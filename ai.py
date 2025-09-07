@@ -1,74 +1,67 @@
 #!/usr/bin/env python3
-import os
+import sys
 import json
 import requests
-import settings
+from settings import API_URL, MODEL, CONTEXT, EXTRA_CONTEXT
+import os
+import subprocess
 
-HISTORY_FILE = "/tmp/deepseek_history.json"
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-# Проверка ключа
-API_KEY = settings.API_KEY
-if not API_KEY:
-    print("Ошибка: не найден ключ API_KEY")
-    exit(1)
-print("Ключ API загружен.", API_KEY[:4] + "..." + API_KEY[-4:])
-
-# Загружаем историю
-if os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-        history = json.load(f)
-else:
-    history = {"messages": []}
-
-print("=== DeepSeek Chat (напиши 'exit' для выхода, 'clear' для очистки истории) ===")
-
-while True:
+def get_system_context():
+    """Подставляем реальные значения вместо $SHELL, $HOME, lsb_release"""
     try:
-        user_input = input("> ").strip()
-    except (EOFError, KeyboardInterrupt):
-        print("\nВыход.")
-        break
+        ubuntu_version = subprocess.check_output(
+            ["lsb_release", "-ds"], text=True
+        ).strip()
+    except Exception:
+        ubuntu_version = "Ubuntu unknown"
 
-    if user_input.lower() == "exit":
-        print("Выход из DeepSeek Chat.")
-        break
-    if user_input.lower() == "clear":
-        history = {"messages": []}
-        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(history, f, ensure_ascii=False, indent=2)
-        print("История очищена.")
-        continue
+    shell = os.environ.get("SHELL", "bash")
+    home = os.environ.get("HOME", "/home/user")
 
-    # Добавляем сообщение пользователя
-    history["messages"].append({"role": "user", "content": user_input})
+    context = CONTEXT.replace("$(lsb_release -ds)", ubuntu_version)
+    context = context.replace("$SHELL", shell).replace("$HOME", home)
+    return context
 
-    # Запрос к OpenRouter
-    response = requests.post(
-        API_URL,
-        headers={
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "deepseek/deepseek-chat",
-            "messages": history["messages"]
-        },
-        timeout=60
-    )
+def main():
+    if len(sys.argv) < 2:
+        print("Использование: ai ваш запрос к ИИ без кавычек")
+        sys.exit(1)
 
-    if response.status_code != 200:
-        print("Ошибка запроса:", response.status_code, response.text)
-        continue
+    # Объединяем все аргументы в одну строку
+    prompt = " ".join(sys.argv[1:])
 
-    data = response.json()
-    reply = data["choices"][0]["message"]["content"]
+    # Формируем полный контекст
+    system_context = get_system_context()
+    full_context = system_context + "\n" + "\n".join(EXTRA_CONTEXT)
 
-    print(reply)
+    # Отправляем как системное сообщение + пользовательский запрос
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": full_context},
+            {"role": "user", "content": prompt},
+        ],
+    }
 
-    # Добавляем ответ ассистента в историю
-    history["messages"].append({"role": "assistant", "content": reply})
+    headers = {
+        "Content-Type": "application/json"
+    }
 
-    # Сохраняем историю
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
+    try:
+        response = requests.post(API_URL, headers=headers, data=json.dumps(payload))
+        response.raise_for_status()
+        data = response.json()
+
+        if "choices" in data and len(data["choices"]) > 0:
+            answer = data["choices"][0]["message"]["content"]
+            print(answer)
+        else:
+            print("Ошибка: неожиданный формат ответа:", data)
+
+    except requests.exceptions.HTTPError as e:
+        print("HTTP ошибка:", e)
+    except Exception as e:
+        print("Ошибка:", e)
+
+if __name__ == "__main__":
+    main()
