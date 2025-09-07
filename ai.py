@@ -2,16 +2,17 @@
 import os
 import json
 import requests
-from settings import OPENROUTER_API_KEY
+import settings
 
 HISTORY_FILE = "/tmp/deepseek_history.json"
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Проверка ключа
-API_KEY = OPENROUTER_API_KEY
+API_KEY = settings.API_KEY
 if not API_KEY:
-    print("Ошибка: не найден ключ OPENROUTER_API_KEY")
+    print("Ошибка: не найден ключ API_KEY")
     exit(1)
+print("Ключ API загружен.", API_KEY[:4] + "..." + API_KEY[-4:])
 
 # Загружаем историю
 if os.path.exists(HISTORY_FILE):
