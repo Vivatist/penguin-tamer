@@ -25,10 +25,17 @@ def get_system_context():
 
 def main():
     if len(sys.argv) < 2:
-        print("Использование: ai ваш запрос к ИИ без кавычек")
+        print("Использование: ai [-run] ваш запрос к ИИ без кавычек")
         sys.exit(1)
 
-    prompt = " ".join(sys.argv[1:])
+    # Проверяем ключ -run
+    run_mode = False
+    args = sys.argv[1:]
+    if "-run" in args:
+        run_mode = True
+        args.remove("-run")
+
+    prompt = " ".join(args)
 
     system_context = get_system_context()
     full_context = system_context + "\n" + "\n".join(EXTRA_CONTEXT)
@@ -50,7 +57,30 @@ def main():
 
         if "choices" in data and len(data["choices"]) > 0:
             answer = data["choices"][0]["message"]["content"]
-            print(format_answer(answer))
+            formatted, code_blocks = format_answer(answer)
+            print(formatted)
+
+            if run_mode and code_blocks:
+                while True:
+                    try:
+                        choice = input("\nВведите номер блока для выполнения (0 - выход): ")
+                        if not choice.isdigit():
+                            print("Введите число.")
+                            continue
+                        choice = int(choice)
+                        if choice == 0:
+                            print("Выход.")
+                            break
+                        if 1 <= choice <= len(code_blocks):
+                            code = code_blocks[choice - 1]
+                            print(f"\n>>> Выполняем блок #{choice}:\n{code}\n")
+                            subprocess.run(code, shell=True)
+                        else:
+                            print("Нет такого блока.")
+                    except KeyboardInterrupt:
+                        print("\nВыход.")
+                        break
+
         else:
             print("Ошибка: неожиданный формат ответа:", data)
 

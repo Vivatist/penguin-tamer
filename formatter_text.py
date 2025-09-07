@@ -8,12 +8,16 @@ BOLD = "\033[1m"
 RESET = "\033[0m"
 
 def highlight_code_blocks(text):
-    """Подсветка блоков кода в жёлтый"""
+    """Подсветка блоков кода в жёлтый и нумерация"""
+    code_blocks = []
     def repl(match):
         code = match.group(1)
-        return f"{YELLOW}{code}{RESET}"
+        code_blocks.append(code.strip())
+        index = len(code_blocks)
+        return f"{YELLOW}[Блок #{index}]\n{code}{RESET}"
     pattern = re.compile(r"```.*?\n(.*?)```", re.DOTALL)
-    return pattern.sub(repl, text)
+    formatted = pattern.sub(repl, text)
+    return formatted, code_blocks
 
 def highlight_explanation_blocks(text):
     """Подсветка блоков между ### ... ### в серый курсив"""
@@ -40,9 +44,9 @@ def highlight_bold(text):
     return pattern.sub(repl, text)
 
 def format_answer(text):
-    """Применяем все правила форматирования"""
-    text = highlight_code_blocks(text)
+    """Применяем все правила форматирования и возвращаем текст + блоки кода"""
+    text, code_blocks = highlight_code_blocks(text)
     text = highlight_explanation_blocks(text)
     text = highlight_inline_code(text)
     text = highlight_bold(text)
-    return text
+    return text, code_blocks
