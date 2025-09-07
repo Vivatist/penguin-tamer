@@ -5,14 +5,7 @@ import requests
 from settings import API_URL, MODEL, CONTEXT, EXTRA_CONTEXT
 import os
 import subprocess
-import re
-
-# ANSI цвета и стили
-YELLOW = "\033[33m"
-GRAY_ITALIC = "\033[90m\033[3m"
-GREEN = "\033[32m"
-BOLD = "\033[1m"
-RESET = "\033[0m"
+from formatter_text import format_answer
 
 def get_system_context():
     """Подставляем реальные значения вместо $SHELL, $HOME, lsb_release"""
@@ -29,47 +22,6 @@ def get_system_context():
     context = CONTEXT.replace("$(lsb_release -ds)", ubuntu_version)
     context = context.replace("$SHELL", shell).replace("$HOME", home)
     return context
-
-def highlight_code_blocks(text):
-    """Подсветка блоков кода в жёлтый"""
-    def repl(match):
-        code = match.group(1)
-        return f"{YELLOW}{code}{RESET}"
-    pattern = re.compile(r"```.*?\n(.*?)```", re.DOTALL)
-    return pattern.sub(repl, text)
-
-def highlight_explanation_blocks(text):
-    """Подсветка блоков между ### ... ### в серый курсив"""
-    def repl(match):
-        content = match.group(1).strip()
-        return f"{GRAY_ITALIC}{content}{RESET}"
-    pattern = re.compile(r"###(.*?)###", re.DOTALL)
-    return pattern.sub(repl, text)
-
-def highlight_inline_code(text):
-    """Подсветка инлайн-кода `...` в зелёный"""
-    def repl(match):
-        code = match.group(1)
-        return f"{GREEN}{code}{RESET}"
-    pattern = re.compile(r"`([^`]+)`")
-    return pattern.sub(repl, text)
-
-def highlight_bold(text):
-    """Подсветка текста между **...** жирным"""
-    def repl(match):
-        bold_text = match.group(1)
-        return f"{BOLD}{bold_text}{RESET}"
-    # Чтобы не путать с markdown `***`, обрабатываем только пары **
-    pattern = re.compile(r"\*\*(.*?)\*\*")
-    return pattern.sub(repl, text)
-
-def format_answer(text):
-    """Применяем все правила форматирования"""
-    text = highlight_code_blocks(text)
-    text = highlight_explanation_blocks(text)
-    text = highlight_inline_code(text)
-    text = highlight_bold(text)
-    return text
 
 def main():
     if len(sys.argv) < 2:
@@ -98,8 +50,7 @@ def main():
 
         if "choices" in data and len(data["choices"]) > 0:
             answer = data["choices"][0]["message"]["content"]
-            answer = format_answer(answer)
-            print(answer)
+            print(format_answer(answer))
         else:
             print("Ошибка: неожиданный формат ответа:", data)
 
