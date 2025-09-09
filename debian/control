@@ -1,0 +1,9 @@
+Package: ai-bash
+Version: 0.1.0
+Section: utils
+Priority: optional
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}
+Maintainer: Your Name <you@example.com>
+Description: AI Bash CLI utility
+ A simple CLI wrapper for AI written in Python.
