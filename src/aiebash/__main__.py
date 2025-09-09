@@ -72,7 +72,7 @@ def main():
         progress_thread.join()  # Ждём завершения потока
 
         # В режиме DEBUG выводим исходную (неформатированную) версию ответа
-        if DEBUG:
+        if not DEBUG:
             print("=== RAW RESPONSE (from send_prompt) ===")
             print(answer)
             print("=== /RAW RESPONSE ===\n")
