@@ -14,11 +14,11 @@ import threading
 import time
 
 
-from aibash.api_client import send_prompt
-from aibash.formatter_text import annotate_bash_blocks
-from aibash.block_runner import run_code_selection  # добавлен импорт
+from aiebash.api_client import send_prompt
+from aiebash.formatter_text import annotate_bash_blocks
+from aiebash.block_runner import run_code_selection  # добавлен импорт
 
-from aibash.settings import settings as user_settings
+from aiebash.settings import settings as user_settings
 
 # нормализуем DEBUG (возможные варианты: True/False, "true"/"False", "1"/"0")
 _raw_debug = user_settings.get("DEBUG")
