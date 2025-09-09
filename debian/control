@@ -1,9 +1,9 @@
 Package: ai-bash
-Version: 0.1.0
+Version: 0.1.1
 Section: utils
 Priority: optional
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}
-Maintainer: Your Name <you@example.com>
-Description: AI Bash CLI utility
+Maintainer: Andrey Bochkarev <andrey.bch.1976@gmail.com>
+Description: Console utility for integrating artificial intelligence into a Linux terminal. 
  A simple CLI wrapper for AI written in Python.

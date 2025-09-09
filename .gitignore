@@ -1,6 +1,7 @@
 
 copilot-instructions.md
 .vscode/
+.команды
 
 # secret kyeys and files
 *.key

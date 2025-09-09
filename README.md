@@ -5,22 +5,17 @@ The project is in the pre-alpha stage. In case of problems with the installation
 
 ## Setup
 
+### Ubuntu/Debian
+Download `.deb` из [Releases](https://github.com/yourname/ai-bash/releases) and install:
+
 ```bash
-# Cloning the repository
-git clone https://github.com/Vivatist/ai-bash.git
-
-# Making the installer executable
-cd ai-bash
-chmod +x install.sh
-
-# Running the installation with root rights
-sudo ./install.sh
+sudo dpkg -i ai-bash_0.1.0-1_all.deb
+sudo apt -f install  # it will tighten up the missing dependencies
 ```
 
 
 
 ### Run
-If an error occurs on the first startup after installation, restart the terminal.
 ```bash
 ai [-run] Your request to the AI
 ```
@@ -35,8 +30,6 @@ ai -run Write a script in bash that outputs a list of files in the current direc
 ```
 
 ## Remove
-Execute commands in the directory of the package that was downloaded during installation (ai-bash/)
 ```bash
-chmod +x uninstall.sh
-sudo ./uninstall.sh
+sudo apt remove ai-bash
 ```

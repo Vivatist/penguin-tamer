@@ -1,16 +1,35 @@
 #!/usr/bin/env python3
 import sys
-from rich.console import Console
+from pathlib import Path
+
+# Убедимся, что parent (src) в sys.path, чтобы можно было import aibash.*
+# Это нужно, если вы запускаете файл напрямую: python src/aibash/__main__.py
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+
 from rich.markdown import Markdown
-import threading
-import time
 from rich.console import Console
 from rich.rule import Rule
+import threading
+import time
 
-from settings import CONTEXT, DEBUG
-from formatter_text import annotate_bash_blocks
-from api_client import send_prompt
-from block_runner import run_code_selection  # добавлен импорт
+
+from aibash.api_client import send_prompt
+from aibash.formatter_text import annotate_bash_blocks
+from aibash.block_runner import run_code_selection  # добавлен импорт
+
+from aibash.settings import settings as user_settings
+
+# нормализуем DEBUG (возможные варианты: True/False, "true"/"False", "1"/"0")
+_raw_debug = user_settings.get("DEBUG")
+if isinstance(_raw_debug, bool):
+    DEBUG = _raw_debug
+else:
+    DEBUG = str(_raw_debug).strip().lower() in ("1", "true", "yes", "on")
+CONTEXT = user_settings.get("CONTEXT")
+MODEL = user_settings.get("MODEL")
+API_URL = user_settings.get("API_URL")
+API_KEY = user_settings.get("API_KEY")
 
 # Флаг для остановки потока (заменён на Event)
 import threading
@@ -46,7 +65,7 @@ def main():
         progress_thread.start()
 
         # Получаем ответ от API через новый интерфейс
-        answer = send_prompt(prompt, system_context=CONTEXT)
+        answer = send_prompt(prompt, MODEL, API_URL, API_KEY, CONTEXT)
 
         # Сигнализируем потоку прогресса остановиться
         stop_event.set()
