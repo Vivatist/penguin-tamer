@@ -75,7 +75,7 @@ def main():
         if not DEBUG:
             print("=== RAW RESPONSE (from send_prompt) ===")
             print(answer)
-            print("=== /RAW RESPONSE ===\n")
+            print("=== /RAW RESPONSE === \n")
 
         # Размечаем bash-блоки и получаем список кодов
         annotated_answer, code_blocks = annotate_bash_blocks(answer)
