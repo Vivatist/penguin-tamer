@@ -65,11 +65,11 @@ def main():
         # Если включён режим выполнения и есть блоки кода — предлагаем выбрать
         if run_mode and code_blocks:
             console.print(Markdown(annotated_answer))
-            console.print(Rule("Конец ответа", style="green"))
             run_code_selection(console, code_blocks)
         else:
             console.print(Markdown(answer))
-            console.print(Rule("Конец ответа", style="green"))
+        
+        console.print(Rule("", style="green"))
 
     except Exception as e:
         # Прочие ошибки (сеть, JSON, и т.д.)
