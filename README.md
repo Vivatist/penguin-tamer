@@ -27,7 +27,7 @@ pipx ensurepath
 
 2. Restart the terminal
 
-3. Install ae-ebash
+3. Install ai-ebash
 ```bash
 pipx install ai-ebash
 ```
