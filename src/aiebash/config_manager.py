@@ -343,7 +343,7 @@ class ConfigManager:
         table.add_column("Название", style="white", no_wrap=True)
         table.add_column("Модель", style="dim white")
         table.add_column("API URL", style="dim white")
-        table.add_column("API Key", style="dim white")
+        table.add_column("API Key", style="dim white") 
         table.add_column("Статус", style="cyan")
 
         for llm_name in available_llms:
@@ -407,7 +407,7 @@ class ConfigManager:
         self.console.print()
 
         # Ввод данных
-        name = self.menu.get_user_input("Название нейросети")
+        name = self.menu.get_user_input("Название нейросети (может быть любым уникальным именем)")
         if not name:
             self.console.print("[red]Название не может быть пустым![/red]")
             self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
