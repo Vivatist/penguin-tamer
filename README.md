@@ -27,6 +27,11 @@ pipx ensurepath
 
 2. Restart the terminal
 
+3. Install ae-ebash
+```bash
+pipx install ai-ebash
+```
+
 **Note:** If you encounter issues with pipx not recognizing the package, you can also install it using pip:
 ```bash
 pip install ai-ebash
