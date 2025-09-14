@@ -40,7 +40,7 @@ class MenuSystem:
 
     def display_menu(self, title: str, options: List[str]) -> None:
         """Отображает меню с пронумерованными опциями"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         # Заголовок уже показан в run_configuration_menu
         self.console.print()
@@ -214,7 +214,7 @@ class ConfigManager:
 
         while True:
             # Показываем заголовок
-            self.console.clear()
+            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
             title_panel = Panel(
                 Align.center(Text("AI-ebash Конфигуратор", style="white")),
                 border_style="white",
@@ -251,7 +251,7 @@ class ConfigManager:
 
     def _set_context_menu(self) -> None:
         """Меню настройки контекста"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         current_context = self.get_value("global", "context", "")
 
@@ -287,7 +287,7 @@ class ConfigManager:
         current_llm = self.get_current_llm_name()
 
         if not available_llms:
-            self.console.clear()
+            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
             self.console.print("[red]Нет доступных нейросетей![/red]")
             self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
             return
@@ -304,12 +304,12 @@ class ConfigManager:
             selected_llm = available_llms[choice]
             if selected_llm != current_llm:
                 self.set_value("global", "current_LLM", selected_llm)
-                self.console.clear()
+                # self.console.clear()  # Убрано для отмены перемотки экрана вверх
                 self.console.print(f"[white]✓ Выбрана нейросеть: {selected_llm}[/white]")
                 # Показываем обновленную таблицу всех LLM
                 self._show_llms_table()
             else:
-                self.console.clear()
+                # self.console.clear()  # Убрано для отмены перемотки экрана вверх
                 self.console.print("[dim]Нейросеть оставлена без изменений[/dim]")
 
             # Показываем таблицу всех LLM
@@ -317,7 +317,7 @@ class ConfigManager:
 
     def _show_all_llms_menu(self) -> None:
         """Меню показа всех нейросетей"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         panel = Panel(
             Text("Все доступные нейросети", style="white"),
@@ -360,7 +360,7 @@ class ConfigManager:
 
     def _delete_llm_menu(self) -> None:
         """Меню удаления нейросети"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         available_llms = self.get_available_llms()
         current_llm = self.get_current_llm_name()
@@ -385,7 +385,7 @@ class ConfigManager:
         if choice is not None:
             selected_llm = deletable_llms[choice]
 
-            self.console.clear()
+            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
             if Confirm.ask(f"Удалить нейросеть '{selected_llm}'?", default=False):
                 del self.json_config["supported_LLMs"][selected_llm]
                 self._save_json_config()
@@ -397,7 +397,7 @@ class ConfigManager:
 
     def _add_llm_menu(self) -> None:
         """Меню добавления новой нейросети"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         panel = Panel(
             Text("Добавление новой нейросети", style="white"),
@@ -444,7 +444,7 @@ class ConfigManager:
         available_llms = self.get_available_llms()
 
         if not available_llms:
-            self.console.clear()
+            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
             self.console.print("[red]Нет нейросетей для редактирования![/red]")
             self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
             return
@@ -461,7 +461,7 @@ class ConfigManager:
 
     def _edit_specific_llm(self, llm_name: str) -> None:
         """Редактирование конкретной нейросети"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         current_config = self.json_config.get("supported_LLMs", {}).get(llm_name, {})
 
@@ -544,7 +544,7 @@ class ConfigManager:
 
     def _language_menu(self) -> None:
         """Заглушка для меню языка"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         panel = Panel(
             Text("Функция выбора языка находится в разработке", style="white"),
@@ -556,7 +556,7 @@ class ConfigManager:
 
     def _show_exit_message(self) -> None:
         """Показывает сообщение при выходе"""
-        self.console.clear()
+        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         panel = Panel(
             Text("Спасибо за использование AI-ebash!", style="white"),
