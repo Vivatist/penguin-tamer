@@ -20,6 +20,7 @@ from aiebash.llm_chat import OpenRouterChat
 from aiebash.arguments import parse_args, parser
 from rich.console import Console
 from rich.markdown import Markdown
+from aiebash.script_executor import run_code_block
 
 
 # === Считываем глобальные настройки ===
@@ -75,17 +76,23 @@ def run_single_query(chat_client: OpenRouterChat, query: str, console: Console) 
 
 def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_prompt: str = None) -> None:
     """Интерактивный режим диалога"""
+    
     logger.info("Запуск режима диалога")
 
     logger.info("[bold green]Режим диалога активирован![/bold green]")
     logger.info("Введите ваш запрос или 'exit' для выхода.")
     console.print()
 
+    last_code_blocks = []  # Список блоков кода из последнего ответа AI
+
     # Если есть начальный промпт, обрабатываем его
     if initial_prompt:
         console.print(f"[bold blue]Начальный запрос:[/bold blue] {initial_prompt}")
         try:
-            chat_client.ask_stream(initial_prompt)
+            reply, code_blocks = chat_client.ask(initial_prompt)
+            last_code_blocks = code_blocks
+            console.print(Markdown(reply))
+            
         except Exception as e:
             logger.error(f"Ошибка при обработке начального запроса: {e}")
             console.print(f"[red]Ошибка:[/red] {e}")
@@ -95,7 +102,7 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
     while True:
         try:
             user_input = console.input("[bold cyan]Вы:[/bold cyan] ").strip()
-
+            
             if user_input.lower() in ['exit', 'quit', 'q', 'выход']:
                 console.print("[yellow]До свидания![/yellow]")
                 break
@@ -103,8 +110,22 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
             if not user_input:
                 continue
 
+            # Проверка, если введено число
+            if user_input.isdigit():
+                block_index = int(user_input)
+                if 1 <= block_index <= len(last_code_blocks):
+                    run_code_block(console, last_code_blocks, block_index)
+                    console.print()
+                    continue
+                else:
+                    console.print(f"[red]Блок кода #{user_input} не найден.[/red]")
+                    continue
+
+            # Если введен текст, отправляем как запрос к AI
             console.print("[bold green]AI:[/bold green] ", end="")
-            response = chat_client.ask_stream(user_input)
+            response, code_blocks = chat_client.ask(user_input)
+            last_code_blocks = code_blocks
+            console.print(Markdown(response))
             console.print()  # Новая строка после ответа
 
         except KeyboardInterrupt:
@@ -113,8 +134,6 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
         except Exception as e:
             logger.error(f"Ошибка в режиме диалога: {e}")
             console.print(f"[red]Ошибка:[/red] {e}")
-
-
 def main() -> None:
     try:
         args = parse_args()

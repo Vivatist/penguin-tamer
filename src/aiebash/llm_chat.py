@@ -6,6 +6,8 @@ from rich.markdown import Markdown
 from rich.live import Live
 import time
 
+from aiebash.formatter_text import annotate_code_blocks
+
 
 
 class OpenRouterChat:
@@ -40,8 +42,8 @@ class OpenRouterChat:
                 print(f"[TOKENS] input={usage.prompt_tokens}, "
                       f"output={usage.completion_tokens}, "
                       f"total={usage.total_tokens}")
-
-            return reply
+            reply, code_blocks = annotate_code_blocks(reply)
+            return reply, code_blocks
 
         except Exception as e:
             return self._handle_api_error(e)
@@ -65,7 +67,7 @@ class OpenRouterChat:
                     if chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
                         reply_parts.append(text)
-
+                        
                         # Объединяем все части и обрабатываем как Markdown
                         full_text = "".join(reply_parts)
                         markdown = Markdown(full_text)

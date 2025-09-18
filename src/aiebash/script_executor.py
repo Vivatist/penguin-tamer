@@ -41,7 +41,7 @@ class LinuxCommandExecutor(CommandExecutor):
             encoding='utf-8'
         )
         logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
-                    f"stdout: {len(result.stdout)} байт, stderr: {len(result.stderr)} байт")
+                    f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
         return result
 
 
@@ -75,7 +75,7 @@ class WindowsCommandExecutor(CommandExecutor):
                 encoding='cp1251'  # Кириллическая кодировка для консоли Windows
             )
             logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
-                        f"stdout: {len(result.stdout)} байт, stderr: {len(result.stderr)} байт")
+                        f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
             return result
         except Exception as e:
             logger.error(f"Ошибка при выполнении Windows-команды: {e}", exc_info=True)
@@ -149,6 +149,7 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
             console.print("[green]>>> Нет вывода stdout[/green]")
             
         if process.stderr:
+            logger.debug(f"Получен stderr ({len(process.stderr)} символов)")
             console.print(f"[yellow]>>>Error:[/yellow]\n{process.stderr}")
         
         # Добавляем информацию о статусе выполнения
