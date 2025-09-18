@@ -26,6 +26,7 @@ from rich.markdown import Markdown
 logger.info("Загрузка настроек...")
 CONTEXT: str = config_manager.get_value("global", "context", "")
 CURRENT_LLM: str = config_manager.get_value("global", "current_LLM", "openai_over_proxy")
+TEMPERATURE: float = config_manager.get_value("global","temperature", 0.7)
 
 logger.debug(f"Заданы настройки - Системный контекст: {'(пусто)' if not CONTEXT else CONTEXT[:30] + '...'}")
 logger.debug(f"Заданы настройки - Текущий LLM: {CURRENT_LLM}")
@@ -35,20 +36,24 @@ MODEL = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("model",
 API_URL = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_url", "")
 API_KEY = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_key", "")
 
+
 logger.debug(f"Заданы настройки - Модель: {MODEL}")
 logger.debug(f"Заданы настройки - API URL: {API_URL}")
 logger.debug(f"Заданы настройки - API Key: {'(не задан)' if not API_KEY else f'{API_KEY[:5]}...{API_KEY[-5:] if len(API_KEY) > 10 else API_KEY}'}")
+logger.debug(f"Заданы настройки - Temperature: {TEMPERATURE}")
 
+console = Console()
 
 # === Инициализация OpenRouterChat клиента ===
 logger.debug("Инициализация OpenRouterChat клиента")
 try:
     chat_client = OpenRouterChat(
+        console=console,
         api_key=API_KEY,
         api_url=API_URL,
         model=MODEL,
         system_context=CONTEXT or "You are a helpful assistant.",
-        temperature=0.7
+        temperature=TEMPERATURE
     )
 except Exception as e:
     logger.error(f"Ошибка при создании OpenRouterChat клиента: {e}", exc_info=True)
@@ -72,8 +77,8 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
     """Интерактивный режим диалога"""
     logger.info("Запуск режима диалога")
 
-    console.print("[bold green]Режим диалога активирован![/bold green]")
-    console.print("Введите ваш запрос или 'exit' для выхода.")
+    logger.info("[bold green]Режим диалога активирован![/bold green]")
+    logger.info("Введите ваш запрос или 'exit' для выхода.")
     console.print()
 
     # Если есть начальный промпт, обрабатываем его
@@ -111,8 +116,6 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
 
 
 def main() -> None:
-    console = Console()
-
     try:
         args = parse_args()
         logger.info("Разбор аргументов командной строки...")
