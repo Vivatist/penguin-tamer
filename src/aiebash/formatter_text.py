@@ -2,7 +2,7 @@ import re
 import platform
 
 
-def _format_api_key_display(api_key: str) -> str:
+def format_api_key_display(api_key: str) -> str:
     """Форматирует отображение API ключа для логирования"""
     if not api_key:
         return "(не задан)"

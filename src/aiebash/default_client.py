@@ -3,9 +3,9 @@ import json, requests
 from typing import List
 
 from .llm_interface import LLMClient
-from aiebash.logger import logger
 from rich.prompt import Prompt
 from rich.console import Console
+from aiebash.logger import logger
 
 try:
     from .formatter_text import _format_api_key_display
@@ -20,14 +20,9 @@ class DefaultClient(LLMClient):
         self.model = model
         self.api_url = api_url
         self.api_key = api_key
-        logger.info(f"Инициализирован {self.__class__.__name__} с моделью {model}")
-        logger.debug(f"API URL: {api_url}, timeout: {timeout}с")
 
     def configure_llm(self, console: Console) -> dict:
-        """
-        Настройка параметров OpenAI через прокси.
-        Настраивается только модель и API ключ, URL фиксирован.
-        """
+
         console.print("\n[bold]Настройка OpenAI через прокси:[/bold]")
 
         # Текущие значения
@@ -50,52 +45,29 @@ class DefaultClient(LLMClient):
         }
 
     def _send_chat(self, messages: List[dict]) -> str:
-        logger.info(f"Отправка запроса к {self.model} через прокси")
 
         payload = {"model": self.model, "messages": messages}
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-            logger.debug(f"Используется API-ключ: {_format_api_key_display(self.api_key)}")
-        else:
-            logger.debug("API-ключ не предоставлен (используется публичный доступ, если поддерживается)")
         try:
 
-            logger.debug(f"Выполняется POST-запрос к {self.api_url}")
             resp = requests.post(self.api_url, headers=headers, json=payload, timeout=self.timeout)
 
             status_code = resp.status_code
-            logger.debug(f"Получен ответ, статус: {status_code}")
 
             resp.raise_for_status()
             data = resp.json()
 
             if "usage" in data:
                 usage = data["usage"]
-                logger.info(f"Использование токенов: prompt={usage.get('prompt_tokens', 0)}, "
-                           f"completion={usage.get('completion_tokens', 0)}, "
-                           f"total={usage.get('total_tokens', 0)}")
 
             if "choices" in data and data["choices"]:
                 answer = data["choices"][0]["message"]["content"]
-                logger.info(f"Получен ответ длиной {len(answer)} символов")
                 return answer
 
-            logger.error(f"Неожиданный формат ответа API: {json.dumps(data)[:200]}...")
             raise RuntimeError("Unexpected API response format")
 
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP ошибка: {e}", exc_info=True)
-            raise
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"Ошибка соединения: {e}", exc_info=True)
-            raise
-        except requests.exceptions.Timeout as e:
-            logger.error(f"Таймаут соединения: {e}", exc_info=True)
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Ошибка запроса: {e}", exc_info=True)
-            raise
         except Exception as e:
-            logger.error(f"Непредвиденная ошибка: {e}", exc_info=True)
             raise
+

@@ -19,10 +19,10 @@ from rich.layout import Layout
 from platformdirs import user_config_dir
 
 try:
-    from .formatter_text import _format_api_key_display
+    from .formatter_text import format_api_key_display
 except ImportError:
     # Для случаев, когда модуль запускается напрямую
-    from formatter_text import _format_api_key_display
+    from formatter_text import format_api_key_display
 
 
 # === Настройки ===
@@ -350,7 +350,7 @@ class ConfigManager:
             llm_config = self.json_config.get("supported_LLMs", {}).get(llm_name, {})
             model = llm_config.get("model", "не указана")
             api_url = llm_config.get("api_url", "не указан")
-            api_key = _format_api_key_display(llm_config.get("api_key", ""))
+            api_key = format_api_key_display(llm_config.get("api_key", ""))
             status = "✓ Текущая" if llm_name == current_llm else ""
 
             table.add_row(llm_name, model, api_url, api_key, status)
@@ -476,7 +476,7 @@ class ConfigManager:
         self.console.print(f"Текущее название: [white]{llm_name}[/white]")
         self.console.print(f"Текущая модель: [dim white]{current_config.get('model', 'не указана')}[/dim white]")
         self.console.print(f"Текущий API URL: [dim white]{current_config.get('api_url', 'не указан')}[/dim white]")
-        self.console.print(f"API Key: [dim white]{_format_api_key_display(current_config.get('api_key', ''))}[/dim white]")
+        self.console.print(f"API Key: [dim white]{format_api_key_display(current_config.get('api_key', ''))}[/dim white]")
         self.console.print()
 
         # Ввод нового названия
