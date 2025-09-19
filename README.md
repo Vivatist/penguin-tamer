@@ -9,8 +9,6 @@
 
 🌍 **Available in:** [English](README.md) | [Русский](docs/locales/README_ru.md)
 
-![Demo](https://via.placeholder.com/800x400/333/fff?text=AI-eBash+Demo)
-
 ## 📋 Table of Contents
 
 - [🤖 AI-eBash](#-ai-ebash)
