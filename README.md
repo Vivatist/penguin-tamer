@@ -3,10 +3,11 @@
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Version](https://img.shields.io/pypi/v/ai-ebash.svg)](https://pypi.org/project/ai-ebash/)
-[![GitHub Issues](https://img.shields.io/github/issues/Vivatist/ai-ebash.svg)](https://github.com/Vivatist/ai-ebash/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/Vivatist/ai-ebash.svg)](https://github.com/Vivatist/ai-ebash/stargazers)
 
 > **Console utility for integrating artificial intelligence into your terminal.** Ask AI questions and execute suggested scripts and commands directly from the command line. Perfect for Linux administrators and developers.
+
+🌍 **Available in:** [English](README.md) | [Русский](docs/locales/README_ru.md)
 
 ![Demo](https://via.placeholder.com/800x400/333/fff?text=AI-eBash+Demo)
 
