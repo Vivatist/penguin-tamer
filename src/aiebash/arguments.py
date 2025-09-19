@@ -1,8 +1,8 @@
 import argparse
 
-from aiebash.logger import logger
+from aiebash.logger import logger, log_execution_time
 
-# Создаем парсер как объект модуля
+
 parser = argparse.ArgumentParser(
     prog="ai",
     description=(
@@ -34,11 +34,6 @@ parser.add_argument(
     nargs="*",
     help="Ваш запрос к ИИ.",
 )
-
-
-import argparse
-
-from aiebash.logger import logger, log_execution_time
 
 
 @log_execution_time

@@ -19,9 +19,8 @@ logger = configure_logger(logging_config)
 
 # Импортируем OpenRouterChat вместо старых модулей
 from aiebash.llm_client import OpenRouterClient
-from aiebash.arguments import parse_args, parser
+from aiebash.arguments import parse_args
 from rich.console import Console
-from rich.markdown import Markdown
 from aiebash.script_executor import run_code_block
 
 
