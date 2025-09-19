@@ -2,6 +2,8 @@
 import sys
 from pathlib import Path
 
+from aiebash.formatter_text import extract_labeled_code_blocks
+
 # Добавляем parent (src) в sys.path для локального запуска
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -16,7 +18,7 @@ logging_config = config_manager.get_logging_config()
 logger = configure_logger(logging_config)
 
 # Импортируем OpenRouterChat вместо старых модулей
-from aiebash.llm_chat import OpenRouterChat
+from aiebash.llm_client import OpenRouterClient
 from aiebash.arguments import parse_args, parser
 from rich.console import Console
 from rich.markdown import Markdown
@@ -45,10 +47,11 @@ logger.debug(f"Заданы настройки - Temperature: {TEMPERATURE}")
 
 console = Console()
 
+
 # === Инициализация OpenRouterChat клиента ===
 logger.debug("Инициализация OpenRouterChat клиента")
 try:
-    chat_client = OpenRouterChat(
+    chat_client = OpenRouterClient(
         console=console,
         api_key=API_KEY,
         api_url=API_URL,
@@ -62,21 +65,24 @@ except Exception as e:
 
 
 # === Основная логика ===
-def run_single_query(chat_client: OpenRouterChat, query: str, console: Console) -> None:
+def run_single_query(chat_client: OpenRouterClient, query: str, console: Console) -> None:
     """Выполнение одиночного запроса в потоковом режиме"""
     logger.info(f"Выполнение запроса: '{query[:50]}'...")
     try:
         # Используем потоковый режим для вывода ответа
-        response = chat_client.ask_stream(query)
+        reply = chat_client.ask_stream(query)
+        # console.print(Markdown(reply))
         logger.info("Запрос выполнен успешно")
     except Exception as e:
         logger.error(f"Ошибка при выполнении запроса: {e}")
         console.print(f"[red]Ошибка:[/red] {e}")
 
 
-def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_prompt: str = None) -> None:
+def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_prompt: str = None) -> None:
     """Интерактивный режим диалога"""
     
+    additional_context = " ВСЕГДА нумеруй блоки кода в ответах, чтобы пользователь мог ссылаться на них. Формат нумерации: [Код #1]\n```bash ... ```, [Код 2]\n```bash ... ```, и так далее. Если в ответе есть несколько блоков кода, нумеруй их последовательно. В новом ответе начинай нумерацию с 1. Обсуждать с пользователем нумерацию не нужно, просто делай это автоматически."
+
     logger.info("Запуск режима диалога")
 
     logger.info("[bold green]Режим диалога активирован![/bold green]")
@@ -87,10 +93,11 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
 
     # Если есть начальный промпт, обрабатываем его
     if initial_prompt:
-        console.print(f"[bold blue]Начальный запрос:[/bold blue] {initial_prompt}")
+        initial_prompt += additional_context
         try:
             reply = chat_client.ask_stream(initial_prompt)
-            
+            last_code_blocks = extract_labeled_code_blocks(reply)
+            print(last_code_blocks)
         except Exception as e:
             logger.error(f"Ошибка при обработке начального запроса: {e}")
             console.print(f"[red]Ошибка:[/red] {e}")
@@ -116,16 +123,14 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
                     console.print()
                     continue
                 else:
-                    console.print(f"[red]Блок кода #{user_input} не найден.[/red]")
+                    console.print(f"[dim]Блок кода #{user_input} не найден.[/dim]")
                     continue
 
             # Если введен текст, отправляем как запрос к AI
-            console.print("[bold green]AI:[/bold green] ", end="")
             reply = chat_client.ask_stream(user_input)
             console.print()  # Новая строка после ответа
 
         except KeyboardInterrupt:
-            console.print("\n[yellow]Диалог прерван пользователем[/yellow]")
             break
         except Exception as e:
             logger.error(f"Ошибка в режиме диалога: {e}")
@@ -137,20 +142,16 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
 def main() -> None:
     try:
         args = parse_args()
-        logger.info("Разбор аргументов командной строки...")
-        logger.debug(f"Полученные аргументы: dialog={args.dialog}, settings={args.settings}, prompt={args.prompt or '(пусто)'}")
+
 
         # Обработка режима настройки
         if args.settings:
             logger.info("Запуск конфигурационного режима")
-            try:
-                from aiebash.config_manager import run_configuration_dialog
-                run_configuration_dialog()
-                logger.info("Конфигурационный режим завершен")
-                return 0
-            except Exception as e:
-                logger.error(f"Ошибка в режиме конфигурации: {e}", exc_info=True)
-                return 1
+            from aiebash.config_manager import run_configuration_dialog
+            run_configuration_dialog()
+            logger.info("Конфигурационный режим завершен")
+            return 0
+
 
         # Определяем режим работы
         dialog_mode: bool = args.dialog
