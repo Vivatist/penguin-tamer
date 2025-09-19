@@ -120,7 +120,7 @@ def log_execution_time(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
-        logger.debug(f"Начало выполнения {func.__name__}")
+        #logger.debug(f"Начало выполнения {func.__name__}")
         result = func(*args, **kwargs)
         execution_time = time.time() - start_time
         logger.debug(f"Функция {func.__name__} выполнена за {execution_time:.3f} сек")

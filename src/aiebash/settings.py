@@ -4,6 +4,8 @@ import os
 import shutil
 from typing import Dict, Any, Optional
 from platformdirs import user_config_dir
+from aiebash.logger import log_execution_time
+import time
 
 
 # --- Пути к конфигурации ---
@@ -20,6 +22,7 @@ class Settings:
         self.config_data = {}
         self.load_settings()
         
+    @log_execution_time
     def load_settings(self) -> None:
         """Загружает настройки из файла или создает файл с настройками по умолчанию"""
         
@@ -42,6 +45,7 @@ class Settings:
         except Exception:
             self.config_data = {}
             
+    @log_execution_time
     def save_settings(self) -> None:
         """Сохраняет настройки в файл"""
         try:
@@ -53,6 +57,7 @@ class Settings:
         except Exception:
             pass
             
+    @log_execution_time
     def get_value(self, section: str, key: str, default: Any = None) -> Any:
         """Получает значение из настроек"""
         try:
@@ -69,6 +74,7 @@ class Settings:
         except Exception:
             return default
             
+    @log_execution_time
     def set_value(self, section: str, key: str, value: Any) -> None:
         """Устанавливает значение в настройках"""
         try:
@@ -92,34 +98,28 @@ class Settings:
         except Exception:
             pass
             
-    def get_backend_name(self) -> str:
-        """Возвращает имя текущего LLM (устаревший метод, используйте get_current_llm_name)"""
-        return self.get_current_llm_name()
         
+    @log_execution_time
     def get_current_llm_name(self) -> str:
         """Возвращает имя текущего LLM"""
         current_llm = self.get_value("global", "current_LLM", "openai_over_proxy")
         return current_llm
         
-    def get_backend_config(self) -> Dict[str, Any]:
-        """Возвращает конфигурацию текущего бэкенда (устаревший метод, используйте get_current_llm_config)"""
-        return self.get_current_llm_config()
         
+    @log_execution_time
     def get_current_llm_config(self) -> Dict[str, Any]:
         """Возвращает конфигурацию текущего LLM"""
         current_llm_name = self.get_current_llm_name()
         config = self.config_data.get("supported_LLMs", {}).get(current_llm_name, {})
         return config
 
-    def get_available_backends(self) -> list:
-        """Возвращает список доступных бэкендов (устаревший метод, используйте get_available_llms)"""
-        return self.get_available_llms()
-        
+    @log_execution_time
     def get_available_llms(self) -> list:
         """Возвращает список доступных LLM"""
         llms = list(self.config_data.get("supported_LLMs", {}).keys())
         return llms
     
+    @log_execution_time
     def get_logging_config(self) -> Dict[str, Any]:
         """
         Возвращает настройки логирования из конфигурации.

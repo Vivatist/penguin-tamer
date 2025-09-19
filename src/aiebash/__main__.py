@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from aiebash.config_manager import config_manager
 
 # Теперь импортируем и настраиваем логгер
-from aiebash.logger import configure_logger
+from aiebash.logger import configure_logger, log_execution_time
 
 # Получаем настройки логирования и настраиваем логгер
 logging_config = config_manager.get_logging_config()
@@ -45,8 +45,8 @@ logger.debug(f"Заданы настройки - API URL: {API_URL}")
 logger.debug(f"Заданы настройки - API Key: {'(не задан)' if not API_KEY else f'{API_KEY[:5]}...{API_KEY[-5:] if len(API_KEY) > 10 else API_KEY}'}")
 logger.debug(f"Заданы настройки - Temperature: {TEMPERATURE}")
 
-console = Console()
 
+console = Console()
 
 # === Инициализация OpenRouterChat клиента ===
 logger.debug("Инициализация OpenRouterChat клиента")
@@ -65,6 +65,7 @@ except Exception as e:
 
 
 # === Основная логика ===
+@log_execution_time
 def run_single_query(chat_client: OpenRouterClient, query: str, console: Console) -> None:
     """Выполнение одиночного запроса в потоковом режиме"""
     logger.info(f"Выполнение запроса: '{query[:50]}'...")
@@ -78,16 +79,13 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
         console.print(f"[red]Ошибка:[/red] {e}")
 
 
+@log_execution_time
 def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_prompt: str = None) -> None:
     """Интерактивный режим диалога"""
     
     additional_context = " ВСЕГДА нумеруй блоки кода в ответах, чтобы пользователь мог ссылаться на них. Формат нумерации: [Код #1]\n```bash ... ```, [Код 2]\n```bash ... ```, и так далее. Если в ответе есть несколько блоков кода, нумеруй их последовательно. В новом ответе начинай нумерацию с 1. Обсуждать с пользователем нумерацию не нужно, просто делай это автоматически."
 
     logger.info("Запуск режима диалога")
-
-    logger.info("[bold green]Режим диалога активирован![/bold green]")
-    logger.info("Введите ваш запрос или 'exit' для выхода.")
-    console.print()
 
     last_code_blocks = []  # Список блоков кода из последнего ответа AI
 
@@ -97,7 +95,6 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_pro
         try:
             reply = chat_client.ask_stream(initial_prompt)
             last_code_blocks = extract_labeled_code_blocks(reply)
-            print(last_code_blocks)
         except Exception as e:
             logger.error(f"Ошибка при обработке начального запроса: {e}")
             console.print(f"[red]Ошибка:[/red] {e}")
@@ -139,6 +136,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_pro
 
 
 
+@log_execution_time
 def main() -> None:
     try:
         args = parse_args()

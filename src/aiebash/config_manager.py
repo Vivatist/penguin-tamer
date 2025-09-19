@@ -18,11 +18,13 @@ from rich.align import Align
 from rich.layout import Layout
 from platformdirs import user_config_dir
 
+from aiebash.logger import log_execution_time
+
 try:
     from .formatter_text import format_api_key_display
 except ImportError:
     # Для случаев, когда модуль запускается напрямую
-    from formatter_text import format_api_key_display
+    from aiebash.formatter_text import format_api_key_display
 
 
 # === Настройки ===
@@ -123,6 +125,7 @@ class ConfigManager:
         except Exception as e:
             self.console.print(f"[red]Ошибка сохранения настроек: {e}[/red]")
 
+    @log_execution_time
     def get_value(self, section: str, key: str, default: Any = None) -> Any:
         """Получает значение из настроек"""
         return self.json_config.get(section, {}).get(key, default)
@@ -132,14 +135,17 @@ class ConfigManager:
         self.json_config.setdefault(section, {})[key] = value
         self._save_json_config()
 
+    @log_execution_time
     def get_logging_config(self) -> Dict[str, Any]:
         """Возвращает настройки логирования"""
         return self.json_config.get("logging", {})
 
+    @log_execution_time
     def get_current_llm_name(self) -> str:
         """Возвращает имя текущего LLM"""
         return self.json_config.get("global", {}).get("current_LLM", "openai_over_proxy")
 
+    @log_execution_time
     def get_current_llm_config(self) -> Dict[str, Any]:
         """Возвращает конфигурацию текущего LLM"""
         current_llm = self.get_current_llm_name()
@@ -200,6 +206,7 @@ class ConfigManager:
         supported_llms = self.json_config.get("supported_LLMs", {})
         return list(supported_llms.keys())
 
+    @log_execution_time
     def run_configuration_menu(self) -> None:
         """Запускает главное меню конфигурации"""
         main_menu_options = [
@@ -569,6 +576,7 @@ class ConfigManager:
 config_manager = ConfigManager()
 
 
+@log_execution_time
 def run_configuration_dialog() -> None:
     """Запуск интерактивной настройки"""
     config_manager.run_configuration_menu()

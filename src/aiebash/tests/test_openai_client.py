@@ -1,7 +1,22 @@
+import sys
+from pathlib import Path
 import pytest
 from unittest.mock import patch
 from requests.exceptions import HTTPError
-from aiebash.openai_client import OpenAIClientOverProxy
+
+# Добавляем путь к src
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+try:
+    from aiebash.openai_client import OpenAIClientOverProxy
+    from aiebash.logger import log_execution_time
+except ImportError:
+    # Если не можем импортировать, создаем заглушки
+    class OpenAIClientOverProxy:
+        pass
+    def log_execution_time(func):
+        return func
+
 
 def test_send_chat_raises_connection_error():
     client = OpenAIClientOverProxy(model="gpt-3.5-turbo", api_url="https://any-url", api_key="fake-key")
@@ -15,6 +30,8 @@ def test_send_chat_raises_connection_error():
             mock_print.assert_not_called()
     assert "Max retries exceeded" in str(exc_info.value)
 
+
+@log_execution_time
 def test_send_chat_raises_http_error_and_message_hidden():
     client = OpenAIClientOverProxy(model="gpt-3.5-turbo", api_url="https://fake-url", api_key="fake-key")
     messages = [{"role": "user", "content": "test"}]

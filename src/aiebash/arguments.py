@@ -36,6 +36,12 @@ parser.add_argument(
 )
 
 
+import argparse
+
+from aiebash.logger import logger, log_execution_time
+
+
+@log_execution_time
 def parse_args() -> argparse.Namespace:
     """
     Разбор аргументов командной строки.

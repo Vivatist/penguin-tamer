@@ -1,37 +1,96 @@
 import threading
 from typing import List, Dict
-from openai import OpenAI
-from openai import RateLimitError, APIError, OpenAIError, AuthenticationError
-from rich.console import Console
-from rich.markdown import Markdown
-from rich.live import Live
 import time
+from aiebash.logger import log_execution_time
+
+# Ленивый импорт Rich
+_console = None
+_markdown = None
+_live = None
+
+def _get_console():
+    global _console
+    if _console is None:
+        from rich.console import Console
+        _console = Console()
+    return _console
+
+def _get_markdown():
+    global _markdown
+    if _markdown is None:
+        from rich.markdown import Markdown
+        _markdown = Markdown
+    return _markdown
+
+def _get_live():
+    global _live
+    if _live is None:
+        from rich.live import Live
+        _live = Live
+    return _live
+
+# Ленивый импорт OpenAI (самый тяжелый модуль)
+_openai_client = None
+_openai_exceptions = None
+
+def _get_openai_client():
+    """Ленивый импорт OpenAI клиента"""
+    global _openai_client
+    if _openai_client is None:
+        from openai import OpenAI
+        _openai_client = OpenAI
+    return _openai_client
+
+def _get_openai_exceptions():
+    """Ленивый импорт OpenAI исключений"""
+    global _openai_exceptions
+    if _openai_exceptions is None:
+        from openai import RateLimitError, APIError, OpenAIError, AuthenticationError
+        _openai_exceptions = {
+            'RateLimitError': RateLimitError,
+            'APIError': APIError,
+            'OpenAIError': OpenAIError,
+            'AuthenticationError': AuthenticationError
+        }
+    return _openai_exceptions
 
 
 
 
 class OpenRouterClient:
 
+    @log_execution_time
     def _spinner(self, stop_spinner: threading.Event) -> None:
         """Визуальный индикатор работы ИИ с точечным спиннером.
         Пока stop_event не установлен, показывает "Аи печатает...".
         """
-        console = Console()
+        console = _get_console()
         with console.status("[dim]Ai думает...[/dim]", spinner="dots", spinner_style="dim"):
             while not stop_spinner.is_set():
                 time.sleep(0.1)
 
-    def __init__(self, console: Console, api_key: str, api_url: str, model: str,
+    @log_execution_time
+    def __init__(self, console, api_key: str, api_url: str, model: str,
                  system_context: str = "You are a helpful assistant.",
                  temperature: float = 0.7):
         self.console = console
-        self.client = OpenAI(api_key=api_key, base_url=api_url)
+        self.api_key = api_key
+        self.api_url = api_url
         self.model = model
         self.temperature = temperature
         self.messages: List[Dict[str, str]] = [
             {"role": "system", "content": system_context}
         ]
+        self._client = None  # Ленивая инициализация
 
+    @property
+    def client(self):
+        """Ленивая инициализация OpenAI клиента"""
+        if self._client is None:
+            self._client = _get_openai_client()(api_key=self.api_key, base_url=self.api_url)
+        return self._client
+
+    @log_execution_time
     def ask(self, user_input: str) -> str:
         """Обычный (не потоковый) режим с сохранением контекста"""
         self.messages.append({"role": "user", "content": user_input})
@@ -71,6 +130,7 @@ class OpenRouterClient:
             spinner_thread.join()
             return self._handle_api_error(e)
 
+    @log_execution_time
     def ask_stream(self, user_input: str) -> str:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
         self.messages.append({"role": "user", "content": user_input})
@@ -95,14 +155,14 @@ class OpenRouterClient:
             spinner_thread.join()
 
             # Используем Live для динамического обновления отображения с Markdown
-            with Live(console=self.console, refresh_per_second=20, auto_refresh=True) as live:
+            with _get_live()(console=self.console, refresh_per_second=20, auto_refresh=True) as live:
                 for chunk in stream:
                     if chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
                         reply_parts.append(text)
                         # Объединяем все части и обрабатываем как Markdown
                         full_text = "".join(reply_parts)
-                        markdown = Markdown(full_text)
+                        markdown = _get_markdown()(full_text)
                         live.update(markdown)
                         time.sleep(0.01)  # Небольшая задержка для плавности обновления
             reply = "".join(reply_parts)
@@ -115,15 +175,16 @@ class OpenRouterClient:
             spinner_thread.join()
             return self._handle_api_error(e)
 
+    @log_execution_time
     def _handle_api_error(self, error: Exception) -> str:
         """Обработка ошибок API с соответствующим выводом сообщений"""
-        if isinstance(error, RateLimitError):
+        if isinstance(error, _get_openai_exceptions()['RateLimitError']):
             self.console.print("[dim]Ошибка 403: Доступ запрещён\nВозможные причины:\n-Превышен лимит запросов (попробуйте через некоторое время)\n-Не поддерживается ваш регион (используйте VPN)[/dim]")
-        elif isinstance(error, AuthenticationError):
+        elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
             self.console.print("[dim]Ошибка 401: Отказ в авторизации.Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-bash]Как получить ключ?[/link][/dim]")
-        elif isinstance(error, APIError):
+        elif isinstance(error, _get_openai_exceptions()['APIError']):
             self.console.print(f"[red]Ошибка API: {error}[/red]")
-        elif isinstance(error, OpenAIError):
+        elif isinstance(error, _get_openai_exceptions()['OpenAIError']):
             self.console.print(f"[red]Ошибка клиента OpenAI: {error}[/red]")
         else:
             self.console.print(f"[red]Неизвестная ошибка: {error}[/red]")

@@ -5,7 +5,7 @@ import os
 from abc import ABC, abstractmethod
 from rich.console import Console
 
-from aiebash.logger import logger
+from aiebash.logger import logger, log_execution_time
 
 
 # Абстрактный базовый класс для исполнителей команд
@@ -30,6 +30,7 @@ class CommandExecutor(ABC):
 class LinuxCommandExecutor(CommandExecutor):
     """Исполнитель команд для Linux/Unix систем"""
     
+    @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bash-команды в Linux"""
         logger.debug(f"Выполнение bash-команды: {code_block[:80]}...")
@@ -49,6 +50,7 @@ class LinuxCommandExecutor(CommandExecutor):
 class WindowsCommandExecutor(CommandExecutor):
     """Исполнитель команд для Windows систем"""
     
+    @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bat-команды в Windows через временный файл"""
         # Предобработка кода для Windows
@@ -94,6 +96,7 @@ class CommandExecutorFactory:
     """Фабрика для создания исполнителей команд в зависимости от ОС"""
     
     @staticmethod
+    @log_execution_time
     def create_executor() -> CommandExecutor:
         """
         Создает исполнитель команд в зависимости от текущей ОС
@@ -110,6 +113,7 @@ class CommandExecutorFactory:
             return LinuxCommandExecutor()
 
 
+@log_execution_time
 def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
     """
     Печатает номер и содержимое блока, выполняет его и выводит результат.
