@@ -235,7 +235,6 @@ class ConfigManager:
             choice = self.menu.navigate_menu(main_menu_options, "AI-ebash Конфигуратор")
 
             if choice is None or choice == 6:  # Выход
-                self._show_exit_message()
                 break
 
             elif choice == 0:  # Изменить контекст
@@ -560,16 +559,6 @@ class ConfigManager:
         )
         self.console.print(panel)
         self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-
-    def _show_exit_message(self) -> None:
-        """Показывает сообщение при выходе"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-
-        panel = Panel(
-            Text("Спасибо за использование AI-ebash!", style="white"),
-            border_style="white"
-        )
-        self.console.print(panel)
 
 
 # Создаем глобальный экземпляр
