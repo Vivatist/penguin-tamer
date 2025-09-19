@@ -78,6 +78,7 @@ ai -d Help me learn Linux commands
    pipx install ai-ebash
    ```
 
+
 > **Note:** If pipx doesn't work, you can install via pip:
 > ```bash
 > pip install ai-ebash
@@ -174,9 +175,8 @@ Settings are stored in:
 
 ## Security
 
-> ⚠️ **WARNING:** Never execute code from untrusted sources without verification!
-
-> ⚠️ **CAUTION:** Be careful when using AI-generated commands in production environments. Always test commands in a safe environment first.
+> [!WARNING]
+> Never execute code from untrusted sources without verification!
 
 ### Best Practices
 
