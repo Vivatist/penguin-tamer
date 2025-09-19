@@ -1,4 +1,4 @@
-# ��� AI-eBash
+# 🤖 AI-eBash
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,36 +10,44 @@
 
 ![Demo](https://via.placeholder.com/800x400/333/fff?text=AI-eBash+Demo)
 
-## ��� Table of Contents
+## 📋 Table of Contents
 
-- [✨ Features](#-features)
-- [��� Quick Start](#-quick-start)
-- [��� Installation](#-installation)
-  - [Linux (pipx)](#linux-pipx)
-  - [Linux (DEB package)](#linux-deb-package)
-  - [Windows](#windows)
-- [��� Usage](#-usage)
-  - [Basic Usage](#basic-usage)
-  - [Dialog Mode](#dialog-mode)
-  - [Code Execution](#code-execution)
-- [⚙️ Configuration](#️-configuration)
-- [��� Security](#-security)
-- [��� Contributing](#-contributing)
-- [��� License](#-license)
-- [��� Contact](#-contact)
+- [🤖 AI-eBash](#-ai-ebash)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [✨ Features](#-features)
+  - [🚀 Quick Start](#-quick-start)
+  - [📦 Installation](#-installation)
+    - [Linux (pipx) 🐧](#linux-pipx-)
+    - [Linux (DEB Package) 📦](#linux-deb-package-)
+    - [Windows (Experimental) 🪟](#windows-experimental-)
+  - [💡 Usage](#-usage)
+    - [Basic Usage](#basic-usage)
+    - [Dialog Mode](#dialog-mode)
+    - [Code Execution](#code-execution)
+    - [Supported AI Providers](#supported-ai-providers)
+    - [Configuration File](#configuration-file)
+  - [🔒 Security](#-security)
+    - [Safety Features](#safety-features)
+    - [Best Practices](#best-practices)
+  - [🤝 Contributing](#-contributing)
+    - [Development Setup](#development-setup)
+    - [Contribution Guidelines](#contribution-guidelines)
+    - [Areas for Contribution](#areas-for-contribution)
+  - [📝 License](#-license)
+  - [📞 Contact](#-contact)
 
 ## ✨ Features
 
-- ��� **Fast AI Queries** - Get instant responses from AI models via command line
-- ��� **Interactive Dialog Mode** - Chat with AI in conversational mode
+- 🚀 **Fast AI Queries** - Get instant responses from AI models via command line
+- 💬 **Interactive Dialog Mode** - Chat with AI in conversational mode
 - ⚡ **Code Execution** - Safely execute AI-suggested scripts and commands
-- ��� **Rich Terminal UI** - Beautiful, formatted output with syntax highlighting
-- ��� **Multiple AI Providers** - Support for OpenAI, Anthropic, and other providers
-- ���️ **Security First** - Built-in safeguards for safe code execution
-- ��� **Localization Ready** - Multi-language support
-- ��� **Performance Monitoring** - Built-in timing and logging
+- 🎨 **Rich Terminal UI** - Beautiful, formatted output with syntax highlighting
+- 🔧 **Multiple AI Providers** - Support for OpenAI, Anthropic, and other providers
+- 🛡️ **Security First** - Built-in safeguards for safe code execution
+- 🌍 **Localization Ready** - Multi-language support
+- 📊 **Performance Monitoring** - Built-in timing and logging
 
-## ��� Quick Start
+## 🚀 Quick Start
 
 ```bash
 # Install
@@ -52,9 +60,9 @@ ai "How to list all files in a directory?"
 ai -d "Help me with Linux commands"
 ```
 
-## ��� Installation
+## 📦 Installation
 
-### Linux (pipx) ���
+### Linux (pipx) 🐧
 
 **Recommended installation method for Linux**
 
@@ -77,7 +85,7 @@ ai -d "Help me with Linux commands"
 > pip install ai-ebash
 > ```
 
-### Linux (DEB Package) ���
+### Linux (DEB Package) 📦
 
 1. **Download the latest DEB package**:
    ```bash
@@ -93,7 +101,7 @@ ai -d "Help me with Linux commands"
 
 3. **Restart your terminal**
 
-### Windows (Experimental) ���
+### Windows (Experimental) 🪟
 
 1. **Install Python 3.11+** (if not already installed)
 
@@ -104,7 +112,7 @@ ai -d "Help me with Linux commands"
 
 3. **Restart your terminal**
 
-## ��� Usage
+## 💡 Usage
 
 ### Basic Usage
 
@@ -178,7 +186,7 @@ Settings are stored in:
 - **Linux:** `~/.config/ai-ebash/config.json`
 - **Windows:** `%APPDATA%\ai-ebash\config.json`
 
-## ��� Security
+## 🔒 Security
 
 > ⚠️ **WARNING:** Never execute code from untrusted sources without review!
 
@@ -210,7 +218,7 @@ Settings are stored in:
    ai --verbose "Run system diagnostics"
    ```
 
-## ��� Contributing
+## 🤝 Contributing
 
 We welcome contributions! Here's how to get started:
 
@@ -238,24 +246,24 @@ We welcome contributions! Here's how to get started:
 
 ### Contribution Guidelines
 
-- ��� **Code Style**: Follow PEP 8
-- ��� **Testing**: Add tests for new features
-- ��� **Documentation**: Update README for new features
-- ��� **Pull Requests**: Use clear commit messages
+- 📝 **Code Style**: Follow PEP 8
+- 🧪 **Testing**: Add tests for new features
+- 📚 **Documentation**: Update README for new features
+- 🔄 **Pull Requests**: Use clear commit messages
 
 ### Areas for Contribution
 
-- ��� **Localization** - Add support for more languages
-- ��� **AI Providers** - Integrate new AI services
-- ��� **UI/UX** - Improve terminal interface
-- ��� **Analytics** - Add usage statistics
-- ��� **Tools** - Create additional utilities
+- 🌍 **Localization** - Add support for more languages
+- 🤖 **AI Providers** - Integrate new AI services
+- 🎨 **UI/UX** - Improve terminal interface
+- 📊 **Analytics** - Add usage statistics
+- 🔧 **Tools** - Create additional utilities
 
-## ��� License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ��� Contact
+## 📞 Contact
 
 - **Author**: Andrey Bochkarev
 - **Email**: andrey.bch.1976@gmail.com
@@ -268,6 +276,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for the Linux community**
 
-[⭐ Star us on GitHub](https://github.com/Vivatist/ai-ebash) • [��� Report Issues](https://github.com/Vivatist/ai-ebash/issues) • [��� Join Discussions](https://github.com/Vivatist/ai-ebash/discussions)
+[⭐ Star us on GitHub](https://github.com/Vivatist/ai-ebash) • [🐛 Report Issues](https://github.com/Vivatist/ai-ebash/issues) • [💬 Join Discussions](https://github.com/Vivatist/ai-ebash/discussions)
 
 </div>
