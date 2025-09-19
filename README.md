@@ -176,6 +176,8 @@ Settings are stored in:
 
 > ⚠️ **WARNING:** Never execute code from untrusted sources without verification!
 
+> ⚠️ **CAUTION:** Be careful when using AI-generated commands in production environments. Always test commands in a safe environment first.
+
 ### Best Practices
 
 1. **Verify code before execution**
