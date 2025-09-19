@@ -2,6 +2,7 @@ import subprocess
 import platform
 import tempfile
 import os
+import sys
 from abc import ABC, abstractmethod
 from rich.console import Console
 
@@ -32,15 +33,75 @@ class LinuxCommandExecutor(CommandExecutor):
     
     @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
-        """Выполняет bash-команды в Linux"""
+        """Выполняет bash-команды в Linux с выводом в реальном времени"""
         logger.debug(f"Выполнение bash-команды: {code_block[:80]}...")
-        result = subprocess.run(
+        
+        # Используем Popen для вывода в реальном времени
+        process = subprocess.Popen(
             code_block,
             shell=True,
-            capture_output=True,
-            text=True,
-            encoding='utf-8'
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=False  # Используем байты для корректной работы
         )
+        
+        # Читаем вывод в реальном времени
+        stdout_lines = []
+        stderr_lines = []
+        
+        # Читаем stdout построчно
+        if process.stdout:
+            for line in process.stdout:
+                try:
+                    decoded_line = line.decode('utf-8', errors='replace').strip()
+                    if decoded_line:  # Игнорируем пустые строки
+                        print(decoded_line)  # Выводим в реальном времени
+                        stdout_lines.append(decoded_line)
+                except UnicodeDecodeError:
+                    # Если UTF-8 не работает, пробуем системную кодировку
+                    try:
+                        decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
+                        if decoded_line:
+                            print(decoded_line)
+                            stdout_lines.append(decoded_line)
+                    except:
+                        # В крайнем случае выводим как есть
+                        raw_line = line.decode('latin1', errors='replace').strip()
+                        if raw_line:
+                            print(raw_line)
+                            stdout_lines.append(raw_line)
+        
+        # Читаем stderr построчно
+        if process.stderr:
+            for line in process.stderr:
+                try:
+                    decoded_line = line.decode('utf-8', errors='replace').strip()
+                    if decoded_line:  # Игнорируем пустые строки
+                        print(f"Error: {decoded_line}", file=sys.stderr)  # Выводим ошибки в реальном времени
+                        stderr_lines.append(decoded_line)
+                except UnicodeDecodeError:
+                    try:
+                        decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
+                        if decoded_line:
+                            print(f"Error: {decoded_line}", file=sys.stderr)
+                            stderr_lines.append(decoded_line)
+                    except:
+                        raw_line = line.decode('latin1', errors='replace').strip()
+                        if raw_line:
+                            print(f"Error: {raw_line}", file=sys.stderr)
+                            stderr_lines.append(raw_line)
+        
+        # Ждем завершения процесса
+        process.wait()
+        
+        # Создаем объект CompletedProcess для совместимости
+        result = subprocess.CompletedProcess(
+            args=code_block,
+            returncode=process.returncode,
+            stdout='\n'.join(stdout_lines) if stdout_lines else '',
+            stderr='\n'.join(stderr_lines) if stderr_lines else ''
+        )
+        
         logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
                     f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
         return result
@@ -52,7 +113,7 @@ class WindowsCommandExecutor(CommandExecutor):
     
     @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
-        """Выполняет bat-команды в Windows через временный файл"""
+        """Выполняет bat-команды в Windows через временный файл с выводом в реальном времени"""
         # Предобработка кода для Windows
         code = code_block.replace('@echo off', '')
         code = code.replace('pause', 'rem pause')
@@ -67,15 +128,72 @@ class WindowsCommandExecutor(CommandExecutor):
             with os.fdopen(fd, 'w') as f:
                 f.write(code)
             
-            # Запускаем с кодировкой консоли Windows
+            # Запускаем с кодировкой консоли Windows и выводом в реальном времени
             logger.info(f"Выполнение команды из файла {temp_path}")
-            result = subprocess.run(
+            
+            process = subprocess.Popen(
                 [temp_path],
                 shell=True,
-                capture_output=True,
-                text=True,
-                encoding='cp1251'  # Кириллическая кодировка для консоли Windows
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=False  # Используем байты для корректной работы
             )
+            
+            # Читаем вывод в реальном времени
+            stdout_lines = []
+            stderr_lines = []
+            
+            # Читаем stdout построчно
+            if process.stdout:
+                for line in process.stdout:
+                    try:
+                        decoded_line = line.decode('cp1251', errors='replace').strip()
+                        if decoded_line:  # Игнорируем пустые строки
+                            print(decoded_line)  # Выводим в реальном времени
+                            stdout_lines.append(decoded_line)
+                    except UnicodeDecodeError:
+                        try:
+                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
+                            if decoded_line:
+                                print(decoded_line)
+                                stdout_lines.append(decoded_line)
+                        except:
+                            raw_line = line.decode('latin1', errors='replace').strip()
+                            if raw_line:
+                                print(raw_line)
+                                stdout_lines.append(raw_line)
+            
+            # Читаем stderr построчно
+            if process.stderr:
+                for line in process.stderr:
+                    try:
+                        decoded_line = line.decode('cp1251', errors='replace').strip()
+                        if decoded_line:  # Игнорируем пустые строки
+                            print(f"Error: {decoded_line}", file=sys.stderr)  # Выводим ошибки в реальном времени
+                            stderr_lines.append(decoded_line)
+                    except UnicodeDecodeError:
+                        try:
+                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
+                            if decoded_line:
+                                print(f"Error: {decoded_line}", file=sys.stderr)
+                                stderr_lines.append(decoded_line)
+                        except:
+                            raw_line = line.decode('latin1', errors='replace').strip()
+                            if raw_line:
+                                print(f"Error: {raw_line}", file=sys.stderr)
+                                stderr_lines.append(raw_line)
+            
+            # Ждем завершения процесса
+            process.wait()
+            
+            # Создаем объект CompletedProcess для совместимости
+            result = subprocess.CompletedProcess(
+                args=[temp_path],
+                returncode=process.returncode,
+                stdout='\n'.join(stdout_lines) if stdout_lines else '',
+                stderr='\n'.join(stderr_lines) if stderr_lines else ''
+            )
+            
             logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
                         f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
             return result
@@ -144,22 +262,16 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         # Выполняем код через соответствующий исполнитель
         logger.debug("Начало выполнения блока кода...")
         process = executor.execute(code)
-                
-        # Выводим результаты
-        if process.stdout:
-            logger.debug(f"Получен stdout ({len(process.stdout)} символов)")
-            console.print(f"[dim]>>>:[/dim]\n{process.stdout}")
-        else:
-            console.print("[dim]>>> Нет вывода stdout[/dim]")
-            
-        if process.stderr:
-            logger.debug(f"Получен stderr ({len(process.stderr)} символов)")
-            console.print(f"[yellow]>>>Error:[/yellow]\n{process.stderr}")
         
-        # Добавляем информацию о статусе выполнения
+        # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
         exit_code = process.returncode
         logger.info(f"Блок #{idx} выполнен с кодом {exit_code}")
         console.print(f"[dim]>>> Код завершения: {exit_code}[/dim]")
+        
+        # Показываем итоговую сводку только если есть stderr или особые случаи
+        if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
+            logger.debug(f"Дополнительный stderr ({len(process.stderr)} символов)")
+            console.print(f"[yellow]>>>Error:[/yellow]\n{process.stderr}")
     except Exception as e:
         logger.error(f"Ошибка выполнения блока #{idx}: {e}", exc_info=True)
         console.print(f"[dim]Ошибка выполнения скрипта: {e}[/dim]")

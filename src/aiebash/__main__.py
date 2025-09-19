@@ -178,6 +178,8 @@ def main() -> None:
     except Exception as e:
         logger.critical(f"Необработанная ошибка: {e}", exc_info=True)
         return 1
+    finally:
+        print()  # Печатаем пустую строку в любом случае
 
     logger.info("Программа завершена успешно")
     return 0
