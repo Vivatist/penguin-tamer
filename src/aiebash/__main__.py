@@ -81,7 +81,7 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
 
 
 @log_execution_time
-def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_prompt: str = None) -> None:
+def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
     """Интерактивный режим диалога"""
     
     additional_context = " ВСЕГДА нумеруй блоки кода в ответах, чтобы пользователь мог ссылаться на них. Формат нумерации: [Код #1]\n```bash ... ```, [Код 2]\n```bash ... ```, и так далее. Если в ответе есть несколько блоков кода, нумеруй их последовательно. В новом ответе начинай нумерацию с 1. Обсуждать с пользователем нумерацию не нужно, просто делай это автоматически."
@@ -91,10 +91,10 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_pro
     last_code_blocks = []  # Список блоков кода из последнего ответа AI
 
     # Если есть начальный промпт, обрабатываем его
-    if initial_prompt:
-        initial_prompt += additional_context
+    if initial_user_prompt:
+        initial_user_prompt += additional_context
         try:
-            reply = chat_client.ask_stream(initial_prompt)
+            reply = chat_client.ask_stream(initial_user_prompt)
             last_code_blocks = extract_labeled_code_blocks(reply)
         except Exception as e:
             logger.error(f"Ошибка при обработке начального запроса: {e}")
@@ -104,28 +104,29 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_pro
     # Основной цикл диалога
     while True:
         try:
-            user_input = console.input("[bold cyan]Вы:[/bold cyan] ").strip()
-            
-            if user_input.lower() in ['exit', 'quit', 'q', 'выход']:
-                console.print("[dim]До свидания![/dim]")
+            user_prompt = console.input("[cyan]Вы:[/cyan] ").strip()
+            if not user_prompt.isdigit(): 
+                user_prompt += additional_context
+            if user_prompt.lower() in ['exit', 'quit', 'q', 'выход']:
                 break
 
-            if not user_input:
+            if not user_prompt:
                 continue
 
             # Проверка, если введено число
-            if user_input.isdigit():
-                block_index = int(user_input)
+            if user_prompt.isdigit():
+                block_index = int(user_prompt)
                 if 1 <= block_index <= len(last_code_blocks):
                     run_code_block(console, last_code_blocks, block_index)
                     console.print()
                     continue
                 else:
-                    console.print(f"[dim]Блок кода #{user_input} не найден.[/dim]")
+                    console.print(f"[dim]Блок кода #{user_prompt} не найден.[/dim]")
                     continue
 
             # Если введен текст, отправляем как запрос к AI
-            reply = chat_client.ask_stream(user_input)
+            reply = chat_client.ask_stream(user_prompt)
+            last_code_blocks = extract_labeled_code_blocks(reply)
             console.print()  # Новая строка после ответа
 
         except KeyboardInterrupt:
@@ -157,17 +158,13 @@ def main() -> None:
         prompt_parts: list = args.prompt or []
         prompt: str = " ".join(prompt_parts).strip()
 
-        if dialog_mode:
+        if dialog_mode or not prompt:
             # Режим диалога
             logger.info("Запуск в режиме диалога")
             run_dialog_mode(chat_client, console, prompt if prompt else None)
         else:
             # Обычный режим (одиночный запрос)
             logger.info("Запуск в режиме одиночного запроса")
-            if not prompt:
-                logger.warning("Запрос не предоставлен, показываем справку")
-                parser.print_help()
-                return 1
 
             run_single_query(chat_client, prompt, console)
 

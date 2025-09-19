@@ -133,8 +133,8 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
     
     code = code_blocks[idx - 1]
     logger.debug(f"Содержимое блока #{idx}: {code[:100]}...")
-    
-    console.print(f"\n>>> Выполняем блок #{idx}:", style="blue")
+
+    console.print(f"[dim]>>> Выполняем блок #{idx}:[/dim]")
     console.print(code)
     
     # Получаем исполнитель для текущей ОС
@@ -148,9 +148,9 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         # Выводим результаты
         if process.stdout:
             logger.debug(f"Получен stdout ({len(process.stdout)} символов)")
-            console.print(f"[green]>>>:[/green]\n{process.stdout}")
+            console.print(f"[dim]>>>:[/dim]\n{process.stdout}")
         else:
-            console.print("[green]>>> Нет вывода stdout[/green]")
+            console.print("[dim]>>> Нет вывода stdout[/dim]")
             
         if process.stderr:
             logger.debug(f"Получен stderr ({len(process.stderr)} символов)")
@@ -159,8 +159,7 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         # Добавляем информацию о статусе выполнения
         exit_code = process.returncode
         logger.info(f"Блок #{idx} выполнен с кодом {exit_code}")
-        console.print(f"[blue]>>> Код завершения: {exit_code}[/blue]")
-            
+        console.print(f"[dim]>>> Код завершения: {exit_code}[/dim]")
     except Exception as e:
         logger.error(f"Ошибка выполнения блока #{idx}: {e}", exc_info=True)
-        console.print(f"[yellow]Ошибка выполнения скрипта: {e}[/yellow]")
+        console.print(f"[dim]Ошибка выполнения скрипта: {e}[/dim]")

@@ -70,6 +70,7 @@ class OpenRouterClient:
         with console.status("[dim]Ai думает...[/dim]", spinner="dots", spinner_style="dim"):
             while not stop_spinner.is_set():
                 time.sleep(0.1)
+        # console.print("[green]Ai: [/green]")
 
     @log_execution_time
     def __init__(self, console, api_key: str, api_url: str, model: str,
@@ -137,7 +138,7 @@ class OpenRouterClient:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
         self.messages.append({"role": "user", "content": user_input})
 
-        reply_parts = []
+        reply_parts = ['**Ai:** ']
 
         # Показ спиннера в отдельном потоке
         stop_spinner = threading.Event()
@@ -157,6 +158,7 @@ class OpenRouterClient:
             spinner_thread.join()
 
             # Используем Live для динамического обновления отображения с Markdown
+
             with _get_live()(console=self.console, refresh_per_second=20, auto_refresh=True) as live:
                 for chunk in stream:
                     if chunk.choices[0].delta.content:
@@ -181,7 +183,7 @@ class OpenRouterClient:
     def _handle_api_error(self, error: Exception) -> str:
         """Обработка ошибок API с соответствующим выводом сообщений"""
         if isinstance(error, _get_openai_exceptions()['RateLimitError']):
-            self.console.print("[dim]Ошибка 429: Превышен лимит запросов (попробуйте через некоторое время)[/dim]")
+            self.console.print(f"[dim]Ошибка 429: {error} Превышен лимит запросов (попробуйте через некоторое время)[/dim]")
         elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
             self.console.print("[dim]Ошибка 401: Отказ в авторизации.Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-bash]Как получить ключ?[/link][/dim]")
         elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
