@@ -6,6 +6,15 @@ from unittest.mock import patch
 from requests.exceptions import HTTPError
 import importlib.util
 
+# Импорт декоратора логирования
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    from aiebash.logger import log_execution_time
+except ImportError:
+    # Если не можем импортировать, создаем заглушку
+    def log_execution_time(func):
+        return func
+
 # Импортируем src/aiebash/__main__.py как модуль
 MAIN_PATH = Path(__file__).resolve().parents[0] / ".." / "__main__.py"
 spec = importlib.util.spec_from_file_location("main_mod", str(MAIN_PATH.resolve()))
@@ -13,6 +22,7 @@ main_mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(main_mod)
 
 
+@log_execution_time
 def test_main_handles_http_error(monkeypatch):
     # Мокаем аргументы командной строки
     monkeypatch.setattr(main_mod, "parse_args", lambda: type("Args", (), {"run": False, "chat": False, "prompt": ["тест"]})())
@@ -24,6 +34,7 @@ def test_main_handles_http_error(monkeypatch):
             main_mod.main()
             mock_print.assert_not_called()
             
+@log_execution_time
 def test_main_handles_connection_error(monkeypatch):
     import requests
     # Мокаем аргументы командной строки

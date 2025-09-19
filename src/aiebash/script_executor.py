@@ -5,7 +5,7 @@ import os
 from abc import ABC, abstractmethod
 from rich.console import Console
 
-from aiebash.logger import logger
+from aiebash.logger import logger, log_execution_time
 
 
 # Абстрактный базовый класс для исполнителей команд
@@ -30,6 +30,7 @@ class CommandExecutor(ABC):
 class LinuxCommandExecutor(CommandExecutor):
     """Исполнитель команд для Linux/Unix систем"""
     
+    @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bash-команды в Linux"""
         logger.debug(f"Выполнение bash-команды: {code_block[:80]}...")
@@ -41,7 +42,7 @@ class LinuxCommandExecutor(CommandExecutor):
             encoding='utf-8'
         )
         logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
-                    f"stdout: {len(result.stdout)} байт, stderr: {len(result.stderr)} байт")
+                    f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
         return result
 
 
@@ -49,6 +50,7 @@ class LinuxCommandExecutor(CommandExecutor):
 class WindowsCommandExecutor(CommandExecutor):
     """Исполнитель команд для Windows систем"""
     
+    @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bat-команды в Windows через временный файл"""
         # Предобработка кода для Windows
@@ -75,7 +77,7 @@ class WindowsCommandExecutor(CommandExecutor):
                 encoding='cp1251'  # Кириллическая кодировка для консоли Windows
             )
             logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
-                        f"stdout: {len(result.stdout)} байт, stderr: {len(result.stderr)} байт")
+                        f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
             return result
         except Exception as e:
             logger.error(f"Ошибка при выполнении Windows-команды: {e}", exc_info=True)
@@ -94,6 +96,7 @@ class CommandExecutorFactory:
     """Фабрика для создания исполнителей команд в зависимости от ОС"""
     
     @staticmethod
+    @log_execution_time
     def create_executor() -> CommandExecutor:
         """
         Создает исполнитель команд в зависимости от текущей ОС
@@ -110,6 +113,7 @@ class CommandExecutorFactory:
             return LinuxCommandExecutor()
 
 
+@log_execution_time
 def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
     """
     Печатает номер и содержимое блока, выполняет его и выводит результат.
@@ -129,8 +133,8 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
     
     code = code_blocks[idx - 1]
     logger.debug(f"Содержимое блока #{idx}: {code[:100]}...")
-    
-    console.print(f"\n>>> Выполняем блок #{idx}:", style="blue")
+
+    console.print(f"[dim]>>> Выполняем блок #{idx}:[/dim]")
     console.print(code)
     
     # Получаем исполнитель для текущей ОС
@@ -144,18 +148,18 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         # Выводим результаты
         if process.stdout:
             logger.debug(f"Получен stdout ({len(process.stdout)} символов)")
-            console.print(f"[green]>>>:[/green]\n{process.stdout}")
+            console.print(f"[dim]>>>:[/dim]\n{process.stdout}")
         else:
-            console.print("[green]>>> Нет вывода stdout[/green]")
+            console.print("[dim]>>> Нет вывода stdout[/dim]")
             
         if process.stderr:
+            logger.debug(f"Получен stderr ({len(process.stderr)} символов)")
             console.print(f"[yellow]>>>Error:[/yellow]\n{process.stderr}")
         
         # Добавляем информацию о статусе выполнения
         exit_code = process.returncode
         logger.info(f"Блок #{idx} выполнен с кодом {exit_code}")
-        console.print(f"[blue]>>> Код завершения: {exit_code}[/blue]")
-            
+        console.print(f"[dim]>>> Код завершения: {exit_code}[/dim]")
     except Exception as e:
         logger.error(f"Ошибка выполнения блока #{idx}: {e}", exc_info=True)
-        console.print(f"[yellow]Ошибка выполнения скрипта: {e}[/yellow]")
+        console.print(f"[dim]Ошибка выполнения скрипта: {e}[/dim]")

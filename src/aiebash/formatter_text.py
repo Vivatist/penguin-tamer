@@ -1,8 +1,10 @@
 import re
 import platform
+from aiebash.logger import log_execution_time
 
 
-def _format_api_key_display(api_key: str) -> str:
+@log_execution_time
+def format_api_key_display(api_key: str) -> str:
     """Форматирует отображение API ключа для логирования"""
     if not api_key:
         return "(не задан)"
@@ -12,34 +14,12 @@ def _format_api_key_display(api_key: str) -> str:
         return f"{api_key[:5]}...{api_key[-5:]}"
 
 
-def annotate_code_blocks(md_text):
+@log_execution_time
+def extract_labeled_code_blocks(text: str) -> list[str]:
     """
-    Находит fenced code blocks с языком bash (для Linux) или bat (для Windows),
-    собирает их содержимое в список и добавляет над каждым блоком строку-метку.
-    Возвращает (annotated_md, list_of_code_strings).
+    Извлекает содержимое блоков кода, у которых сверху есть подпись в квадратных скобках.
+    Подпись может быть любой: [Код #1], [Пример], [Test], и т.п.
     """
-    code_blocks = []
-    counter = 0
-    
-    # Определяем тип системы и соответствующий язык
-    # is_windows = platform.system().lower() == "windows"
-    # code_lang = "bat" if is_windows else "bash"
-    
-    # Формируем паттерн в зависимости от ОС
-    # pattern = re.compile(r"```" + code_lang + r"[^\n]*\n(.*?)```", re.DOTALL | re.IGNORECASE)
-
-    pattern = re.compile(r"```" + r"[^\n]*\n(.*?)```", re.DOTALL | re.IGNORECASE)
-
-
-    def repl(m):
-        nonlocal counter
-        counter += 1
-        code = m.group(1).rstrip("\n")
-        code_blocks.append(code)
-        # label = f"\n**Блок кода {code_lang} [#{counter}]**\n"
-        # return label + f"```{code_lang}\n" + code + "\n```"
-        label = f"\nБлок кода [#{counter}]\n"
-        return label + f"```\n" + code + "\n```"
-
-    annotated = pattern.sub(repl, md_text)
-    return annotated, code_blocks
+    pattern = r"\[[^\]]+\]\s*```.*?\n(.*?)```"
+    matches = re.findall(pattern, text, flags=re.DOTALL)
+    return [m.strip() for m in matches]

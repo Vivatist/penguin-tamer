@@ -1,6 +1,8 @@
 import argparse
 
-# Создаем парсер как объект модуля
+from aiebash.logger import logger, log_execution_time
+
+
 parser = argparse.ArgumentParser(
     prog="ai",
     description=(
@@ -34,8 +36,12 @@ parser.add_argument(
 )
 
 
+@log_execution_time
 def parse_args() -> argparse.Namespace:
     """
     Разбор аргументов командной строки.
     """
-    return parser.parse_args()
+    args = parser.parse_args()
+    logger.info("Разбор аргументов командной строки...")
+    logger.debug(f"Полученные аргументы: dialog={args.dialog}, settings={args.settings}, prompt={args.prompt or '(пусто)'}")
+    return args

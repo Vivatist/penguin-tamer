@@ -1,0 +1,206 @@
+import threading
+from typing import List, Dict
+import time
+from aiebash.logger import log_execution_time
+
+# Ленивый импорт Rich
+_console = None
+_markdown = None
+_live = None
+
+def _get_console():
+    global _console
+    if _console is None:
+        from rich.console import Console
+        _console = Console()
+    return _console
+
+def _get_markdown():
+    global _markdown
+    if _markdown is None:
+        from rich.markdown import Markdown
+        _markdown = Markdown
+    return _markdown
+
+def _get_live():
+    global _live
+    if _live is None:
+        from rich.live import Live
+        _live = Live
+    return _live
+
+# Ленивый импорт OpenAI (самый тяжелый модуль)
+_openai_client = None
+_openai_exceptions = None
+
+def _get_openai_client():
+    """Ленивый импорт OpenAI клиента"""
+    global _openai_client
+    if _openai_client is None:
+        from openai import OpenAI
+        _openai_client = OpenAI
+    return _openai_client
+
+def _get_openai_exceptions():
+    """Ленивый импорт OpenAI исключений"""
+    global _openai_exceptions
+    if _openai_exceptions is None:
+        from openai import RateLimitError, APIError, OpenAIError, AuthenticationError, APIConnectionError, PermissionDeniedError, NotFoundError, BadRequestError
+        _openai_exceptions = {
+            'RateLimitError': RateLimitError,
+            'APIError': APIError,
+            'OpenAIError': OpenAIError,
+            'AuthenticationError': AuthenticationError,
+            'APIConnectionError': APIConnectionError,
+            'PermissionDeniedError': PermissionDeniedError,
+            'NotFoundError': NotFoundError,
+            'BadRequestError': BadRequestError
+        }
+    return _openai_exceptions
+
+
+
+
+class OpenRouterClient:
+
+    @log_execution_time
+    def _spinner(self, stop_spinner: threading.Event) -> None:
+        """Визуальный индикатор работы ИИ с точечным спиннером.
+        Пока stop_event не установлен, показывает "Аи печатает...".
+        """
+        console = _get_console()
+        with console.status("[dim]Ai думает...[/dim]", spinner="dots", spinner_style="dim"):
+            while not stop_spinner.is_set():
+                time.sleep(0.1)
+        # console.print("[green]Ai: [/green]")
+
+    @log_execution_time
+    def __init__(self, console, api_key: str, api_url: str, model: str,
+                 system_context: str = "You are a helpful assistant.",
+                 temperature: float = 0.7):
+        self.console = console
+        self.api_key = api_key
+        self.api_url = api_url
+        self.model = model
+        self.temperature = temperature
+        self.messages: List[Dict[str, str]] = [
+            {"role": "system", "content": system_context}
+        ]
+        self._client = None  # Ленивая инициализация
+
+    @property
+    def client(self):
+        """Ленивая инициализация OpenAI клиента"""
+        if self._client is None:
+            self._client = _get_openai_client()(api_key=self.api_key, base_url=self.api_url)
+        return self._client
+
+    @log_execution_time
+    def ask(self, user_input: str) -> str:
+        """Обычный (не потоковый) режим с сохранением контекста"""
+        self.messages.append({"role": "user", "content": user_input})
+
+        # Показ спиннера в отдельном потоке
+        stop_spinner = threading.Event()
+        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,))
+        spinner_thread.start()
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=self.messages,
+                temperature=self.temperature
+            )
+
+            reply = response.choices[0].message.content
+
+            # Останавливаем спиннер
+            stop_spinner.set()
+            spinner_thread.join()
+
+
+            self.messages.append({"role": "assistant", "content": reply})
+
+            # токены
+            usage = response.usage
+            if usage:
+                print(f"[TOKENS] input={usage.prompt_tokens}, "
+                      f"output={usage.completion_tokens}, "
+                      f"total={usage.total_tokens}")
+            return reply
+
+        except Exception as e:
+            # Останавливаем спиннер
+            stop_spinner.set()
+            spinner_thread.join()
+            return self._handle_api_error(e)
+
+    @log_execution_time
+    def ask_stream(self, user_input: str) -> str:
+        """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
+        self.messages.append({"role": "user", "content": user_input})
+
+        reply_parts = ['**Ai:** ']
+
+        # Показ спиннера в отдельном потоке
+        stop_spinner = threading.Event()
+        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,))
+        spinner_thread.start()
+
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=self.messages,
+                temperature=self.temperature,
+                stream=True
+            )
+
+            # Останавливаем спиннер
+            stop_spinner.set()
+            spinner_thread.join()
+
+            # Используем Live для динамического обновления отображения с Markdown
+
+            with _get_live()(console=self.console, refresh_per_second=20, auto_refresh=True) as live:
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        text = chunk.choices[0].delta.content
+                        reply_parts.append(text)
+                        # Объединяем все части и обрабатываем как Markdown
+                        full_text = "".join(reply_parts)
+                        markdown = _get_markdown()(full_text)
+                        live.update(markdown)
+                        time.sleep(0.01)  # Небольшая задержка для плавности обновления
+            reply = "".join(reply_parts)
+            self.messages.append({"role": "assistant", "content": reply})
+            return reply
+
+        except Exception as e:
+            # Останавливаем спиннер
+            stop_spinner.set()
+            spinner_thread.join()
+            return self._handle_api_error(e)
+
+    @log_execution_time
+    def _handle_api_error(self, error: Exception) -> str:
+        """Обработка ошибок API с соответствующим выводом сообщений"""   
+        if isinstance(error, _get_openai_exceptions()['RateLimitError']):
+            self.console.print(f"[dim]Ошибка 429: {getattr(error, 'body', None)['message']}. Превышен лимит запросов (попробуйте через некоторое время)[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
+            self.console.print(f"[dim]Ошибка 400: {getattr(error, 'body', None)['message']}. Проверьте название модели.[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
+            self.console.print("[dim]Ошибка 401: Отказ в авторизации.Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-bash]Как получить ключ?[/link][/dim]")
+        elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
+            self.console.print(f"[dim]Нет соединения, проверьте подключение к интернету[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
+            self.console.print(f"[dim]Ошибка 403: Ваш регион не поддерживается, используйте VPN.[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['NotFoundError']):
+            self.console.print("[dim]Ошибка 404: Ресурс не найден. Проверьте API_URL в настройках.[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['APIError']):
+            self.console.print(f"[dim]Ошибка API: {error}[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['OpenAIError']):
+            self.console.print(f"[dim]Ошибка клиента OpenAI: {error}[/dim]")
+        else:
+            self.console.print(f"[dim]Неизвестная ошибка: {error}[/dim]")
+
+        return "Ошибка при получении ответа."
