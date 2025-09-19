@@ -67,7 +67,7 @@ class OpenRouterChat:
                     if chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
                         reply_parts.append(text)
-                        
+                        # print(text)
                         # Объединяем все части и обрабатываем как Markdown
                         full_text = "".join(reply_parts)
                         markdown = Markdown(full_text)

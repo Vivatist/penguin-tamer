@@ -89,9 +89,7 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
     if initial_prompt:
         console.print(f"[bold blue]Начальный запрос:[/bold blue] {initial_prompt}")
         try:
-            reply, code_blocks = chat_client.ask(initial_prompt)
-            last_code_blocks = code_blocks
-            console.print(Markdown(reply))
+            reply = chat_client.ask_stream(initial_prompt)
             
         except Exception as e:
             logger.error(f"Ошибка при обработке начального запроса: {e}")
@@ -123,9 +121,7 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
 
             # Если введен текст, отправляем как запрос к AI
             console.print("[bold green]AI:[/bold green] ", end="")
-            response, code_blocks = chat_client.ask(user_input)
-            last_code_blocks = code_blocks
-            console.print(Markdown(response))
+            reply = chat_client.ask_stream(user_input)
             console.print()  # Новая строка после ответа
 
         except KeyboardInterrupt:
@@ -134,6 +130,10 @@ def run_dialog_mode(chat_client: OpenRouterChat, console: Console, initial_promp
         except Exception as e:
             logger.error(f"Ошибка в режиме диалога: {e}")
             console.print(f"[red]Ошибка:[/red] {e}")
+
+
+
+
 def main() -> None:
     try:
         args = parse_args()
