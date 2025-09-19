@@ -14,7 +14,6 @@
 - [AI-eBash](#ai-ebash)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
-  - [Quick Start](#quick-start)
   - [Installation](#installation)
     - [Linux (pipx)](#linux-pipx)
     - [Linux (DEB Package)](#linux-deb-package)
@@ -45,18 +44,6 @@
 - **Multiple AI Providers** - Support for OpenAI, Anthropic and other providers
 - **Localization Ready** - Support for multiple languages (in development)
 
-## Quick Start
-
-```bash
-# Installation
-pipx install ai-ebash
-
-# Ask AI a question
-ai How to list files in a directory?
-
-# Start interactive dialog
-ai -d Help me learn Linux commands
-```
 
 ## Installation
 
