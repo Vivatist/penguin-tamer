@@ -31,8 +31,8 @@ CONTEXT: str = config_manager.get_value("global", "context", "")
 CURRENT_LLM: str = config_manager.get_value("global", "current_LLM", "openai_over_proxy")
 TEMPERATURE: float = config_manager.get_value("global","temperature", 0.7)
 
-logger.debug(f"Заданы настройки - Системный контекст: {'(пусто)' if not CONTEXT else CONTEXT[:30] + '...'}")
-logger.debug(f"Заданы настройки - Текущий LLM: {CURRENT_LLM}")
+logger.info(f"Заданы настройки - Системный контекст: {'(пусто)' if not CONTEXT else CONTEXT[:30] + '...'}")
+logger.info(f"Заданы настройки - Текущий LLM: {CURRENT_LLM}")
 
 # Настройки конкретного LLM (например, openai_over_proxy)
 MODEL = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("model", "")
@@ -40,10 +40,10 @@ API_URL = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_u
 API_KEY = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_key", "")
 
 
-logger.debug(f"Заданы настройки - Модель: {MODEL}")
-logger.debug(f"Заданы настройки - API URL: {API_URL}")
-logger.debug(f"Заданы настройки - API Key: {'(не задан)' if not API_KEY else f'{API_KEY[:5]}...{API_KEY[-5:] if len(API_KEY) > 10 else API_KEY}'}")
-logger.debug(f"Заданы настройки - Temperature: {TEMPERATURE}")
+logger.info(f"Заданы настройки - Модель: {MODEL}")
+logger.info(f"Заданы настройки - API URL: {API_URL}")
+logger.info(f"Заданы настройки - API Key: {'(не задан)' if not API_KEY else f'{API_KEY[:5]}...{API_KEY[-5:] if len(API_KEY) > 10 else API_KEY}'}")
+logger.info(f"Заданы настройки - Temperature: {TEMPERATURE}")
 
 
 console = Console()
@@ -76,7 +76,8 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
         logger.info("Запрос выполнен успешно")
     except Exception as e:
         logger.error(f"Ошибка при выполнении запроса: {e}")
-        console.print(f"[red]Ошибка:[/red] {e}")
+        console.print(f"[dim]Ошибка:[/dim] {e}")
+
 
 
 @log_execution_time
@@ -97,7 +98,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_pro
             last_code_blocks = extract_labeled_code_blocks(reply)
         except Exception as e:
             logger.error(f"Ошибка при обработке начального запроса: {e}")
-            console.print(f"[red]Ошибка:[/red] {e}")
+            console.print(f"[dim]Ошибка:[/dim] {e}")
         console.print()
 
     # Основной цикл диалога
@@ -106,7 +107,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_pro
             user_input = console.input("[bold cyan]Вы:[/bold cyan] ").strip()
             
             if user_input.lower() in ['exit', 'quit', 'q', 'выход']:
-                console.print("[yellow]До свидания![/yellow]")
+                console.print("[dim]До свидания![/dim]")
                 break
 
             if not user_input:
@@ -131,7 +132,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_pro
             break
         except Exception as e:
             logger.error(f"Ошибка в режиме диалога: {e}")
-            console.print(f"[red]Ошибка:[/red] {e}")
+            console.print(f"[dim]Ошибка:[/dim] {e}")
 
 
 
