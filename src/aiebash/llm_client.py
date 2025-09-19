@@ -45,7 +45,7 @@ def _get_openai_exceptions():
     """Ленивый импорт OpenAI исключений"""
     global _openai_exceptions
     if _openai_exceptions is None:
-        from openai import RateLimitError, APIError, OpenAIError, AuthenticationError, APIConnectionError, PermissionDeniedError
+        from openai import RateLimitError, APIError, OpenAIError, AuthenticationError, APIConnectionError, PermissionDeniedError, NotFoundError, BadRequestError
         _openai_exceptions = {
             'RateLimitError': RateLimitError,
             'APIError': APIError,
@@ -53,6 +53,8 @@ def _get_openai_exceptions():
             'AuthenticationError': AuthenticationError,
             'APIConnectionError': APIConnectionError,
             'PermissionDeniedError': PermissionDeniedError,
+            'NotFoundError': NotFoundError,
+            'BadRequestError': BadRequestError
         }
     return _openai_exceptions
 
@@ -181,15 +183,19 @@ class OpenRouterClient:
 
     @log_execution_time
     def _handle_api_error(self, error: Exception) -> str:
-        """Обработка ошибок API с соответствующим выводом сообщений"""
+        """Обработка ошибок API с соответствующим выводом сообщений"""   
         if isinstance(error, _get_openai_exceptions()['RateLimitError']):
-            self.console.print(f"[dim]Ошибка 429: {error} Превышен лимит запросов (попробуйте через некоторое время)[/dim]")
+            self.console.print(f"[dim]Ошибка 429: {getattr(error, 'body', None)['message']}. Превышен лимит запросов (попробуйте через некоторое время)[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
+            self.console.print(f"[dim]Ошибка 400: {getattr(error, 'body', None)['message']}. Проверьте название модели.[/dim]")
         elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
             self.console.print("[dim]Ошибка 401: Отказ в авторизации.Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-bash]Как получить ключ?[/link][/dim]")
         elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
             self.console.print(f"[dim]Нет соединения, проверьте подключение к интернету[/dim]")
         elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
-            self.console.print("[dim]Ошибка 403: Доступ запрещён. Возможные причины:\n-Не поддерживается ваш регион (используйте VPN)[/dim]")
+            self.console.print(f"[dim]Ошибка 403: {getattr(error, 'body', None)['message']}. Для вашего региона доступ запрещён, используйте VPN.[/dim]")
+        elif isinstance(error, _get_openai_exceptions()['NotFoundError']):
+            self.console.print("[dim]Ошибка 404: Ресурс не найден. Проверьте API_URL в настройках.[/dim]")
         elif isinstance(error, _get_openai_exceptions()['APIError']):
             self.console.print(f"[dim]Ошибка API: {error}[/dim]")
         elif isinstance(error, _get_openai_exceptions()['OpenAIError']):
