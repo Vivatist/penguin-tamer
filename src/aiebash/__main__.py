@@ -104,13 +104,18 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
     while True:
         try:
             user_prompt = console.input("[cyan]Вы:[/cyan] ").strip()
-            if not user_prompt.isdigit(): 
-                user_prompt += additional_context
-            if user_prompt.lower() in ['exit', 'quit', 'q', 'выход']:
-                break
 
+            # Запрет пустого ввода
             if not user_prompt:
                 continue
+
+            # Добавляем контекст нумерации блоков, если это не команда выхода и не число
+            if not user_prompt.isdigit(): 
+                user_prompt += additional_context
+
+            # Команды выхода
+            if user_prompt.lower() in ['exit', 'quit', 'q', 'выход']:
+                break
 
             # Проверка, если введено число
             if user_prompt.isdigit():

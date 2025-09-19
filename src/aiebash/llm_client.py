@@ -193,7 +193,7 @@ class OpenRouterClient:
         elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
             self.console.print(f"[dim]Нет соединения, проверьте подключение к интернету[/dim]")
         elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
-            self.console.print(f"[dim]Ошибка 403: {getattr(error, 'body', None)['message']}. Для вашего региона доступ запрещён, используйте VPN.[/dim]")
+            self.console.print(f"[dim]Ошибка 403: Ваш регион не поддерживается, используйте VPN.[/dim]")
         elif isinstance(error, _get_openai_exceptions()['NotFoundError']):
             self.console.print("[dim]Ошибка 404: Ресурс не найден. Проверьте API_URL в настройках.[/dim]")
         elif isinstance(error, _get_openai_exceptions()['APIError']):
