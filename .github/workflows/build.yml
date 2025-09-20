@@ -67,7 +67,10 @@ jobs:
         run: |
           echo "==== debian/rules ===="
           sed -n '1,200p' debian/rules || true
-          export DEB_BUILD_OPTIONS=nocheck,nodocs
+          export DEB_BUILD_OPTIONS="nocheck nodocs"
+          export DEB_BUILD_PROFILES="nodoc"
+          echo "DEB_BUILD_OPTIONS=$DEB_BUILD_OPTIONS"
+          echo "DEB_BUILD_PROFILES=$DEB_BUILD_PROFILES"
           # Сборка DEB используя debian/ из репозитория (dh-virtualenv установит зависимости из debian/requirements.txt)
           dpkg-buildpackage -us -uc -b
           mkdir -p dist_deb
