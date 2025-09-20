@@ -54,24 +54,15 @@ jobs:
       - name: Install system dependencies for DEB build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-all debhelper dh-python
+          sudo apt-get install -y build-essential python3-all debhelper dh-python dh-virtualenv python3-venv dpkg-dev
 
       - name: Build DEB package
         run: |
-          pip install --upgrade stdeb
-          python setup.py --command-packages=stdeb.command sdist_dsc
-          
-          # Заменяем debian/rules с использованием табуляции (а не пробелов!)
-          echo '#!/usr/bin/make -f' > deb_dist/ai-ebash-*/debian/rules
-          echo '%:' >> deb_dist/ai-ebash-*/debian/rules
-          echo -e '\tdh $@ --with python3 --buildsystem=pybuild' >> deb_dist/ai-ebash-*/debian/rules
-          chmod +x deb_dist/ai-ebash-*/debian/rules
-          
-          cd deb_dist/ai-ebash-*
+          # Сборка DEB используя debian/ из репозитория (dh-virtualenv установит зависимости из debian/requirements.txt)
           dpkg-buildpackage -us -uc -b
-          cd ../..
           mkdir -p dist_deb
-          cp deb_dist/*.deb dist_deb/
+          # Скопируем полученные .deb из родительской директории
+          cp ../*.deb dist_deb/ || cp ./*.deb dist_deb/ || true
 
       - name: Upload DEB to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')

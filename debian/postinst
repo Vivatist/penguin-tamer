@@ -1,6 +1,4 @@
 #!/bin/bash
 set -e
-# Установка зависимостей Python
-if [ -f /usr/share/ai-ebash/requirements.txt ]; then
-    pip3 install -r /usr/share/ai-ebash/requirements.txt
-fi
+# Нет действий после установки: зависимости уложены в виртуальное окружение пакетной сборкой
+exit 0
