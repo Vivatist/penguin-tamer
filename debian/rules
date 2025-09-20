@@ -1,24 +1,9 @@
 #!/usr/bin/make -f
 
-export PYBUILD_NAME=ai-ebash
-export PYBUILD_DISABLE_python2=1
-export PYBUILD_DISABLE_python3.5=1
-
 %:
-    dh $@ --with python3 --buildsystem=pybuild
+    dh $@ --with python3,virtualenv
 
-override_dh_auto_build:
-    # Установка зависимостей через pip в виртуальное окружение
-    pip3 install --user --upgrade pip
-    pip3 install --user openai rich pyyaml textual platformdirs requests
-    dh_auto_build
-
-override_dh_auto_install:
-    # Установка пакета с зависимостями
-    python3 setup.py install --root=$(CURDIR)/debian/ai-ebash \
-        --install-layout=deb --install-scripts=/usr/bin
-    dh_auto_install
-
-override_dh_python3:
-    # Указываем dh_python3 не обрабатывать зависимости
-    dh_python3 --no-ext-rename
+override_dh_virtualenv:
+    dh_virtualenv --python python3 \
+        --install-suffix ai-ebash \
+        --requirements requirements.txt
