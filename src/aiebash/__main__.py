@@ -35,8 +35,6 @@ def _get_markdown():
         _markdown = Markdown
     return _markdown
 
-console = Console()
-
 educational_text = \
     f"ВСЕГДА нумеруй блоки кода в ответах, чтобы пользователь мог " \
     f"ссылаться на них. Формат нумерации: [Код #1]\n```bash ... ```, [Код 2]\n```bash ... ```, и так далее. " \
@@ -63,23 +61,6 @@ def get_system_content() -> str:
     
     system_content = f"{user_content} {additional_content_json} {additional_content_main}".strip()
     return system_content
-
-# === Инициализация OpenRouterChat клиента ===
-logger.info("Инициализация OpenRouterChat клиента")
-
-try:
-    chat_client = OpenRouterClient(
-        console=console,
-        api_key=config.get_current_llm_config()["api_key"],
-        api_url=config.get_current_llm_config()["api_url"],
-        model=config.get_current_llm_config()["model"],
-        system_content=get_system_content(),
-        temperature=config.get("global","temperature", 0.7)
-    )
-    logger.info("OpenRouterChat клиент создан:" + f"{chat_client}")
-except Exception as e:
-    logger.error(f"Ошибка при создании OpenRouterChat клиента: {e}", exc_info=True)
-    sys.exit(1)
 
 # === Основная логика ===
 @log_execution_time
@@ -165,13 +146,28 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
             console.print(f"[dim]Ошибка:[/dim] {e}")
 
 
-
-
 @log_execution_time
 def main() -> None:
+
+    console = Console()
+
+    # === Инициализация OpenRouterChat клиента ===
+    logger.info("Инициализация OpenRouterChat клиента")
+
+    llm_config = config.get_current_llm_config()
+    chat_client = OpenRouterClient(
+        console=console,
+        api_key = llm_config["api_key"],
+        api_url = llm_config["api_url"],
+        model = llm_config["model"],
+        system_content=get_system_content(),
+        temperature=config.get("global","temperature", 0.7)
+    )
+    logger.info("OpenRouterChat клиент создан:" + f"{chat_client}")
+    
+
     try:
         args = parse_args()
-
 
         # Обработка режима настройки
         if args.settings:
@@ -180,7 +176,6 @@ def main() -> None:
             run_configuration_dialog()
             logger.info("Конфигурационный режим завершен")
             return 0
-
 
         # Определяем режим работы
         dialog_mode: bool = args.dialog

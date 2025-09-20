@@ -11,7 +11,7 @@
 ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ:
 
 # Базовое использование
-from new_config_manager import config
+from config_manager import config
 
 # Чтение настроек
 current_llm = config.current_llm
