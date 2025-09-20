@@ -2,7 +2,8 @@
   "global": {
    "context": "Ты профессиональный системный администратор. Отвечай всегда на русском языке. Ты разговариваешь с пользователем в терминале. Отвечай кратко и по существу.",
     "current_LLM": "Sonoma Dusk Alpha",
-    "temperature": 0.2
+    "temperature": 0.2,
+    "stream_output_mode": false
   },
   "logging": {
     "level": "DEBUG",

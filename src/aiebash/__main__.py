@@ -29,33 +29,43 @@ logger.info("Загрузка настроек...")
 CONTEXT: str = config_manager.get_value("global", "context", "")
 CURRENT_LLM: str = config_manager.get_value("global", "current_LLM", "openai_over_proxy")
 TEMPERATURE: float = config_manager.get_value("global","temperature", 0.7)
+STREAM_OUTPUT_MODE: bool = config_manager.get_value("global","stream_output_mode", False)
 
 logger.info(f"Заданы настройки - Системный контекст: {'(пусто)' if not CONTEXT else CONTEXT[:30] + '...'}")
 logger.info(f"Заданы настройки - Текущий LLM: {CURRENT_LLM}")
+logger.info(f"Заданы настройки - Temperature: {TEMPERATURE}")
+logger.info(f"Заданы настройки - Режим потокового вывода: {STREAM_OUTPUT_MODE}")
 
 # Настройки конкретного LLM (например, openai_over_proxy)
 MODEL = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("model", "")
 API_URL = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_url", "")
 API_KEY = config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_key", "")
 
-
 logger.info(f"Заданы настройки - Модель: {MODEL}")
 logger.info(f"Заданы настройки - API URL: {API_URL}")
 logger.info(f"Заданы настройки - API Key: {'(не задан)' if not API_KEY else f'{API_KEY[:5]}...{API_KEY[-5:] if len(API_KEY) > 10 else API_KEY}'}")
-logger.info(f"Заданы настройки - Temperature: {TEMPERATURE}")
 
+# Ленивый импорт Markdown из rich (легкий модуль) для ускорения загрузки
+_markdown = None
+def _get_markdown():
+    global _markdown
+    if _markdown is None:
+        from rich.markdown import Markdown
+        _markdown = Markdown
+    return _markdown
 
 console = Console()
 
 # === Инициализация OpenRouterChat клиента ===
 logger.debug("Инициализация OpenRouterChat клиента")
+
 try:
     chat_client = OpenRouterClient(
         console=console,
         api_key=API_KEY,
         api_url=API_URL,
         model=MODEL,
-        system_context=CONTEXT or "You are a helpful assistant.",
+        system_context=CONTEXT,
         temperature=TEMPERATURE
     )
 except Exception as e:
@@ -69,9 +79,11 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
     """Выполнение одиночного запроса в потоковом режиме"""
     logger.info(f"Выполнение запроса: '{query[:50]}'...")
     try:
-        # Используем потоковый режим для вывода ответа
-        reply = chat_client.ask_stream(query)
-        # console.print(Markdown(reply))
+        if STREAM_OUTPUT_MODE:
+            reply = chat_client.ask_stream(query)
+        else:
+            reply = chat_client.ask(query)
+            console.print(_get_markdown()(reply))
         logger.info("Запрос выполнен успешно")
     except Exception as e:
         logger.error(f"Ошибка при выполнении запроса: {e}")
@@ -93,7 +105,11 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
     if initial_user_prompt:
         initial_user_prompt += additional_context
         try:
-            reply = chat_client.ask_stream(initial_user_prompt)
+            if STREAM_OUTPUT_MODE:
+                reply = chat_client.ask_stream(initial_user_prompt)
+            else:
+                reply = chat_client.ask(initial_user_prompt)
+                console.print(_get_markdown()(reply))
             last_code_blocks = extract_labeled_code_blocks(reply)
         except Exception as e:
             logger.error(f"Ошибка при обработке начального запроса: {e}")
@@ -129,7 +145,11 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
                     continue
 
             # Если введен текст, отправляем как запрос к AI
-            reply = chat_client.ask_stream(user_prompt)
+            if STREAM_OUTPUT_MODE:
+                reply = chat_client.ask_stream(user_prompt)
+            else:
+                reply = chat_client.ask(user_prompt)    
+                console.print(_get_markdown()(reply))
             last_code_blocks = extract_labeled_code_blocks(reply)
             console.print()  # Новая строка после ответа
 
