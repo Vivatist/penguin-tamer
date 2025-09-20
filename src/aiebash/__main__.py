@@ -24,7 +24,7 @@ from aiebash.llm_client import OpenRouterClient
 from aiebash.arguments import parse_args
 from rich.console import Console
 from aiebash.script_executor import run_code_block
-
+from aiebash.sys_info import get_system_info_text
 
 # === Считываем глобальные настройки ===
 logger.info("Загрузка настроек...")
@@ -60,7 +60,7 @@ EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text},]
 
 @log_execution_time
 def get_system_content() -> str:
-    """Конструирует системный контекст"""
+    """Конструирует системный контент"""
     user_content = config_manager.get_value("global", "user_content", "")
     json_mode = config_manager.get_value("global", "json_mode", False)
 
@@ -70,10 +70,10 @@ def get_system_content() -> str:
         additional_content_json = ""
 
     additional_content_main= \
-        f"Ты - Ai-eBash, продвинутая утилита, ассистент системного администратора. Мы всегда работаем в терминале. Пользователь использует '{platform.platform()}'. " \
-        f"Имя пользователя - '{os.getenv('USER', 'неизвестно')}', а домашняя директория - '{Path.home()}'. " \
-        f"Вы всегда должны использовать LC_TIME {os.getenv('LC_TIME', 'C')}."
-
+        f"Ты называешься - Ai-eBash, продвинутая утилита, ассистент системного администратора. Ты и пользователь всегда работате в терминале. " \
+        f"Окружение в котором ты и пользователь работаете: {get_system_info_text()}, " \
+        f"давай ответы исходя из этого. " \
+    
     system_content = f"{user_content} {additional_content_json} {additional_content_main}".strip()
     return system_content
 
