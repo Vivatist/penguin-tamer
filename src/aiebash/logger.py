@@ -1,5 +1,5 @@
 import logging
-import json
+import yaml
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional

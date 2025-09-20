@@ -2,6 +2,7 @@
 copilot-instructions.md
 .vscode/
 .notes.md
+.test.py
 
 # secret kyeys and files
 *.key

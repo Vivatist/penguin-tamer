@@ -40,38 +40,69 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: Ускорение сборки DEB (отключение man-db)
-        run: |
-          # Отключаем автоматическое обновление man-db
-          echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
+      # - name: Ускорение сборки DEB (отключение man-db)
+      #   run: |
+      #     # Отключаем автоматическое обновление man-db
+      #     echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
           
-          # Создаем политику исключения документации
-          echo 'path-exclude=/usr/share/man/*' | sudo tee /etc/dpkg/dpkg.cfg.d/exclude-documentation
+      #     # Создаем политику исключения документации
+      #     echo 'path-exclude=/usr/share/man/*' | sudo tee /etc/dpkg/dpkg.cfg.d/exclude-documentation
           
-          # Устанавливаем переменные для пропуска проверок и документации
-          export DEB_BUILD_OPTIONS=nocheck,nodocs
+      #     # Устанавливаем переменные для пропуска проверок и документации
+      #     export DEB_BUILD_OPTIONS=nocheck,nodocs
 
       - name: Install system dependencies for DEB build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-all debhelper dh-python
+          # На всякий случай включим universe (на runner'ах обычно включен)
+          sudo apt-get install -y software-properties-common || true
+          sudo add-apt-repository -y universe || true
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3-all debhelper dh-python dh-virtualenv python3-venv python3-virtualenv dpkg-dev devscripts git
+          # Диагностика наличия плагина dh-virtualenv
+          dpkg -s dh-virtualenv || true
+          ls -al /usr/share/perl5/Debian/Debhelper/Sequence/ || true
+
+      - name: Set Debian version from Git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -e
+          TAG=${GITHUB_REF#refs/tags/}
+          # Обрезаем лидирующую 'v' если есть
+          VER=${TAG#v}
+          echo "Using Debian version: $VER-1"
+          # Обновляем debian/changelog (maintainer берётся из окружения или коммита)
+          export DEBFULLNAME="${{ github.actor }}"
+          export DEBEMAIL="${{ github.actor }}@users.noreply.github.com"
+          dch --create --distribution unstable --package ai-ebash --newversion "$VER-1" "Automated release from tag $TAG" || \
+          dch --newversion "$VER-1" "Automated release from tag $TAG"
+          # Сделаем файл исполняемым на всякий случай
+          chmod +x debian/rules
 
       - name: Build DEB package
         run: |
-          pip install --upgrade stdeb
-          python setup.py --command-packages=stdeb.command sdist_dsc
-          
-          # Заменяем debian/rules с использованием табуляции (а не пробелов!)
-          echo '#!/usr/bin/make -f' > deb_dist/ai-ebash-*/debian/rules
-          echo '%:' >> deb_dist/ai-ebash-*/debian/rules
-          echo -e '\tdh $@ --with python3 --buildsystem=pybuild' >> deb_dist/ai-ebash-*/debian/rules
-          chmod +x deb_dist/ai-ebash-*/debian/rules
-          
-          cd deb_dist/ai-ebash-*
+          echo "==== debian/rules ===="
+          sed -n '1,200p' debian/rules || true
+          export DEB_BUILD_OPTIONS="nocheck nodocs"
+          export DEB_BUILD_PROFILES="nodoc"
+          echo "DEB_BUILD_OPTIONS=$DEB_BUILD_OPTIONS"
+          echo "DEB_BUILD_PROFILES=$DEB_BUILD_PROFILES"
+          # Сборка DEB используя debian/ из репозитория (dh-virtualenv установит зависимости из debian/requirements.txt)
           dpkg-buildpackage -us -uc -b
-          cd ../..
           mkdir -p dist_deb
-          cp deb_dist/*.deb dist_deb/
+          # Скопируем полученные .deb из родительской директории
+          cp ../*.deb dist_deb/ || cp ./*.deb dist_deb/ || true
+
+      - name: Smoke test DEB package
+        run: |
+          set -e
+          sudo apt-get update
+          DEB_FILE=$(ls dist_deb/*.deb | head -n1)
+          echo "Installing $DEB_FILE"
+          # apt требует явного пути к локальному файлу (с префиксом ./)
+          sudo apt-get install -y "./$DEB_FILE" || (sudo dpkg -i "$DEB_FILE" && sudo apt-get -f install -y)
+          which ai || (echo "ai not in PATH" && exit 1)
+          ai --help || (echo "ai failed to run" && exit 1)
 
       - name: Upload DEB to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')

@@ -18,6 +18,10 @@
     - [Linux (pipx)](#linux-pipx)
     - [Linux (DEB Package)](#linux-deb-package)
     - [Windows (Experimental)](#windows-experimental)
+  - [Uninstall](#uninstall)
+    - [If installed via pipx](#if-installed-via-pipx)
+    - [If installed via DEB package](#if-installed-via-deb-package)
+    - [If installed via Windows:](#if-installed-via-windows)
   - [Usage](#usage)
     - [Basic Usage](#basic-usage)
     - [Dialog Mode](#dialog-mode)
@@ -97,6 +101,35 @@
    ```
 
 3. **Restart your terminal**
+
+## Uninstall
+
+To completely remove the utility:
+
+### If installed via pipx
+```bash
+pipx uninstall ai-ebash
+```
+
+### If installed via DEB package
+```bash
+sudo apt remove python3-ai-ebash
+# Or for complete deletion, including configuration files:
+sudo apt purge python3-ai-ebash
+```
+
+or you can also use dpkg.:
+
+```bash
+sudo dpkg -r python3-ai-ebash
+# Or for complete deletion, including configuration files:
+sudo dpkg -P python3-ai-ebash
+```
+
+### If installed via Windows:
+```bash
+pip uninstall ai-ebash
+```
 
 ## Usage
 

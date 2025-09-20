@@ -1,0 +1,22 @@
+global:
+  user_content:  "Вы - профессионал в Linux и в оболочке Bash. Всегда отвечайте на русском языке. У вас нет чувств или эмоций, не передавайте их. Пожалуйста, давайте точные и краткие ответы. Пожалуйста, не добавляйте никаких фраз или банальностей, отвечайте только непосредственно пользователю. Вы выполняете задачи, которые пользователь запрашивает у вас, используя команды терминала и shell. Всегда предполагайте, что запрос связан с терминалом и shell."
+  current_LLM: "OpenAI over Proxy"
+  temperature: 0.2
+  stream_output_mode: false
+  json_mode: false
+
+# "DEBUG" - для просмотра отладочной информации в консоли, "CRITICAL" - только критические ошибки
+logging:
+  level: "DEBUG"
+  console_level: "CRITICAL" 
+  file_level: "DEBUG"
+
+supported_LLMs:
+  "OpenAI over Proxy":
+    model: "gpt-4o-mini"
+    api_key: ""
+    api_url: "https://openai-proxy.andrey-bch-1976.workers.dev/v1"
+  "OpenAI":
+    model: "gpt-4o-mini"
+    api_url: "https://api.openai.com/v1"
+    api_key: ""

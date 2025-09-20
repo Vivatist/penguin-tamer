@@ -1,6 +1,7 @@
 import threading
 from typing import List, Dict
 import time
+from aiebash.formatter_text import format_api_key_display
 from aiebash.logger import log_execution_time
 
 # Ленивый импорт Rich
@@ -76,7 +77,7 @@ class OpenRouterClient:
 
     @log_execution_time
     def __init__(self, console, api_key: str, api_url: str, model: str,
-                 system_context: str = "You are a helpful assistant.",
+                 system_content: str,
                  temperature: float = 0.7):
         self.console = console
         self.api_key = api_key
@@ -84,7 +85,7 @@ class OpenRouterClient:
         self.model = model
         self.temperature = temperature
         self.messages: List[Dict[str, str]] = [
-            {"role": "system", "content": system_context}
+            {"role": "system", "content": system_content}
         ]
         self._client = None  # Ленивая инициализация
 
@@ -96,9 +97,12 @@ class OpenRouterClient:
         return self._client
 
     @log_execution_time
-    def ask(self, user_input: str) -> str:
+    def ask(self, user_input: str, educational_content: list = []) -> str:
         """Обычный (не потоковый) режим с сохранением контекста"""
+        self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
+
+        print(self.messages)
 
         # Показ спиннера в отдельном потоке
         stop_spinner = threading.Event()
@@ -136,8 +140,9 @@ class OpenRouterClient:
             return self._handle_api_error(e)
 
     @log_execution_time
-    def ask_stream(self, user_input: str) -> str:
+    def ask_stream(self, user_input: str, educational_content: list = []) -> str:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
+        self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
 
         reply_parts = ['**Ai:** ']
@@ -204,3 +209,28 @@ class OpenRouterClient:
             self.console.print(f"[dim]Неизвестная ошибка: {error}[/dim]")
 
         return "Ошибка при получении ответа."
+
+    def __str__(self) -> str:
+        """Человекочитаемое представление клиента со всеми полями.
+
+        Примечание: значение `api_key` маскируется (видны только последние 4 символа),
+        а сложные объекты выводятся кратко.
+        """
+
+        items = {}
+        for k, v in self.__dict__.items():
+            if k == 'api_key':
+                items[k] = format_api_key_display(v)
+            elif k == 'messages' or k == 'console' or k == '_client':
+                continue
+            else:
+                try:
+                    items[k] = v
+                except Exception:
+                    items[k] = f"<unrepr {type(v).__name__}>"
+
+        parts = [f"{self.__class__.__name__}("]
+        for key, val in items.items():
+            parts.append(f"  {key}={val!r},")
+        parts.append(")")
+        return "\n".join(parts)
