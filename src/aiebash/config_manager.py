@@ -153,28 +153,28 @@ class ConfigManager:
 
     def _show_current_settings(self) -> None:
         """Показывает текущие настройки перед главным меню"""
-        current_context = self.get_value("global", "context", "")
+        current_content = self.get_value("global", "user_content", "")
         current_llm = self.get_current_llm_name()
         current_llm_config = self.get_current_llm_config()
         available_llms = self.get_available_llms()
 
         # Показываем контекст
-        if current_context:
-            context_panel = Panel(
-                Text(current_context, style="white"),
+        if current_content:
+            content_panel = Panel(
+                Text(current_content, style="white"),
                 title="Контекст для всех нейронок",
                 border_style="white",
                 padding=(1, 2)
             )
-            self.console.print(context_panel)
+            self.console.print(content_panel)
         else:
-            context_panel = Panel(
+            content_panel = Panel(
                 Text("[dim]Контекст не задан[/dim]", style="dim white"),
                 title="[bold]Контекст[/bold]",
                 border_style="white",
                 padding=(1, 2)
             )
-            self.console.print(context_panel)
+            self.console.print(content_panel)
 
         self.console.print()
 
@@ -238,7 +238,7 @@ class ConfigManager:
                 break
 
             elif choice == 0:  # Изменить контекст
-                self._set_context_menu()
+                self._set_content_menu()
 
             elif choice == 1:  # Выбрать нейросеть
                 self._select_llm_menu()
@@ -255,32 +255,32 @@ class ConfigManager:
             elif choice == 5:  # Language (заглушка)
                 self._language_menu()
 
-    def _set_context_menu(self) -> None:
+    def _set_content_menu(self) -> None:
         """Меню настройки контекста"""
         # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
-        current_context = self.get_value("global", "context", "")
+        current_content = self.get_value("global", "content", "")
 
         panel = Panel(
             Text("Текущий контекст:", style="white") + "\n\n" +
-            (current_context if current_context else "[dim](не задан)[/dim]"),
+            (current_content if current_content else "[dim](не задан)[/dim]"),
             title="Настройка контекста",
             border_style="white"
         )
         self.console.print(panel)
         self.console.print()
 
-        new_context = self.menu.get_user_input(
+        new_content = self.menu.get_user_input(
             "Введите новый контекст (или Enter для отмены)",
-            default=current_context
+            default=current_content
         )
 
-        if new_context and new_context != current_context:
-            self.set_value("global", "context", new_context)
+        if new_content and new_content != current_content:
+            self.set_value("global", "content", new_content)
             self.console.print("[white]✓ Контекст обновлен![/white]")
-        elif not new_context and current_context:
+        elif not new_content and current_content:
             if Confirm.ask("Очистить контекст?", default=False):
-                self.set_value("global", "context", "")
+                self.set_value("global", "content", "")
                 self.console.print("[white]✓ Контекст очищен![/white]")
         else:
             self.console.print("[dim]Контекст оставлен без изменений[/dim]")
