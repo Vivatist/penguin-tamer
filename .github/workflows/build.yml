@@ -99,7 +99,8 @@ jobs:
           sudo apt-get update
           DEB_FILE=$(ls dist_deb/*.deb | head -n1)
           echo "Installing $DEB_FILE"
-          sudo apt-get install -y "$DEB_FILE"
+          # apt требует явного пути к локальному файлу (с префиксом ./)
+          sudo apt-get install -y "./$DEB_FILE" || (sudo dpkg -i "$DEB_FILE" && sudo apt-get -f install -y)
           which ai || (echo "ai not in PATH" && exit 1)
           ai --help || (echo "ai failed to run" && exit 1)
 
