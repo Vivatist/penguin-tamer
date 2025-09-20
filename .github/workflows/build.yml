@@ -54,7 +54,14 @@ jobs:
       - name: Install system dependencies for DEB build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-all debhelper dh-python dh-virtualenv python3-venv dpkg-dev
+          # На всякий случай включим universe (на runner'ах обычно включен)
+          sudo apt-get install -y software-properties-common || true
+          sudo add-apt-repository -y universe || true
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3-all debhelper dh-python dh-virtualenv python3-venv python3-virtualenv dpkg-dev
+          # Диагностика наличия плагина dh-virtualenv
+          dpkg -s dh-virtualenv || true
+          ls -al /usr/share/perl5/Debian/Debhelper/Sequence/ || true
 
       - name: Build DEB package
         run: |
