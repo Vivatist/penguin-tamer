@@ -1,12 +1,31 @@
 Source: ai-ebash
-Section: utils
+Section: python
 Priority: optional
 Maintainer: Andrey Bochkarev <andrey.bch.1976@gmail.com>
-Build-Depends: debhelper (>= 9), dh-python, python3-all
-Standards-Version: 4.5.0
+Build-Depends: debhelper-compat (= 13),
+               python3-all,
+               python3-setuptools,
+               python3-pip,
+               dh-python,
+               python3-openai | python3 (>= 3.6),
+               python3-rich,
+               python3-pyyaml,
+               python3-textual
+Standards-Version: 4.6.2
+Homepage: https://github.com/Vivatist/ai-bash
 
 Package: ai-ebash
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}
-Description: Console utility for integrating artificial intelligence into a Linux terminal.
- A simple CLI wrapper for AI written in Python.
+Depends: ${python3:Depends},
+         ${misc:Depends},
+         python3-openai,
+         python3-rich,
+         python3-pyyaml,
+         python3-textual,
+         python3-platformdirs,
+         python3-requests
+Description: AI-powered Bash shell assistant
+ AI-eBash is an intelligent command-line assistant that uses AI to help
+ with shell commands and system administration tasks. It provides
+ contextual suggestions, command explanations, and automated script
+ generation using OpenAI's GPT models.
