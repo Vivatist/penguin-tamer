@@ -4,7 +4,7 @@
 Использует JSON для всех настроек с современным меню навигацией стрелками.
 """
 
-import json
+import yaml
 import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -30,8 +30,8 @@ except ImportError:
 # === Настройки ===
 APP_NAME = "ai-ebash"
 USER_CONFIG_DIR = Path(user_config_dir(APP_NAME))
-USER_CONFIG_PATH = USER_CONFIG_DIR / "config.json"
-DEFAULT_CONFIG_PATH = Path(__file__).parent / "default_config.json"
+USER_CONFIG_PATH = USER_CONFIG_DIR / "config.yaml"
+DEFAULT_CONFIG_PATH = Path(__file__).parent / "default_config.yaml"
 
 
 class MenuSystem:
@@ -92,9 +92,9 @@ class ConfigManager:
     def __init__(self):
         self.console = Console()
         self.menu = MenuSystem(self.console)
-        self.json_config = {}
+        self.yaml_config = {}
         self._ensure_config_exists()
-        self._load_json_config()
+        self._load_yaml_config()
 
     def _ensure_config_exists(self) -> None:
         """Убеждается, что файл конфигурации существует"""
@@ -108,48 +108,48 @@ class ConfigManager:
             self.console.print(f"[red]Ошибка при создании файла конфигурации: {e}[/red]")
 
 
-    def _load_json_config(self) -> None:
-        """Загружает полную конфигурацию из JSON"""
+    def _load_yaml_config(self) -> None:
+        """Загружает полную конфигурацию из YAML"""
         try:
             with open(USER_CONFIG_PATH, 'r', encoding='utf-8') as f:
-                self.json_config = json.load(f)
+                self.yaml_config = yaml.safe_load(f)
         except Exception:
-            self.json_config = {}
+            self.yaml_config = {}
 
-    def _save_json_config(self) -> None:
-        """Сохраняет полную конфигурацию в JSON"""
+    def _save_yaml_config(self) -> None:
+        """Сохраняет полную конфигурацию в YAML"""
         try:
             USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
             with open(USER_CONFIG_PATH, 'w', encoding='utf-8') as f:
-                json.dump(self.json_config, f, indent=2, ensure_ascii=False)
+                yaml.safe_dump(self.yaml_config, f, indent=2, allow_unicode=True, default_flow_style=False)
         except Exception as e:
             self.console.print(f"[red]Ошибка сохранения настроек: {e}[/red]")
 
     @log_execution_time
     def get_value(self, section: str, key: str, default: Any = None) -> Any:
         """Получает значение из настроек"""
-        return self.json_config.get(section, {}).get(key, default)
+        return self.yaml_config.get(section, {}).get(key, default)
 
     def set_value(self, section: str, key: str, value: Any) -> None:
         """Устанавливает значение в настройках"""
-        self.json_config.setdefault(section, {})[key] = value
-        self._save_json_config()
+        self.yaml_config.setdefault(section, {})[key] = value
+        self._save_yaml_config()
 
     @log_execution_time
     def get_logging_config(self) -> Dict[str, Any]:
         """Возвращает настройки логирования"""
-        return self.json_config.get("logging", {})
+        return self.yaml_config.get("logging", {})
 
     @log_execution_time
     def get_current_llm_name(self) -> str:
         """Возвращает имя текущего LLM"""
-        return self.json_config.get("global", {}).get("current_LLM", "openai_over_proxy")
+        return self.yaml_config.get("global", {}).get("current_LLM", "openai_over_proxy")
 
     @log_execution_time
     def get_current_llm_config(self) -> Dict[str, Any]:
         """Возвращает конфигурацию текущего LLM"""
         current_llm = self.get_current_llm_name()
-        return self.json_config.get("supported_LLMs", {}).get(current_llm, {})
+        return self.yaml_config.get("supported_LLMs", {}).get(current_llm, {})
 
     def _show_current_settings(self) -> None:
         """Показывает текущие настройки перед главным меню"""
@@ -203,7 +203,7 @@ class ConfigManager:
 
     def get_available_llms(self) -> List[str]:
         """Возвращает список доступных LLM"""
-        supported_llms = self.json_config.get("supported_LLMs", {})
+        supported_llms = self.yaml_config.get("supported_LLMs", {})
         return list(supported_llms.keys())
 
     @log_execution_time
@@ -353,7 +353,7 @@ class ConfigManager:
         table.add_column("Статус", style="cyan")
 
         for llm_name in available_llms:
-            llm_config = self.json_config.get("supported_LLMs", {}).get(llm_name, {})
+            llm_config = self.yaml_config.get("supported_LLMs", {}).get(llm_name, {})
             model = llm_config.get("model", "не указана")
             api_url = llm_config.get("api_url", "не указан")
             api_key = format_api_key_display(llm_config.get("api_key", ""))
@@ -393,8 +393,8 @@ class ConfigManager:
 
             # self.console.clear()  # Убрано для отмены перемотки экрана вверх
             if Confirm.ask(f"Удалить нейросеть '{selected_llm}'?", default=False):
-                del self.json_config["supported_LLMs"][selected_llm]
-                self._save_json_config()
+                del self.yaml_config["supported_LLMs"][selected_llm]
+                self._save_yaml_config()
                 self.console.print(f"[white]✓ Нейросеть '{selected_llm}' удалена![/white]")
                 # Показываем обновленную таблицу всех LLM
                 self._show_llms_table()
@@ -437,8 +437,8 @@ class ConfigManager:
         }
 
         # Сохраняем
-        self.json_config.setdefault("supported_LLMs", {})[name] = new_llm_config
-        self._save_json_config()
+        self.yaml_config.setdefault("supported_LLMs", {})[name] = new_llm_config
+        self._save_yaml_config()
 
         self.console.print(f"[white]✓ Нейросеть '{name}' добавлена![/white]")
         
@@ -469,7 +469,7 @@ class ConfigManager:
         """Редактирование конкретной нейросети"""
         # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
-        current_config = self.json_config.get("supported_LLMs", {}).get(llm_name, {})
+        current_config = self.yaml_config.get("supported_LLMs", {}).get(llm_name, {})
 
         panel = Panel(
             Text(f"Редактирование нейросети: {llm_name}", style="white"),
@@ -529,9 +529,9 @@ class ConfigManager:
         # Сохраняем изменения
         if new_name != llm_name:
             # Удаляем старую конфигурацию
-            del self.json_config["supported_LLMs"][llm_name]
+            del self.yaml_config["supported_LLMs"][llm_name]
             # Сохраняем под новым именем
-            self.json_config.setdefault("supported_LLMs", {})[new_name] = updated_config
+            self.yaml_config.setdefault("supported_LLMs", {})[new_name] = updated_config
 
             # Если это была текущая нейросеть, обновляем ссылку
             if self.get_current_llm_name() == llm_name:
@@ -540,10 +540,10 @@ class ConfigManager:
             self.console.print(f"[white]✓ Нейросеть переименована в '{new_name}' и обновлена![/white]")
         else:
             # Просто обновляем существующую
-            self.json_config.setdefault("supported_LLMs", {})[llm_name] = updated_config
+            self.yaml_config.setdefault("supported_LLMs", {})[llm_name] = updated_config
             self.console.print(f"[white]✓ Нейросеть '{llm_name}' обновлена![/white]")
 
-        self._save_json_config()
+        self._save_yaml_config()
 
         # Показываем таблицу всех LLM
         self._show_llms_table()

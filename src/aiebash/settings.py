@@ -1,4 +1,4 @@
-import json
+import yaml
 from pathlib import Path
 import os
 import shutil
@@ -10,11 +10,11 @@ import time
 
 # --- Пути к конфигурации ---
 APP_NAME = "ai-ebash"
-# Путь к конфигу пользователя (e.g., %APPDATA%\ai-ebash\config.json)
+# Путь к конфигу пользователя (e.g., %APPDATA%\ai-ebash\config.yaml)
 USER_CONFIG_DIR = Path(user_config_dir(APP_NAME))
-USER_CONFIG_PATH = USER_CONFIG_DIR / "config.json"
+USER_CONFIG_PATH = USER_CONFIG_DIR / "config.yaml"
 # Путь к дефолтному конфигу
-DEFAULT_CONFIG_PATH = Path(__file__).parent / "default_config.json"
+DEFAULT_CONFIG_PATH = Path(__file__).parent / "default_config.yaml"
 
 class Settings:
     """Класс для работы с настройками приложения"""
@@ -41,7 +41,7 @@ class Settings:
         # Загружаем настройки из файла
         try:
             with open(USER_CONFIG_PATH, 'r', encoding='utf-8') as f:
-                self.config_data = json.load(f)
+                self.config_data = yaml.safe_load(f)
         except Exception:
             self.config_data = {}
             
@@ -53,7 +53,7 @@ class Settings:
             USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
             with open(USER_CONFIG_PATH, 'w', encoding='utf-8') as f:
-                json.dump(self.config_data, f, indent=2, ensure_ascii=False)
+                yaml.safe_dump(self.config_data, f, indent=2, allow_unicode=True, default_flow_style=False)
         except Exception:
             pass
             
