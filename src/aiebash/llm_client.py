@@ -102,8 +102,6 @@ class OpenRouterClient:
         self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
 
-        print(self.messages)
-
         # Показ спиннера в отдельном потоке
         stop_spinner = threading.Event()
         spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,))
@@ -126,11 +124,11 @@ class OpenRouterClient:
             self.messages.append({"role": "assistant", "content": reply})
 
             # токены
-            usage = response.usage
-            if usage:
-                print(f"[TOKENS] input={usage.prompt_tokens}, "
-                      f"output={usage.completion_tokens}, "
-                      f"total={usage.total_tokens}")
+            # usage = response.usage
+            # if usage:
+            #     print(f"[TOKENS] input={usage.prompt_tokens}, "
+            #           f"output={usage.completion_tokens}, "
+            #           f"total={usage.total_tokens}")
             return reply
 
         except Exception as e:

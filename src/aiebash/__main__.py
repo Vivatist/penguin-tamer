@@ -70,7 +70,7 @@ def get_system_content() -> str:
         additional_content_json = ""
 
     additional_content_main= \
-        f"Мы всегда находимся в терминале. Пользователь использует '{platform.platform()}'. " \
+        f"Ты - Ai-eBash, продвинутая утилита, ассистент системного администратора. Мы всегда работаем в терминале. Пользователь использует '{platform.platform()}'. " \
         f"Имя пользователя - '{os.getenv('USER', 'неизвестно')}', а домашняя директория - '{Path.home()}'. " \
         f"Вы всегда должны использовать LC_TIME {os.getenv('LC_TIME', 'C')}."
 
