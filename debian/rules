@@ -8,3 +8,13 @@ override_dh_auto_install:
 	dh_virtualenv --python python3 \
 		--install-suffix ai-ebash \
 		--requirements debian/requirements.txt
+
+# Не выполняем стандартные auto-* этапы (проект упаковывается через dh_virtualenv)
+override_dh_auto_configure:
+	:
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_clean:
+	:
