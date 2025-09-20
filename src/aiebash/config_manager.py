@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional
 from rich.console import Console
 from rich.prompt import Prompt, Confirm
 from rich.panel import Panel
-from rich.table import Table
+from rich.table import Table, box
 from rich.text import Text
 from rich.columns import Columns
 from rich.align import Align
@@ -153,51 +153,53 @@ class ConfigManager:
 
     def _show_current_settings(self) -> None:
         """Показывает текущие настройки перед главным меню"""
-        current_content = self.get_value("global", "user_content", "")
+        
         current_llm = self.get_current_llm_name()
         current_llm_config = self.get_current_llm_config()
         available_llms = self.get_available_llms()
 
-        # Показываем контекст
-        if current_content:
-            content_panel = Panel(
-                Text(current_content, style="white"),
-                title="Контекст для всех нейронок",
-                border_style="white",
-                padding=(1, 2)
-            )
-            self.console.print(content_panel)
-        else:
-            content_panel = Panel(
-                Text("[dim]Контекст не задан[/dim]", style="dim white"),
-                title="[bold]Контекст[/bold]",
-                border_style="white",
-                padding=(1, 2)
-            )
-            self.console.print(content_panel)
-
-        self.console.print()
-
-        # Информация о текущей нейросети
-        current_info = Table(show_header=False, box=None, padding=(0, 2))
+# Информация о текущей нейросети
+        current_info = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
         current_info.add_column("Параметр", style="white", no_wrap=True)
         current_info.add_column("Значение", style="white")
 
         current_info.add_row("Текущая нейросеть", current_llm)
         current_info.add_row("Модель", current_llm_config.get("model", "не указана"))
         current_info.add_row("API URL", current_llm_config.get("api_url", "не указан"))
-        current_info.add_row("Всего нейросетей", str(len(available_llms)))
 
         info_panel = Panel(
             current_info,
             title="Текущая конфигурация",
-            border_style="white",
-            padding=(1, 2)
+            border_style="dim",
+            padding=(1, 1)
         )
         self.console.print(info_panel)
 
         self.console.print()
 
+        current_content = self.get_value("global", "user_content", "")
+
+        # Показываем Контент
+        if current_content:
+            content_panel = Panel(
+                Text(current_content, style="white"),
+                title="Контент для всех нейронок",
+                border_style="dim",
+                padding=(1, 2)
+            )
+            self.console.print(content_panel)
+        else:
+            content_panel = Panel(
+                Text("[dim]Контент не задан[/dim]", style="dim white"),
+                title="[bold]Контент[/bold]",
+                border_style="dim",
+                padding=(1, 2)
+            )
+            self.console.print(content_panel)
+
+        self.console.print()
+
+        
         # Показываем таблицу всех LLM
         self._show_llms_table()
 
@@ -210,24 +212,15 @@ class ConfigManager:
     def run_configuration_menu(self) -> None:
         """Запускает главное меню конфигурации"""
         main_menu_options = [
-            "Изменить контекст",
+            "Изменить Контент",
             "Выбрать нейросеть",
             "Добавить нейросеть",
             "Редактировать нейросеть",
             "Удалить нейросеть",
-            "Language (в разработке)",
             "Выход"
         ]
 
         while True:
-            # Показываем заголовок
-            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-            title_panel = Panel(
-                Align.center(Text("AI-ebash Конфигуратор", style="white")),
-                border_style="white",
-                padding=(1, 2)
-            )
-            self.console.print(title_panel)
 
             # Показываем текущие настройки
             self._show_current_settings()
@@ -237,7 +230,7 @@ class ConfigManager:
             if choice is None or choice == 6:  # Выход
                 break
 
-            elif choice == 0:  # Изменить контекст
+            elif choice == 0:  # Изменить Контент
                 self._set_content_menu()
 
             elif choice == 1:  # Выбрать нейросеть
@@ -256,34 +249,34 @@ class ConfigManager:
                 self._language_menu()
 
     def _set_content_menu(self) -> None:
-        """Меню настройки контекста"""
+        """Меню настройки Контента"""
         # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         current_content = self.get_value("global", "content", "")
 
         panel = Panel(
-            Text("Текущий контекст:", style="white") + "\n\n" +
+            Text("Текущий Контент:", style="white") + "\n\n" +
             (current_content if current_content else "[dim](не задан)[/dim]"),
-            title="Настройка контекста",
+            title="Настройка Контента",
             border_style="white"
         )
         self.console.print(panel)
         self.console.print()
 
         new_content = self.menu.get_user_input(
-            "Введите новый контекст (или Enter для отмены)",
+            "Введите новый Контент (или Enter для отмены)",
             default=current_content
         )
 
         if new_content and new_content != current_content:
             self.set_value("global", "content", new_content)
-            self.console.print("[white]✓ Контекст обновлен![/white]")
+            self.console.print("[white]✓ Контент обновлен![/white]")
         elif not new_content and current_content:
-            if Confirm.ask("Очистить контекст?", default=False):
+            if Confirm.ask("Очистить Контент?", default=False):
                 self.set_value("global", "content", "")
-                self.console.print("[white]✓ Контекст очищен![/white]")
+                self.console.print("[white]✓ Контент очищен![/white]")
         else:
-            self.console.print("[dim]Контекст оставлен без изменений[/dim]")
+            self.console.print("[dim]Контент оставлен без изменений[/dim]")
 
         self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
 
@@ -326,8 +319,8 @@ class ConfigManager:
         # self.console.clear()  # Убрано для отмены перемотки экрана вверх
 
         panel = Panel(
-            Text("Все доступные нейросети", style="white"),
-            border_style="white"
+            Text("Добавленные нейросети", style="white"),
+            border_style="dim white"
         )
         self.console.print(panel)
         self.console.print()
@@ -345,7 +338,7 @@ class ConfigManager:
         if not available_llms:
             return
 
-        table = Table(title="Доступные нейросети", show_header=True, header_style="white")
+        table = Table(title="Добавленные нейросети", border_style="dim white")
         table.add_column("Название", style="white", no_wrap=True)
         table.add_column("Модель", style="dim white")
         table.add_column("API URL", style="dim white")
