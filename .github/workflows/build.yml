@@ -58,10 +58,26 @@ jobs:
           sudo apt-get install -y software-properties-common || true
           sudo add-apt-repository -y universe || true
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-all debhelper dh-python dh-virtualenv python3-venv python3-virtualenv dpkg-dev
+          sudo apt-get install -y build-essential python3-all debhelper dh-python dh-virtualenv python3-venv python3-virtualenv dpkg-dev devscripts git
           # Диагностика наличия плагина dh-virtualenv
           dpkg -s dh-virtualenv || true
           ls -al /usr/share/perl5/Debian/Debhelper/Sequence/ || true
+
+      - name: Set Debian version from Git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -e
+          TAG=${GITHUB_REF#refs/tags/}
+          # Обрезаем лидирующую 'v' если есть
+          VER=${TAG#v}
+          echo "Using Debian version: $VER-1"
+          # Обновляем debian/changelog (maintainer берётся из окружения или коммита)
+          export DEBFULLNAME="${{ github.actor }}"
+          export DEBEMAIL="${{ github.actor }}@users.noreply.github.com"
+          dch --create --distribution unstable --package ai-ebash --newversion "$VER-1" "Automated release from tag $TAG" || \
+          dch --newversion "$VER-1" "Automated release from tag $TAG"
+          # Сделаем файл исполняемым на всякий случай
+          chmod +x debian/rules
 
       - name: Build DEB package
         run: |
