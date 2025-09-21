@@ -1,4 +1,5 @@
 include src/aiebash/default_config.yaml
+include src/aiebash/locales/*.json
 
 # Exclude CI and packaging for other distros
 prune .github
