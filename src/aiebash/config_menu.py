@@ -11,6 +11,41 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import inquirer
 from aiebash.config_manager import config
+from aiebash.formatter_text import format_api_key_display
+
+
+def prompt_clean(questions):
+    """Обертка над inquirer.prompt: подавляет строку 'Cancelled by user' и
+    возвращает None при Ctrl+C, чтобы не было лишнего вывода."""
+    old_out_write = sys.stdout.write
+    old_err_write = sys.stderr.write
+
+    def _filter_out(s):
+        try:
+            if s and 'Cancelled by user' in str(s):
+                return 0
+        except Exception:
+            pass
+        return old_out_write(s)
+
+    def _filter_err(s):
+        try:
+            if s and 'Cancelled by user' in str(s):
+                return 0
+        except Exception:
+            pass
+        return old_err_write(s)
+
+    sys.stdout.write = _filter_out
+    sys.stderr.write = _filter_err
+    try:
+        try:
+            return inquirer.prompt(questions)
+        except KeyboardInterrupt:
+            return None
+    finally:
+        sys.stdout.write = old_out_write
+        sys.stderr.write = old_err_write
 
 
 def main_menu():
@@ -20,14 +55,16 @@ def main_menu():
             inquirer.List('choice',
                          message="Выберите действие",
                          choices=[
-                             ('Управление нейросетями', 'llm'),
+                            ('Выбрать нейросеть', 'select'),
+                            ('Управление нейросетями', 'llm'),
                             ('Редактировать контент', 'content'),
-                             ('Системные настройки', 'system'),
-                             ('Выход', 'exit')
-                         ])
+                            ('Системные настройки', 'system'),
+                            ('Выход', 'exit')
+                         ],
+                         carousel=True)
         ]
 
-        answers = inquirer.prompt(questions)
+        answers = prompt_clean(questions)
         if not answers:
             break
 
@@ -39,6 +76,8 @@ def main_menu():
             system_settings_menu()
         elif choice == 'content':
             edit_user_content()
+        elif choice == 'select':
+            select_current_llm()
         elif choice == 'exit':
             break
 
@@ -63,10 +102,11 @@ def llm_management_menu():
         questions = [
             inquirer.List('choice',
                          message="Управление нейросетями",
-                         choices=choices)
+                         choices=choices,
+                         carousel=True)
         ]
 
-        answers = inquirer.prompt(questions)
+        answers = prompt_clean(questions)
         if not answers:
             break
 
@@ -88,7 +128,7 @@ def edit_llm(llm_name):
     print(f"\nНастройки для: {llm_name}")
     print(f"Модель: {llm_config.get('model', '')}")
     print(f"API URL: {llm_config.get('api_url', '')}")
-    print(f"API ключ: {'*' * len(llm_config.get('api_key', '')) if llm_config.get('api_key') else ''}")
+    print(f"API ключ: {format_api_key_display(llm_config.get('api_key', ''))}")
 
     # Меню действий с LLM
     questions = [
@@ -99,12 +139,12 @@ def edit_llm(llm_name):
                          ('Изменить API URL', 'url'),
                          ('Изменить API ключ', 'key'),
                          ('Удалить нейросеть', 'delete'),
-                         ('Сделать текущей', 'current'),
                          ('Назад', 'back')
-                     ])
+                     ],
+                     carousel=True)
     ]
 
-    answers = inquirer.prompt(questions)
+    answers = prompt_clean(questions)
     if not answers:
         return
 
@@ -112,21 +152,21 @@ def edit_llm(llm_name):
 
     if action == 'model':
         questions = [inquirer.Text('value', message="Новая модель", default=llm_config.get('model', ''))]
-        answers = inquirer.prompt(questions)
+        answers = prompt_clean(questions)
         if answers:
             config.update_llm(llm_name, model=answers['value'])
             print("Модель обновлена")
 
     elif action == 'url':
         questions = [inquirer.Text('value', message="Новый API URL", default=llm_config.get('api_url', ''))]
-        answers = inquirer.prompt(questions)
+        answers = prompt_clean(questions)
         if answers:
             config.update_llm(llm_name, api_url=answers['value'])
             print("API URL обновлен")
 
     elif action == 'key':
-        questions = [inquirer.Password('value', message="Новый API ключ")]
-        answers = inquirer.prompt(questions)
+        questions = [inquirer.Text('value', message="Новый API ключ", default=llm_config.get('api_key', ''))]
+        answers = prompt_clean(questions)
         if answers:
             config.update_llm(llm_name, api_key=answers['value'])
             print("API ключ обновлен")
@@ -137,14 +177,10 @@ def edit_llm(llm_name):
             return
 
         questions = [inquirer.Confirm('confirm', message=f"Удалить {llm_name}?", default=False)]
-        answers = inquirer.prompt(questions)
+        answers = prompt_clean(questions)
         if answers and answers['confirm']:
             config.remove_llm(llm_name)
             print("Нейросеть удалена")
-
-    elif action == 'current':
-        config.current_llm = llm_name
-        print(f"{llm_name} установлена как текущая")
 
     elif action == 'back':
         return
@@ -156,10 +192,10 @@ def add_llm():
         inquirer.Text('name', message="Имя нейросети"),
         inquirer.Text('model', message="Модель"),
         inquirer.Text('api_url', message="API URL"),
-        inquirer.Password('api_key', message="API ключ (опционально)")
+        inquirer.Text('api_key', message="API ключ (опционально)")
     ]
 
-    answers = inquirer.prompt(questions)
+    answers = prompt_clean(questions)
     if answers and answers['name'] and answers['model'] and answers['api_url']:
         try:
             config.add_llm(
@@ -173,6 +209,49 @@ def add_llm():
             print(f"Ошибка: {e}")
     else:
         print("Все поля обязательны кроме API ключа")
+
+
+def select_current_llm():
+    """Выбор текущей нейросети из списка доступных."""
+    while True:
+        available_llms = config.get_available_llms()
+        if not available_llms:
+            print("Нет доступных нейросетей. Сначала добавьте хотя бы одну.")
+            return
+
+        current_llm = config.current_llm
+        choices = []
+        for llm in available_llms:
+            marker = " [текущая]" if llm == current_llm else ""
+            choices.append((f"{llm}{marker}", llm))
+
+        choices.append(('Назад', 'back'))
+
+        questions = [
+            inquirer.List(
+                'llm',
+                message="Выберите текущую нейросеть",
+                choices=choices,
+                default=current_llm if current_llm in available_llms else None,
+                carousel=True,
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if answers and answers.get('llm'):
+            selected = answers['llm']
+            if selected == 'back':
+                return
+            if selected != current_llm:
+                config.current_llm = selected
+                print(f"Текущая нейросеть установлена: {selected}")
+                continue  # Остаемся в меню с новым маркером
+            else:
+                print("Эта нейросеть уже текущая")
+                continue  # Остаемся в меню
+        else:
+            print("Выбор нейросети отменен")
+            return  # Остаемся в меню
 
 
 def edit_user_content():
@@ -223,10 +302,11 @@ def system_settings_menu():
                              ('Потоковый режим', 'stream'),
                              ('JSON режим', 'json'),
                              ('Назад', 'back')
-                         ])
+                         ],
+                         carousel=True)
         ]
 
-        answers = inquirer.prompt(questions)
+        answers = prompt_clean(questions)
         if not answers:
             break
 
@@ -248,10 +328,11 @@ def set_log_level():
         inquirer.List('level',
                      message="Уровень логирования",
                      choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                     default=config.console_log_level)
+                     default=config.console_log_level,
+                     carousel=True)
     ]
 
-    answers = inquirer.prompt(questions)
+    answers = prompt_clean(questions)
     if answers:
         config.console_log_level = answers['level']
         print("Уровень логирования обновлен")
@@ -263,10 +344,11 @@ def set_stream_mode():
         inquirer.List('mode',
                      message="Потоковый режим",
                      choices=[('Включен', True), ('Выключен', False)],
-                     default=config.stream_mode)
+                     default=config.stream_mode,
+                     carousel=True)
     ]
 
-    answers = inquirer.prompt(questions)
+    answers = prompt_clean(questions)
     if answers:
         config.stream_mode = answers['mode']
         print("Потоковый режим обновлен")
@@ -278,10 +360,11 @@ def set_json_mode():
         inquirer.List('mode',
                      message="JSON режим",
                      choices=[('Включен', True), ('Выключен', False)],
-                     default=config.json_mode)
+                     default=config.json_mode,
+                     carousel=True)
     ]
 
-    answers = inquirer.prompt(questions)
+    answers = prompt_clean(questions)
     if answers:
         config.json_mode = answers['mode']
         print("JSON режим обновлен")
