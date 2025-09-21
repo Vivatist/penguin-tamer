@@ -84,7 +84,7 @@ AI-eBash ships with several popular models pre-configured, such as **DeepSeek**,
 ### Getting a Token (API_KEY) and Connecting to a Pre-installed Model
 We recommend the provider [OpenRouter](https://openrouter.ai/models?max_price=0) — simple registration and dozens of popular models available for free with a single token.
 
-- Register on the website
+- Register on the [website](https://openrouter.ai/)
 - Get a token by clicking **[Create API key](https://openrouter.ai/settings/keys)**. Save it — OpenRouter will show it only once!
 - Add the token to AI-eBash in the [settings](#configuration) of the selected model
 - Make this model the current one
