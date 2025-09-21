@@ -4,7 +4,6 @@ from aiebash.logger import log_execution_time
 from aiebash.i18n import t
 
 
-@log_execution_time
 def format_api_key_display(api_key: str) -> str:
     """Форматирует отображение API ключа для логирования
     показывает первые и последние 5 символов, остальное заменяет на "...".

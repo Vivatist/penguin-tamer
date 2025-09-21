@@ -2,7 +2,7 @@
   "[cyan]You:[/cyan] ": "[cyan]Вы:[/cyan] ",
   "Settings": "Настройки",
   "Manage LLMs": "Управление LLM",
-  "System settings": "Системные настройки",
+  "System": "Система",
   "User content": "Пользовательский контент",
   "Temperature": "Температура",
   "Show current settings": "Показать текущие настройки",
@@ -13,12 +13,12 @@
   "Add LLM": "Добавить LLM",
   "Edit LLM": "Редактировать LLM",
   "Delete LLM": "Удалить LLM",
-  "Select current LLM": "Сделать текущей LLM",
+  "Select current LLM": "Выбрать нейросеть",
 
   "Console log level": "Уровень логирования консоли",
   "Stream mode": "Потоковый режим",
   "JSON mode": "JSON режим",
-  "Language": "Язык",
+  "Language": "Language/Язык",
 
   "current": "текущая",
   "Name": "Имя",

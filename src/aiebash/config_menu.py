@@ -73,8 +73,9 @@ def main_menu():
                             (t('Manage LLMs'), 'llm'),
                             (t('Temperature'), 'temp'),
                             (t('User content'), 'content'),
-                            (t('System settings'), 'system'),
+                            (t('System'), 'system'),
                             (t('Show current settings'), 'overview'),
+                            (t('Language'), 'language'),
                             (t('Exit'), 'exit')
                          ],
                          carousel=True)
@@ -98,6 +99,8 @@ def main_menu():
             select_current_llm()
         elif choice == 'overview':
             print_settings_overview()
+        elif choice == 'language':
+            set_language()
         elif choice == 'exit':
             break
 
@@ -321,7 +324,6 @@ def system_settings_menu():
                              (t('Console log level'), 'logging'),
                              (t('Stream mode'), 'stream'),
                              (t('JSON mode'), 'json'),
-                             (t('Language'), 'language'),
                              (t('Back'), 'back')
                          ],
                          carousel=True)
@@ -339,8 +341,6 @@ def system_settings_menu():
             set_stream_mode()
         elif choice == 'json':
             set_json_mode()
-        elif choice == 'language':
-            set_language()
         elif choice == 'back':
             break
 
