@@ -301,7 +301,7 @@ class ConfigManager:
             api_url: API URL
             api_key: API ключ (опционально)
         """
-        supported_llms = self.get("supported_LLMs", {})
+        supported_llms = self.get("supported_LLMs") or {}
 
         if name in supported_llms:
             raise ValueError(f"LLM с именем '{name}' уже существует")
@@ -324,12 +324,13 @@ class ConfigManager:
             api_url: Новый API URL (опционально)
             api_key: Новый API ключ (опционально)
         """
-        supported_llms = self.get("supported_LLMs", {})
+        supported_llms = self.get("supported_LLMs") or {}
 
         if name not in supported_llms:
             raise ValueError(f"LLM с именем '{name}' не найдена")
 
-        current_config = supported_llms[name]
+        # Создаем копию текущей конфигурации
+        current_config = supported_llms[name].copy()
 
         if model is not None:
             current_config["model"] = model
@@ -338,7 +339,9 @@ class ConfigManager:
         if api_key is not None:
             current_config["api_key"] = api_key
 
-        self.set("supported_LLMs", name, current_config)
+        # Обновляем всю секцию supported_LLMs
+        supported_llms[name] = current_config
+        self.update_section("supported_LLMs", supported_llms)
 
     def remove_llm(self, name: str) -> None:
         """
@@ -350,7 +353,7 @@ class ConfigManager:
         if name == self.current_llm:
             raise ValueError("Нельзя удалить текущую LLM")
 
-        supported_llms = self.get("supported_LLMs", {})
+        supported_llms = self.get("supported_LLMs") or {}
 
         if name not in supported_llms:
             raise ValueError(f"LLM с именем '{name}' не найдена")

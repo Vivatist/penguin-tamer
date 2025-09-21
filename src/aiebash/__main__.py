@@ -21,6 +21,7 @@ from rich.console import Console
 from aiebash.script_executor import run_code_block
 from aiebash.sys_info import get_system_info_text
 from aiebash.formatter_text import extract_labeled_code_blocks
+from aiebash.error_messages import connection_error
 
 
 STREAM_OUTPUT_MODE: bool = config.get("global","stream_output_mode")
@@ -57,10 +58,12 @@ def get_system_content() -> str:
     additional_content_main= \
         f"Ты называешься - Ai-eBash, продвинутая утилита, ассистент системного администратора. Ты и пользователь всегда работате в терминале. " \
         f"Окружение в котором ты и пользователь работаете: {get_system_info_text()}, " \
-        f"давай ответы исходя из этого. " \
+        f"давай ответы исходя из этой информации если пользователь явно не укажет другое. " \
     
     system_content = f"{user_content} {additional_content_json} {additional_content_main}".strip()
     return system_content
+
+
 
 # === Основная логика ===
 @log_execution_time
@@ -73,10 +76,9 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
         else:
             reply = chat_client.ask(query)
             console.print(_get_markdown()(reply))
-        logger.info("Запрос выполнен успешно")
     except Exception as e:
-        logger.error(f"Ошибка при выполнении запроса: {e}")
-        console.print(f"[dim]Ошибка:[/dim] {e}")
+        console.print(connection_error(e))
+        logger.error(f"Ошибка соединения: {e}")
 
 @log_execution_time
 def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
@@ -101,10 +103,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
                 console.print(_get_markdown()(reply))
             last_code_blocks = extract_labeled_code_blocks(reply)
         except Exception as e:
-            logger.error(f"Ошибка при обработке начального запроса: {e}")
-            console.print(f"[dim]Ошибка:[/dim] {e}")
+            console.print(connection_error(e))
+            logger.error(f"Ошибка соединения: {e}")
         console.print()
 
+
+   
     # Основной цикл диалога
     while True:
         try:
@@ -142,8 +146,8 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
         except KeyboardInterrupt:
             break
         except Exception as e:
-            logger.error(f"Ошибка в режиме диалога: {e}")
-            console.print(f"[dim]Ошибка:[/dim] {e}")
+            console.print(connection_error(e))
+            logger.error(f"Ошибка соединения: {e}")
 
 
 @log_execution_time
@@ -157,6 +161,7 @@ def main() -> None:
     llm_config = config.get_current_llm_config()
     chat_client = OpenRouterClient(
         console=console,
+        logger=logger,
         api_key = llm_config["api_key"],
         api_url = llm_config["api_url"],
         model = llm_config["model"],
@@ -172,8 +177,8 @@ def main() -> None:
         # Обработка режима настройки
         if args.settings:
             logger.info("Запуск конфигурационного режима")
-            from aiebash.old_config_manager import run_configuration_dialog
-            run_configuration_dialog()
+            from aiebash.config_menu import main_menu
+            main_menu()
             logger.info("Конфигурационный режим завершен")
             return 0
 
