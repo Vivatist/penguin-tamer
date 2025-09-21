@@ -57,6 +57,7 @@ def main_menu():
                          choices=[
                             ('Выбрать нейросеть', 'select'),
                             ('Управление нейросетями', 'llm'),
+                            ('Температура генерации', 'temp'),
                             ('Редактировать контент', 'content'),
                             ('Системные настройки', 'system'),
                             ('Выход', 'exit')
@@ -76,6 +77,8 @@ def main_menu():
             system_settings_menu()
         elif choice == 'content':
             edit_user_content()
+        elif choice == 'temp':
+            set_temperature()
         elif choice == 'select':
             select_current_llm()
         elif choice == 'exit':
@@ -368,6 +371,48 @@ def set_json_mode():
     if answers:
         config.json_mode = answers['mode']
         print("JSON режим обновлен")
+
+
+def set_temperature():
+    """Настройка температуры генерации (0.0–1.0)."""
+    current = config.temperature
+    print(f"\nТекущая температура: {current}")
+    print("Подсказка: Температура регулирует степень случайности и креативности генерируемых ответов.")
+    print("Допустимое значение от 0.0 до 1.0. Можно вводить через запятую или точку.")
+
+    while True:
+        questions = [
+            inquirer.Text(
+                'value',
+                message="Введите новое значение температуры (0.0–1.0)",
+                default=str(current)
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            print("Изменение температуры отменено")
+            return
+
+        raw = str(answers.get('value', '')).strip()
+        if raw == "":
+            print("Изменение температуры отменено")
+            return
+
+        raw = raw.replace(',', '.')
+        try:
+            value = float(raw)
+        except ValueError:
+            print("Ошибка: введите число в формате 0.0–1.0 (можно использовать запятую)")
+            continue
+
+        if not (0.0 <= value <= 1.0):
+            print("Ошибка: значение должно быть в диапазоне от 0.0 до 1.0")
+            continue
+
+        config.temperature = value
+        print(f"Температура обновлена: {value}")
+        return
 
 
 if __name__ == "__main__":
