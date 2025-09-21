@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import inquirer
 from aiebash.config_manager import config
 from aiebash.formatter_text import format_api_key_display
+from aiebash.settings_overview import print_settings_overview
 
 
 def prompt_clean(questions):
@@ -50,6 +51,13 @@ def prompt_clean(questions):
 
 def main_menu():
     """Главное меню приложения."""
+    # Показать обзор текущих настроек при входе в меню
+    try:
+        print_settings_overview()
+    except Exception:
+        # Не блокируем меню, если обзор по какой-то причине упал
+        pass
+
     while True:
         questions = [
             inquirer.List('choice',
@@ -60,7 +68,8 @@ def main_menu():
                             ('Температура генерации', 'temp'),
                             ('Редактировать контент', 'content'),
                             ('Системные настройки', 'system'),
-                            ('Выход', 'exit')
+                                ('Показать текущие настройки', 'overview'),
+                                ('Выход', 'exit')
                          ],
                          carousel=True)
         ]
@@ -81,6 +90,8 @@ def main_menu():
             set_temperature()
         elif choice == 'select':
             select_current_llm()
+        elif choice == 'overview':
+            print_settings_overview()
         elif choice == 'exit':
             break
 
