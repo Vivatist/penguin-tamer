@@ -21,6 +21,10 @@ try:
 except Exception:
     pass
 
+from prompt_toolkit import prompt
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.styles import Style
+
 # Импортируем OpenRouterChat вместо старых модулей
 from aiebash.llm_client import OpenRouterClient
 from aiebash.arguments import parse_args
@@ -95,6 +99,8 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
 def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode"""
     
+    history = FileHistory(".cmd_history")
+
     logger.info("Starting dialog mode")
 
     # Use module global EDUCATIONAL_CONTENT inside the function
@@ -123,7 +129,14 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
     # Main dialog loop
     while True:
         try:
-            user_prompt = console.input(t("[cyan]You:[/cyan] ")).strip()
+
+            # Define prompt styles
+            style = Style.from_dict({
+                "prompt": "bold fg:green",
+                "": "fg:white",  # сам ввод
+                })
+
+            user_prompt = prompt([("class:prompt", t("You: "))], history=history, style=style)
 
             # Disallow empty input
             if not user_prompt:
