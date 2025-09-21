@@ -5,6 +5,7 @@ import os
 import sys
 from abc import ABC, abstractmethod
 from rich.console import Console
+from aiebash.i18n import t
 
 from aiebash.logger import logger, log_execution_time
 
@@ -34,7 +35,7 @@ class LinuxCommandExecutor(CommandExecutor):
     @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bash-команды в Linux с выводом в реальном времени"""
-        logger.debug(f"Выполнение bash-команды: {code_block[:80]}...")
+        logger.debug(t("Executing bash command: {preview}...").format(preview=code_block[:80]))
         
         # Используем Popen для вывода в реальном времени
         process = subprocess.Popen(
@@ -77,18 +78,18 @@ class LinuxCommandExecutor(CommandExecutor):
                 try:
                     decoded_line = line.decode('utf-8', errors='replace').strip()
                     if decoded_line:  # Игнорируем пустые строки
-                        print(f"Error: {decoded_line}", file=sys.stderr)  # Выводим ошибки в реальном времени
+                        print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
                         stderr_lines.append(decoded_line)
                 except UnicodeDecodeError:
                     try:
                         decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
                         if decoded_line:
-                            print(f"Error: {decoded_line}", file=sys.stderr)
+                            print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
                             stderr_lines.append(decoded_line)
                     except:
                         raw_line = line.decode('latin1', errors='replace').strip()
                         if raw_line:
-                            print(f"Error: {raw_line}", file=sys.stderr)
+                            print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
                             stderr_lines.append(raw_line)
         
         # Ждем завершения процесса
@@ -102,8 +103,13 @@ class LinuxCommandExecutor(CommandExecutor):
             stderr='\n'.join(stderr_lines) if stderr_lines else ''
         )
         
-        logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
-                    f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
+        logger.debug(
+            t("Execution result: return code {code}, stdout: {stdout} bytes, stderr: {stderr} bytes").format(
+                code=result.returncode,
+                stdout=(len(result.stdout) if result.stdout else 0),
+                stderr=(len(result.stderr) if result.stderr else 0),
+            )
+        )
         return result
 
 
@@ -118,18 +124,18 @@ class WindowsCommandExecutor(CommandExecutor):
         code = code_block.replace('@echo off', '')
         code = code.replace('pause', 'rem pause')
         
-        logger.debug(f"Подготовка Windows-команды: {code[:80]}...")
+        logger.debug(t("Preparing Windows command: {preview}...").format(preview=code[:80]))
         
         # Создаем временный .bat файл
         fd, temp_path = tempfile.mkstemp(suffix='.bat')
-        logger.debug(f"Создан временный файл: {temp_path}")
+        logger.debug(t("Created temporary file: {path}").format(path=temp_path))
         
         try:
             with os.fdopen(fd, 'w') as f:
                 f.write(code)
             
             # Запускаем с кодировкой консоли Windows и выводом в реальном времени
-            logger.info(f"Выполнение команды из файла {temp_path}")
+            logger.info(t("Executing command from file {path}").format(path=temp_path))
             
             process = subprocess.Popen(
                 [temp_path],
@@ -169,18 +175,18 @@ class WindowsCommandExecutor(CommandExecutor):
                     try:
                         decoded_line = line.decode('cp1251', errors='replace').strip()
                         if decoded_line:  # Игнорируем пустые строки
-                            print(f"Error: {decoded_line}", file=sys.stderr)  # Выводим ошибки в реальном времени
+                            print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
                             stderr_lines.append(decoded_line)
                     except UnicodeDecodeError:
                         try:
                             decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
                             if decoded_line:
-                                print(f"Error: {decoded_line}", file=sys.stderr)
+                                print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
                                 stderr_lines.append(decoded_line)
                         except:
                             raw_line = line.decode('latin1', errors='replace').strip()
                             if raw_line:
-                                print(f"Error: {raw_line}", file=sys.stderr)
+                                print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
                                 stderr_lines.append(raw_line)
             
             # Ждем завершения процесса
@@ -194,19 +200,24 @@ class WindowsCommandExecutor(CommandExecutor):
                 stderr='\n'.join(stderr_lines) if stderr_lines else ''
             )
             
-            logger.debug(f"Результат выполнения: код возврата {result.returncode}, "
-                        f"stdout: {len(result.stdout) if result.stdout else 0} байт, stderr: {len(result.stderr) if result.stderr else 0} байт")
+            logger.debug(
+                t("Execution result: return code {code}, stdout: {stdout} bytes, stderr: {stderr} bytes").format(
+                    code=result.returncode,
+                    stdout=(len(result.stdout) if result.stdout else 0),
+                    stderr=(len(result.stderr) if result.stderr else 0),
+                )
+            )
             return result
         except Exception as e:
-            logger.error(f"Ошибка при выполнении Windows-команды: {e}", exc_info=True)
+            logger.error(t("Error executing Windows command: {error}").format(error=e), exc_info=True)
             raise
         finally:
             # Всегда удаляем временный файл
             try:
                 os.unlink(temp_path)
-                logger.debug(f"Временный файл {temp_path} удален")
+                logger.debug(t("Temporary file {path} deleted").format(path=temp_path))
             except Exception as e:
-                logger.warning(f"Не удалось удалить временный файл {temp_path}: {e}")
+                logger.warning(t("Failed to delete temporary file {path}: {error}").format(path=temp_path, error=e))
 
 
 # Фабрика для создания исполнителей команд
@@ -224,10 +235,10 @@ class CommandExecutorFactory:
         """
         system = platform.system().lower()
         if system == "windows":
-            logger.info("Создание исполнителя команд для Windows")
+            logger.info(t("Creating command executor for Windows"))
             return WindowsCommandExecutor()
         else:
-            logger.info(f"Создание исполнителя команд для {system} (используется LinuxCommandExecutor)")
+            logger.info(t("Creating command executor for {system} (using LinuxCommandExecutor)").format(system=system))
             return LinuxCommandExecutor()
 
 
@@ -241,18 +252,18 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         code_blocks (list): Список блоков кода
         idx (int): Индекс выполняемого блока
     """
-    logger.info(f"Запуск блока кода #{idx}")
+    logger.info(t("Starting code block #{idx}").format(idx=idx))
     
     # Проверяем корректность индекса
     if not (1 <= idx <= len(code_blocks)):
-        logger.warning(f"Некорректный индекс блока: {idx}. Доступно блоков: {len(code_blocks)}")
-        console.print(f"[yellow]Блок #{idx} не существует. Доступны блоки с 1 по {len(code_blocks)}.[/yellow]")
+        logger.warning(t("Invalid block index: {idx}. Total blocks: {total}").format(idx=idx, total=len(code_blocks)))
+        console.print(t("[yellow]Block #{idx} does not exist. Available blocks: 1 to {total}.[/yellow]").format(idx=idx, total=len(code_blocks)))
         return
     
     code = code_blocks[idx - 1]
-    logger.debug(f"Содержимое блока #{idx}: {code[:100]}...")
+    logger.debug(t("Block #{idx} content: {preview}...").format(idx=idx, preview=code[:100]))
 
-    console.print(f"[dim]>>> Выполняем блок #{idx}:[/dim]")
+    console.print(t("[dim]>>> Running block #{idx}:[/dim]").format(idx=idx))
     console.print(code)
     
     # Получаем исполнитель для текущей ОС
@@ -260,18 +271,18 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         executor = CommandExecutorFactory.create_executor()
         
         # Выполняем код через соответствующий исполнитель
-        logger.debug("Начало выполнения блока кода...")
+        logger.debug(t("Starting code block execution..."))
         process = executor.execute(code)
         
         # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
         exit_code = process.returncode
-        logger.info(f"Блок #{idx} выполнен с кодом {exit_code}")
-        console.print(f"[dim]>>> Код завершения: {exit_code}[/dim]")
+        logger.info(t("Block #{idx} finished with exit code {code}").format(idx=idx, code=exit_code))
+        console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
         
         # Показываем итоговую сводку только если есть stderr или особые случаи
         if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
-            logger.debug(f"Дополнительный stderr ({len(process.stderr)} символов)")
-            console.print(f"[yellow]>>>Error:[/yellow]\n{process.stderr}")
+            logger.debug(t("Additional stderr ({length} chars)").format(length=len(process.stderr)))
+            console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
     except Exception as e:
-        logger.error(f"Ошибка выполнения блока #{idx}: {e}", exc_info=True)
-        console.print(f"[dim]Ошибка выполнения скрипта: {e}[/dim]")
+        logger.error(t("Execution error in block #{idx}: {error}").format(idx=idx, error=e), exc_info=True)
+        console.print(t("[dim]Script execution error: {error}[/dim]").format(error=e))

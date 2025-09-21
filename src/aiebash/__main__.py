@@ -10,7 +10,7 @@ from aiebash.config_manager import config
 
 # Теперь импортируем и настраиваем логгер
 from aiebash.logger import configure_logger, log_execution_time
-from aiebash.i18n import translator
+from aiebash.i18n import t, translator
 
 # Получаем настройки логирования и настраиваем логгер
 logger = configure_logger(config.get("logging"))
@@ -123,7 +123,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
     # Main dialog loop
     while True:
         try:
-            user_prompt = console.input("[cyan]You:[/cyan] ").strip()
+            user_prompt = console.input(t("[cyan]You:[/cyan] ")).strip()
 
             # Disallow empty input
             if not user_prompt:
