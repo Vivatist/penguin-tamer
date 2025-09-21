@@ -22,7 +22,7 @@ def _get_openai_exceptions():
 def connection_error(error: Exception) -> str:
     """Обработка ошибок API с соответствующим выводом сообщений"""   
     if isinstance(error, _get_openai_exceptions()['RateLimitError']):
-        return (f"[dim]Ошибка 429: Вы превысили текущую квоту запросов, пожалуйста, проверьте свой тарифный план и платежные реквизиты у провайдера нейросети. Либо попробуйте отправить запрос через некоторое время, если пользуетесь бесплатным тарифом.[/dim]")
+        return (f"[dim]Ошибка 429: Вы превысили текущую квоту запросов, пожалуйста, проверьте свой тарифный план и платежные реквизиты у провайдера нейросети. Либо попробуйте отправить запрос через некоторое время, если пользуетесь бесплатным тарифом. Сменить нейросеть можно в настройках: 'ai --settings'[/dim]")
     elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
         return (f"[dim]Ошибка 400: {getattr(error, 'body', None)['message']}. Проверьте название модели.[/dim]")
     elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
@@ -30,7 +30,7 @@ def connection_error(error: Exception) -> str:
     elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
         return (f"[dim]Нет соединения, проверьте подключение к интернету[/dim]")
     elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
-        return (f"[dim]Ошибка 403: Ваш регион не поддерживается, используйте VPN.[/dim]")
+        return (f"[dim]Ошибка 403: Ваш регион не поддерживается, используйте VPN либо смените нейросеть. Сменить нейросеть можно в настройках: 'ai --settings'[/dim]")
     elif isinstance(error, _get_openai_exceptions()['NotFoundError']):
         return ("[dim]Ошибка 404: Ресурс не найден. Проверьте API_URL в настройках.[/dim]")
     elif isinstance(error, _get_openai_exceptions()['APIError']):
