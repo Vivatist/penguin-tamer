@@ -22,27 +22,27 @@ def _get_openai_exceptions():
 
 
 def connection_error(error: Exception) -> str:
-    """Map API errors to user-facing messages (English as keys)."""
+    """Map API errors to localized messages (English as keys)."""
     if isinstance(error, _get_openai_exceptions()['RateLimitError']):
-        return t("Error 429: You have exceeded your current quota. Check your plan and billing, or try later if on a free tier. You can change LLM in settings: 'ai --settings'")
+        return t("[dim]Error 429: You have exceeded your current quota; please check your plan and billing with your LLM provider. Or try again later if using a free tier. You can change LLM in settings: 'ai --settings'[/dim]")
     elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
         try:
             body = getattr(error, 'body', None)
             msg = body.get('message') if isinstance(body, dict) else str(error)
         except Exception:
             msg = str(error)
-        return t("Error 400: {message}. Check model name.", message=msg)
+        return t("[dim]Error 400: {message}. Check model name.[/dim]").format(message=msg)
     elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
-        return t("Error 401: Authentication failed. Check your API_KEY. See docs for obtaining a key.")
+        return t("[dim]Error 401: Authentication failed. Check your API_KEY. [link=https://github.com/Vivatist/ai-ebash/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8]How to get a key?[/link][/dim]")
     elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
-        return t("No connection. Please check your Internet connectivity.")
+        return t("[dim]No connection, please check your Internet connection[/dim]")
     elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
-        return t("Error 403: Your region is not supported. Use VPN or change the LLM in settings: 'ai --settings'")
+        return t("[dim]Error 403: Your region is not supported. Use VPN or change the LLM. You can change LLM in settings: 'ai --settings'[/dim]")
     elif isinstance(error, _get_openai_exceptions()['NotFoundError']):
-        return t("Error 404: Resource not found. Check API_URL in settings.")
+        return t("[dim]Error 404: Resource not found. Check API_URL and Model in settings.[/dim]")
     elif isinstance(error, _get_openai_exceptions()['APIError']):
-        return t("API error: {error}", error=str(error))
+        return t("[dim]Error API: {error}. Check the LLM settings, there may be an incorrect API_URL[/dim]").format(error=error)
     elif isinstance(error, _get_openai_exceptions()['OpenAIError']):
-        return t("Check your API_KEY. See provider docs for obtaining a key.")
+        return t("[dim]Please check your API_KEY. See provider docs for obtaining a key. [link=https://github.com/Vivatist/ai-ebash/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8]How to get a key?[/link][/dim]")
     else:
-        return t("Unknown error: {error}", error=str(error))
+        return t("[dim]Unknown error: {error}[/dim]").format(error=error)
