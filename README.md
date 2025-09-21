@@ -1,83 +1,151 @@
-# AI-eBash
+# AI-eBash!
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Version](https://img.shields.io/pypi/v/ai-ebash.svg)](https://pypi.org/project/ai-ebash/)
 [![GitHub Stars](https://img.shields.io/github/stars/Vivatist/ai-ebash.svg)](https://github.com/Vivatist/ai-ebash/stargazers)
 
-> **Console utility for integrating artificial intelligence into your terminal.** Ask AI questions and execute suggested scripts and commands directly from the command line. Perfect for beginners in Linux and Windows administration.
+> **Integrate artificial intelligence into your terminal.** Ask questions to ***ChatGPT***, ***Deep Seek***, ***Grok*** and many other large language models (LLM). Execute scripts and commands suggested by the neural network directly from the command line. Perfect for beginners in Linux and Windows administration.
 
-🌍 **Available in:** [English](README.md) | [Русский](docs/locales/README_ru.md)
+🌍 **Available in:** [English](README.md) | [Русский](/docs/locales/README_ru.md)
+
 
 ## Table of Contents
 
-- [AI-eBash](#ai-ebash)
+- [AI-eBash!](#ai-ebash)
   - [Table of Contents](#table-of-contents)
-  - [Features](#features)
+  - [Description](#description)
+    - [Features](#features)
+    - [Quick Start](#quick-start)
+  - [Connecting to Neural Networks](#connecting-to-neural-networks)
+    - [Getting a Token (API\_KEY) and Connecting to a Pre-installed Model](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model)
+    - [Adding a New Model](#adding-a-new-model)
+      - [Connection Example](#connection-example)
   - [Installation](#installation)
-    - [Linux (pipx)](#linux-pipx)
-    - [Linux (DEB Package)](#linux-deb-package)
+    - [Ubuntu/Debian (pipx)](#ubuntudebian-pipx)
+    - [Ubuntu/Debian (DEB Package)](#ubuntudebian-deb-package)
     - [Windows (Experimental)](#windows-experimental)
-  - [Uninstall](#uninstall)
-    - [If installed via pipx](#if-installed-via-pipx)
-    - [If installed via DEB package](#if-installed-via-deb-package)
-    - [If installed via Windows:](#if-installed-via-windows)
-  - [Usage](#usage)
-    - [Basic Usage](#basic-usage)
-    - [Dialog Mode](#dialog-mode)
-    - [Code Execution](#code-execution)
+  - [Removal](#removal)
+    - [If installed with pipx](#if-installed-with-pipx)
+    - [If installed as DEB package](#if-installed-as-deb-package)
+    - [If installed on Windows](#if-installed-on-windows)
   - [Configuration](#configuration)
     - [Initial Setup](#initial-setup)
     - [Supported AI Providers](#supported-ai-providers)
     - [Configuration File](#configuration-file)
+    - [Reset Settings](#reset-settings)
+  - [Examples](#examples)
+    - [Quick Query](#quick-query)
+    - [Dialog Mode](#dialog-mode)
+    - [Running Code from AI Response](#running-code-from-ai-response)
   - [Security](#security)
     - [Best Practices](#best-practices)
   - [Contributing](#contributing)
+    - [Areas for Contribution](#areas-for-contribution)
     - [Development Environment Setup](#development-environment-setup)
     - [Contribution Guidelines](#contribution-guidelines)
-    - [Areas for Contribution](#areas-for-contribution)
   - [License](#license)
   - [Contacts](#contacts)
 
-## Features
+## Description
 
-- **Fast AI Queries** - Get instant responses from AI models through the command line
-- **Interactive Dialog Mode** - Chat with AI in dialog mode with conversation context preservation
-- **Code Execution** - Execute scripts and commands suggested by AI
-- **User-Friendly Interface** - Formatted output with syntax highlighting
-- **Multiple AI Providers** - Support for OpenAI, Anthropic and other providers
-- **Localization Ready** - Support for multiple languages (in development)
+### Features
 
+- **Quick AI queries** — Get answers from large language models via the command line
+- **No GUI** — Communicate with your chosen AI in natural language and any locale: ai how to install Russian fonts?
+- **Interactive dialog mode** — Chat with AI in dialog mode with preserved conversation context
+- **Code execution** — Execute scripts and commands suggested by AI in the console
+- **Friendly interface** — Formatted output with syntax highlighting — just like you’re used to when working with neural networks
+- **Multiple AI providers** — Support for OpenAI, OpenRouter, DeepSeek, Anthropic and other popular providers
+- **Ready for localization** — Multi-language support [(in progress)](#contributing)
+
+### Quick Start
+
+Install AI-eBash using one of the convenient [methods](#installation).
+
+Run the program → `ai who are you?`. In a couple of seconds, the neural network will respond:
+
+![program response1](/docs/img/ru_img1.png)
+
+Try something more complex:
+
+![program response2](/docs/img/ru_img3.png)
+
+On first launch, the program uses a Microsoft-hosted model — **DeepSeek-R1-Lite-Preview** with a public token. This is not the best option since you may see a quota-exceeded message due to high traffic, but it’s fine for a test run.
+
+**For full operation, you need to [obtain](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model) a personal token and add it to the selected model in the program [settings](#installation).**
+
+> [!NOTE]
+> AI-eBash can work with any neural network that supports API access. Today this includes almost all large language models (LLMs) on the market. [How to add a new model](#adding-a-new-model).
+
+## Connecting to Neural Networks
+AI-eBash ships with several popular models pre-configured, such as **DeepSeek**, **Grok 4 Fast**, **Qwen3 Coder**. However, provider policies don’t allow full operation without authorization. You must obtain a personal token (API_KEY) from the provider’s website.
+
+### Getting a Token (API_KEY) and Connecting to a Pre-installed Model
+We recommend the provider [OpenRouter](https://openrouter.ai/models?max_price=0) — simple registration and dozens of popular models available for free with a single token.
+
+- Register on the website
+- Get a token by clicking **[Create API key](https://openrouter.ai/settings/keys)**. Save it — OpenRouter will show it only once!
+- Add the token to AI-eBash in the [settings](#configuration) of the selected model
+- Make this model the current one
+
+**Done! Now the selected model will answer you in the console. You can connect any other model from this website in the same way.**
+
+> [!NOTE]
+> One OpenRouter token is valid for **all** models available from this provider.
+
+A similar procedure applies to other providers, although with **OpenRouter** available, you may not need it.
+
+### Adding a New Model
+To add a **new** model to AI-eBash, including a local model or one from major providers, simply enter in AI-eBash [settings](#configuration):
+ - API_KEY (your personal token)
+ - API_URL (API base URL)
+ - model (model name)
+
+You can find this information on the provider’s website in the *API* section.
+
+#### Connection Example
+Using the example of the free **Meta: Llama 3.1** model listed on [OpenRouter](https://openrouter.ai/models?max_price=0) among dozens of other free models.
+
+Open the model’s page and find the [API](https://openrouter.ai/meta-llama/llama-3.1-405b-instruct:free/api) section.
+
+Among the connection examples, look for information similar to:
+
+ - **API_URL** — for OpenRouter, this parameter is called ***base_url***
+ - **model** — listed as ***model***
+
+How to get **API_KEY** is described [above](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model).
+
+Enter these values (***without quotes***) in AI-eBash settings and set this model as current. Now ***Meta: Llama 3.1*** will answer your questions.
 
 ## Installation
 
-### Linux (pipx)
+### Ubuntu/Debian (pipx)
 
-**Recommended installation method for Linux**
+**Recommended installation method**
 
-1. **Install pipx** (if not already installed):
+1. **Install pipx** (if not installed):
    ```bash
    sudo apt update
    sudo apt install pipx python3-venv -y
    pipx ensurepath
    ```
 
-2. **Restart your terminal**
+2. **Restart the terminal**
 
 3. **Install AI-eBash**:
    ```bash
    pipx install ai-ebash
    ```
 
-
-> **Note:** If pipx doesn't work, you can install via pip:
+> **Note:** If pipx doesn’t work, you can install via pip:
 > ```bash
 > pip install ai-ebash
 > ```
 
-### Linux (DEB Package)
+### Ubuntu/Debian (DEB Package)
 
-1. **Download the latest DEB package**:
+1. **Download the latest DEB package from [GitHub](https://github.com/Vivatist/ai-ebash/releases/latest)**:
    ```bash
    wget -qO ai-ebash.deb $(wget -qO- https://api.github.com/repos/Vivatist/ai-ebash/releases/latest \
      | grep "browser_download_url.*\.deb" | cut -d '"' -f 4)
@@ -89,36 +157,34 @@
    sudo apt-get install -f -y
    ```
 
-3. **Restart your terminal**
+3. **Restart the terminal**
 
 ### Windows (Experimental)
 
-1. **Install Python 3.11+** (if not already installed)
+1. **Install Python 3.11+** (if not installed)
 
 2. **Install AI-eBash**:
    ```cmd
    pip install ai-ebash
    ```
 
-3. **Restart your terminal**
+3. **Restart the terminal**
 
-## Uninstall
+## Removal
 
-To completely remove the utility:
-
-### If installed via pipx
+### If installed with pipx
 ```bash
 pipx uninstall ai-ebash
 ```
 
-### If installed via DEB package
+### If installed as DEB package
 ```bash
 sudo apt remove ai-ebash
 # Or for complete deletion, including configuration files:
 sudo apt purge ai-ebash
 ```
 
-or you can also use dpkg.:
+or you can also use dpkg:
 
 ```bash
 sudo dpkg -r ai-ebash
@@ -126,48 +192,9 @@ sudo dpkg -r ai-ebash
 sudo dpkg -P ai-ebash
 ```
 
-### If installed via Windows:
+### If installed on Windows
 ```bash
 pip uninstall ai-ebash
-```
-
-## Usage
-
-### Basic Usage
-
-```bash
-# Simple question
-ai What's today's date?
-
-# Get help
-ai --help
-```
-
-### Dialog Mode
-
-```bash
-# Start interactive conversation
-ai -d "Help me learn Python"
-
-# In dialog mode you can:
-# - Ask clarifying questions
-# - Execute code blocks suggested by AI
-# - Get command explanations
-```
-
-### Code Execution
-
-In dialog mode, AI responses may contain executable code blocks:
-
-```bash
-ai -d Show how to create a Python script
-```
-
-Then execute the suggested code by entering the block number:
-
-[Code #1]
-```python
-print("Hello, World!")
 ```
 
 ## Configuration
@@ -185,37 +212,89 @@ ai -s
 - **OpenAI** (GPT-3.5, GPT-4)
 - **Anthropic** (Claude)
 - **OpenRouter** (Multiple models)
-- **Local Models** (Ollama, LM Studio)
+- **Local models** (Ollama, LM Studio)
+
+And many others that support API access.
 
 ### Configuration File
 
 Settings are stored in:
-- **Linux:** `~/.config/ai-ebash/config.json`
-- **Windows:** `%APPDATA%\ai-ebash\config.json`
+- **Linux:** `~/.config/ai-ebash/config.yaml`
+- **Windows:** `%APPDATA%\ai-ebash\config.yaml`
+
+### Reset Settings
+
+To restore defaults, delete the configuration file manually or run:
+```bash
+# For Linux
+rm ~/.config/ai-ebash/config.yaml
+```
+```bash
+# For Windows
+rm %APPDATA%\ai-ebash\config.yaml
+```
+
+## Examples
+
+### Quick Query
+
+```bash
+# Simple question
+ai kernel update script
+```
+
+### Dialog Mode
+
+To start a dialog, use the **-d** key or simply type `ai` and press `Enter`.
+In dialog mode, AI-eBash preserves the conversation context throughout the session.
+
+```bash
+a i -d what python version is installed?
+```
+
+```bash
+a i  # Enter
+```
+
+### Running Code from AI Response
+
+When **in dialog mode**, if the response contains code blocks — they are numbered. To run code, simply enter the block number in the console.
+
+![dialog mode](/docs/img/ru_img4.png)
 
 ## Security
 
 > [!WARNING]
-> Never execute code from untrusted sources without verification!
+> Never execute code suggested by the neural network if you’re not sure what it does!
 
 ### Best Practices
 
-1. **Verify code before execution**
+1. **Review code before execution**
    ```bash
    # Always check what AI suggests
-   ai "Delete all files from /tmp"  # Don't execute this blindly!
+   ai Delete all files from /tmp  # Don’t run this blindly!
    ```
 
 2. **Use safe commands**
    ```bash
-   # Prefer these instead of destructive operations
+   # Prefer these over destructive operations
    ai Show disk usage
    ai Show running processes
    ```
 
 ## Contributing
 
-I'd be happy to have your help! Here's how to get started:
+I’ll be glad for any help!
+
+### Areas for Contribution
+
+- 🌍 **Localization** — Adding support for new languages, including README.md
+- 🤖 **AI Providers** — Integrating new AI providers
+- 🎨 **UI/UX** — Improving the configuration manager interface (yes, it’s not perfect)
+- 🔧 **Tools** — Creating additional utilities
+- 💡 **Ideas** — I welcome any ideas to improve and develop AI-eBash. [Join the discussion](https://github.com/Vivatist/ai-ebash/discussions/10#discussion-8924293)
+
+Here’s how to get started:
 
 ### Development Environment Setup
 
@@ -226,7 +305,7 @@ I'd be happy to have your help! Here's how to get started:
    cd ai-ebash
    ```
 
-3. **Set up development environment**:
+3. **Set up the development environment**:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -241,13 +320,6 @@ I'd be happy to have your help! Here's how to get started:
 - 📚 **Documentation**: Update README for new features
 - 🔄 **Pull Requests**: Use clear commit messages
 
-### Areas for Contribution
-
-- 🌍 **Localization** - Add support for new languages
-- 🤖 **AI Providers** - Integrate new AI services
-- 🎨 **UI/UX** - Improve terminal interface
-- 📊 **Analytics** - Add usage statistics
-
 ## License
 
 This project is licensed under the MIT License.
@@ -255,16 +327,14 @@ This project is licensed under the MIT License.
 ## Contacts
 
 - **Author**: Andrey Bochkarev
-- **Email**: andrey.bch.1976@gmail.com
-- **GitHub Issues**: [Report bugs or request features](https://github.com/Vivatist/ai-ebash/issues)
-- **Discussions**: [Join community discussions](https://github.com/Vivatist/ai-ebash/discussions)
+- **GitHub Issues**: [🐛 Report issues](https://github.com/Vivatist/ai-ebash/issues)
+- **Discussions**: [💬 Join](https://github.com/Vivatist/ai-ebash/discussions)
 
 ---
 
 <div align="center">
 
-**Made with ❤️ for the Linux community**
+**Created with ❤️ for the Linux community**
 
-[⭐ Star on GitHub](https://github.com/Vivatist/ai-ebash) • [🐛 Report issues](https://github.com/Vivatist/ai-ebash/issues) • [💬 Join discussions](https://github.com/Vivatist/ai-ebash/discussions)
-
+[⭐ Star on GitHub](https://github.com/Vivatist/ai-ebash)
 </div>
