@@ -8,7 +8,6 @@ from rich.console import Console
 from rich.traceback import install
 import platform
 from logging.handlers import RotatingFileHandler
-from aiebash.i18n import t
 from platformdirs import user_config_dir
 
 # Константы
@@ -94,9 +93,9 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
         logger.addHandler(file_handler)
     
     # Логируем системную информацию при запуске
-    logger.info(t("Starting ai-ebash on {system} {release}").format(system=platform.system(), release=platform.release()))
-    logger.debug(t("Python {version}, interpreter: {executable}").format(version=platform.python_version(), executable=sys.executable))
-    logger.debug(t("Log level: console={console}, file={file}").format(console=console_level, file=(file_level if file_enabled else t('disabled'))))
+    logger.info(f"Starting ai-ebash on {platform.system()} {platform.release()}")
+    logger.debug(f"Python {platform.python_version()}, interpreter: {sys.executable}")
+    logger.debug(f"Log level: console={console_level}, file={file_level if file_enabled else 'disabled'}")
     
     return logger
 
@@ -110,7 +109,7 @@ def update_logger_config(config_data: dict):
     """
     global logger
     logger = configure_logger(config_data)
-    logger.debug(t("Logger settings updated from config file"))
+    logger.debug("Logger settings updated from config file")
 
 # Вспомогательная функция для логирования времени выполнения
 def log_execution_time(func):
@@ -121,9 +120,9 @@ def log_execution_time(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
-        #logger.debug(t("Starting execution of {name}").format(name=func.__name__))
+        #logger.debug(f"Starting execution of {func.__name__}")
         result = func(*args, **kwargs)
         execution_time = time.time() - start_time
-        logger.debug(t("Function {name} executed in {seconds:.3f} s").format(name=func.__name__, seconds=execution_time))
+        logger.debug(f"Function {func.__name__} executed in {execution_time:.3f} s")
         return result
     return wrapper

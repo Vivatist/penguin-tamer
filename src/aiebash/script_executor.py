@@ -35,7 +35,7 @@ class LinuxCommandExecutor(CommandExecutor):
     @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bash-команды в Linux с выводом в реальном времени"""
-        logger.debug(t("Executing bash command: {preview}...").format(preview=code_block[:80]))
+        logger.debug(f"Executing bash command: {code_block[:80]}...")
         
         # Используем Popen для вывода в реальном времени
         process = subprocess.Popen(
@@ -124,18 +124,18 @@ class WindowsCommandExecutor(CommandExecutor):
         code = code_block.replace('@echo off', '')
         code = code.replace('pause', 'rem pause')
         
-        logger.debug(t("Preparing Windows command: {preview}...").format(preview=code[:80]))
+        logger.debug(f"Preparing Windows command: {code[:80]}...")
         
         # Создаем временный .bat файл
         fd, temp_path = tempfile.mkstemp(suffix='.bat')
-        logger.debug(t("Created temporary file: {path}").format(path=temp_path))
+        logger.debug(f"Created temporary file: {temp_path}")
         
         try:
             with os.fdopen(fd, 'w') as f:
                 f.write(code)
             
             # Запускаем с кодировкой консоли Windows и выводом в реальном времени
-            logger.info(t("Executing command from file {path}").format(path=temp_path))
+            logger.info(f"Executing command from file {temp_path}")
             
             process = subprocess.Popen(
                 [temp_path],
@@ -209,15 +209,15 @@ class WindowsCommandExecutor(CommandExecutor):
             )
             return result
         except Exception as e:
-            logger.error(t("Error executing Windows command: {error}").format(error=e), exc_info=True)
+            logger.error(f"Error executing Windows command: {e}", exc_info=True)
             raise
         finally:
             # Всегда удаляем временный файл
             try:
                 os.unlink(temp_path)
-                logger.debug(t("Temporary file {path} deleted").format(path=temp_path))
+                logger.debug(f"Temporary file {temp_path} deleted")
             except Exception as e:
-                logger.warning(t("Failed to delete temporary file {path}: {error}").format(path=temp_path, error=e))
+                logger.warning(f"Failed to delete temporary file {temp_path}: {e}")
 
 
 # Фабрика для создания исполнителей команд
@@ -235,10 +235,10 @@ class CommandExecutorFactory:
         """
         system = platform.system().lower()
         if system == "windows":
-            logger.info(t("Creating command executor for Windows"))
+            logger.info("Creating command executor for Windows")
             return WindowsCommandExecutor()
         else:
-            logger.info(t("Creating command executor for {system} (using LinuxCommandExecutor)").format(system=system))
+            logger.info(f"Creating command executor for {system} (using LinuxCommandExecutor)")
             return LinuxCommandExecutor()
 
 
@@ -252,16 +252,16 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         code_blocks (list): Список блоков кода
         idx (int): Индекс выполняемого блока
     """
-    logger.info(t("Starting code block #{idx}").format(idx=idx))
+    logger.info(f"Starting code block #{idx}")
     
     # Проверяем корректность индекса
     if not (1 <= idx <= len(code_blocks)):
-        logger.warning(t("Invalid block index: {idx}. Total blocks: {total}").format(idx=idx, total=len(code_blocks)))
+        logger.warning(f"Invalid block index: {idx}. Total blocks: {len(code_blocks)}")
         console.print(t("[yellow]Block #{idx} does not exist. Available blocks: 1 to {total}.[/yellow]").format(idx=idx, total=len(code_blocks)))
         return
     
     code = code_blocks[idx - 1]
-    logger.debug(t("Block #{idx} content: {preview}...").format(idx=idx, preview=code[:100]))
+    logger.debug(f"Block #{idx} content: {code[:100]}...")
 
     console.print(t("[dim]>>> Running block #{idx}:[/dim]").format(idx=idx))
     console.print(code)
@@ -271,18 +271,18 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         executor = CommandExecutorFactory.create_executor()
         
         # Выполняем код через соответствующий исполнитель
-        logger.debug(t("Starting code block execution..."))
+        logger.debug("Starting code block execution...")
         process = executor.execute(code)
         
         # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
         exit_code = process.returncode
-        logger.info(t("Block #{idx} finished with exit code {code}").format(idx=idx, code=exit_code))
+        logger.info(f"Block #{idx} finished with exit code {exit_code}")
         console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
         
         # Показываем итоговую сводку только если есть stderr или особые случаи
         if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
-            logger.debug(t("Additional stderr ({length} chars)").format(length=len(process.stderr)))
+            logger.debug(f"Additional stderr ({len(process.stderr)} chars)")
             console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
     except Exception as e:
-        logger.error(t("Execution error in block #{idx}: {error}").format(idx=idx, error=e), exc_info=True)
+        logger.error(f"Execution error in block #{idx}: {e}", exc_info=True)
         console.print(t("[dim]Script execution error: {error}[/dim]").format(error=e))

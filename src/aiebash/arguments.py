@@ -34,8 +34,6 @@ parser.add_argument(
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     args = parser.parse_args()
-    logger.info(t("Parsing command line arguments..."))
-    logger.debug(t("Args received: dialog={dialog}, settings={settings}, prompt={prompt}").format(
-        dialog=args.dialog, settings=args.settings, prompt=args.prompt or t('(empty)')
-    ))
+    logger.info("Parsing command line arguments...")
+    logger.debug(f"Args received: dialog={args.dialog}, settings={args.settings}, prompt={args.prompt or '(empty)'}")
     return args
