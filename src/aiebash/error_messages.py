@@ -1,8 +1,10 @@
+from aiebash.i18n import t
+
 _openai_exceptions = None
 
-# ленивый импорт исключений OpenAI и обработка ошибок с пользовательскими сообщениями
+# Lazy import of OpenAI exceptions and map to names
 def _get_openai_exceptions():
-    """Ленивый импорт OpenAI исключений"""
+    """Lazy import of OpenAI exceptions"""
     global _openai_exceptions
     if _openai_exceptions is None:
         from openai import RateLimitError, APIError, OpenAIError, AuthenticationError, APIConnectionError, PermissionDeniedError, NotFoundError, BadRequestError
@@ -20,22 +22,27 @@ def _get_openai_exceptions():
 
 
 def connection_error(error: Exception) -> str:
-    """Обработка ошибок API с соответствующим выводом сообщений"""   
+    """Map API errors to user-facing messages (English as keys)."""
     if isinstance(error, _get_openai_exceptions()['RateLimitError']):
-        return (f"[dim]Ошибка 429: Вы превысили текущую квоту запросов, пожалуйста, проверьте свой тарифный план и платежные реквизиты у провайдера нейросети. Либо попробуйте отправить запрос через некоторое время, если пользуетесь бесплатным тарифом. Сменить нейросеть можно в настройках: 'ai --settings'[/dim]")
+        return t("Error 429: You have exceeded your current quota. Check your plan and billing, or try later if on a free tier. You can change LLM in settings: 'ai --settings'")
     elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
-        return (f"[dim]Ошибка 400: {getattr(error, 'body', None)['message']}. Проверьте название модели.[/dim]")
+        try:
+            body = getattr(error, 'body', None)
+            msg = body.get('message') if isinstance(body, dict) else str(error)
+        except Exception:
+            msg = str(error)
+        return t("Error 400: {message}. Check model name.", message=msg)
     elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
-        return ("[dim]Ошибка 401: Отказ в авторизации. Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-ebash/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8]Как получить ключ?[/link][/dim]")
+        return t("Error 401: Authentication failed. Check your API_KEY. See docs for obtaining a key.")
     elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
-        return (f"[dim]Нет соединения, проверьте подключение к интернету[/dim]")
+        return t("No connection. Please check your Internet connectivity.")
     elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
-        return (f"[dim]Ошибка 403: Ваш регион не поддерживается, используйте VPN либо смените нейросеть. Сменить нейросеть можно в настройках: 'ai --settings'[/dim]")
+        return t("Error 403: Your region is not supported. Use VPN or change the LLM in settings: 'ai --settings'")
     elif isinstance(error, _get_openai_exceptions()['NotFoundError']):
-        return ("[dim]Ошибка 404: Ресурс не найден. Проверьте API_URL в настройках.[/dim]")
+        return t("Error 404: Resource not found. Check API_URL in settings.")
     elif isinstance(error, _get_openai_exceptions()['APIError']):
-        return (f"[dim]Ошибка API: {error}[/dim]")
+        return t("API error: {error}", error=str(error))
     elif isinstance(error, _get_openai_exceptions()['OpenAIError']):
-        return (f"[dim]Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-ebash/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8]Как получить ключ?[/link][/dim]")
+        return t("Check your API_KEY. See provider docs for obtaining a key.")
     else:
-        return (f"[dim]Неизвестная ошибка: {error}[/dim]")
+        return t("Unknown error: {error}", error=str(error))

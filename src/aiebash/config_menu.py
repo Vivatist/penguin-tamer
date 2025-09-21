@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Меню конфигурации с использованием inquirer.
+Configuration menu using inquirer.
 
-Позволяет управлять настройками config.yaml через интерактивное меню.
+Manage config.yaml via interactive menu with clean cancel behavior and carousel navigation.
 """
 
 import sys
@@ -12,12 +12,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import inquirer
 from aiebash.config_manager import config
 from aiebash.formatter_text import format_api_key_display
+from aiebash.i18n import t, translator
 from aiebash.settings_overview import print_settings_overview
 
 
 def prompt_clean(questions):
-    """Обертка над inquirer.prompt: подавляет строку 'Cancelled by user' и
-    возвращает None при Ctrl+C, чтобы не было лишнего вывода."""
+    """Wrapper over inquirer.prompt: suppresses 'Cancelled by user' noise and
+    returns None on Ctrl+C to avoid extra output."""
     old_out_write = sys.stdout.write
     old_err_write = sys.stderr.write
 
@@ -50,7 +51,12 @@ def prompt_clean(questions):
 
 
 def main_menu():
-    """Главное меню приложения."""
+    """Main settings menu."""
+    # Ensure translator uses current config language
+    try:
+        translator.set_language(getattr(config, 'language', 'en'))
+    except Exception:
+        pass
     # Показать обзор текущих настроек при входе в меню
     try:
         print_settings_overview()
@@ -61,15 +67,15 @@ def main_menu():
     while True:
         questions = [
             inquirer.List('choice',
-                         message="Выберите действие",
+                         message=t("Settings"),
                          choices=[
-                            ('Выбрать нейросеть', 'select'),
-                            ('Управление нейросетями', 'llm'),
-                            ('Температура генерации', 'temp'),
-                            ('Редактировать контент', 'content'),
-                            ('Системные настройки', 'system'),
-                                ('Показать текущие настройки', 'overview'),
-                                ('Выход', 'exit')
+                            (t('Select current LLM'), 'select'),
+                            (t('Manage LLMs'), 'llm'),
+                            (t('Temperature'), 'temp'),
+                            (t('User content'), 'content'),
+                            (t('System settings'), 'system'),
+                            (t('Show current settings'), 'overview'),
+                            (t('Exit'), 'exit')
                          ],
                          carousel=True)
         ]
@@ -97,7 +103,7 @@ def main_menu():
 
 
 def llm_management_menu():
-    """Меню управления нейросетями."""
+    """LLM management menu."""
     while True:
         # Получаем список LLM с отметкой текущей
         available_llms = config.get_available_llms()
@@ -105,17 +111,17 @@ def llm_management_menu():
 
         choices = []
         for llm in available_llms:
-            marker = " [текущая]" if llm == current_llm else ""
+            marker = f" [{t('current')}]" if llm == current_llm else ""
             choices.append((f"{llm}{marker}", llm))
 
         choices.extend([
-            ('Добавить новую нейросеть', 'add'),
-            ('Назад', 'back')
+            (t('Add LLM'), 'add'),
+            (t('Back'), 'back')
         ])
 
         questions = [
             inquirer.List('choice',
-                         message="Управление нейросетями",
+                         message=t('LLM management'),
                          choices=choices,
                          carousel=True)
         ]
@@ -136,24 +142,24 @@ def llm_management_menu():
 
 
 def edit_llm(llm_name):
-    """Редактирование настроек конкретной LLM."""
+    """Edit specific LLM settings."""
     llm_config = config.get_llm_config(llm_name)
 
-    print(f"\nНастройки для: {llm_name}")
-    print(f"Модель: {llm_config.get('model', '')}")
+    print(f"\nSettings for: {llm_name}")
+    print(f"Model: {llm_config.get('model', '')}")
     print(f"API URL: {llm_config.get('api_url', '')}")
-    print(f"API ключ: {format_api_key_display(llm_config.get('api_key', ''))}")
+    print(f"API key: {format_api_key_display(llm_config.get('api_key', ''))}")
 
     # Меню действий с LLM
     questions = [
         inquirer.List('action',
-                     message="Выберите действие",
+                     message=t('Settings'),
                      choices=[
-                         ('Изменить модель', 'model'),
-                         ('Изменить API URL', 'url'),
-                         ('Изменить API ключ', 'key'),
-                         ('Удалить нейросеть', 'delete'),
-                         ('Назад', 'back')
+                         (t('Model'), 'model'),
+                         (t('Base URL'), 'url'),
+                         (t('API key'), 'key'),
+                         (t('Delete LLM'), 'delete'),
+                         (t('Back'), 'back')
                      ],
                      carousel=True)
     ]
@@ -165,48 +171,48 @@ def edit_llm(llm_name):
     action = answers['action']
 
     if action == 'model':
-        questions = [inquirer.Text('value', message="Новая модель", default=llm_config.get('model', ''))]
+        questions = [inquirer.Text('value', message=t('Model'), default=llm_config.get('model', ''))]
         answers = prompt_clean(questions)
         if answers:
             config.update_llm(llm_name, model=answers['value'])
-            print("Модель обновлена")
+            print(t('Updated'))
 
     elif action == 'url':
-        questions = [inquirer.Text('value', message="Новый API URL", default=llm_config.get('api_url', ''))]
+        questions = [inquirer.Text('value', message=t('Base URL'), default=llm_config.get('api_url', ''))]
         answers = prompt_clean(questions)
         if answers:
             config.update_llm(llm_name, api_url=answers['value'])
-            print("API URL обновлен")
+            print(t('Updated'))
 
     elif action == 'key':
-        questions = [inquirer.Text('value', message="Новый API ключ", default=llm_config.get('api_key', ''))]
+        questions = [inquirer.Text('value', message=t('API key'), default=llm_config.get('api_key', ''))]
         answers = prompt_clean(questions)
         if answers:
             config.update_llm(llm_name, api_key=answers['value'])
-            print("API ключ обновлен")
+            print(t('Updated'))
 
     elif action == 'delete':
         if llm_name == config.current_llm:
-            print("Нельзя удалить текущую нейросеть")
+            print("Cannot delete current LLM")
             return
 
-        questions = [inquirer.Confirm('confirm', message=f"Удалить {llm_name}?", default=False)]
+        questions = [inquirer.Confirm('confirm', message=t("Delete '{name}'?", name=llm_name), default=False)]
         answers = prompt_clean(questions)
         if answers and answers['confirm']:
             config.remove_llm(llm_name)
-            print("Нейросеть удалена")
+            print(t('Deleted'))
 
     elif action == 'back':
         return
 
 
 def add_llm():
-    """Добавление новой LLM."""
+    """Add new LLM."""
     questions = [
-        inquirer.Text('name', message="Имя нейросети"),
-        inquirer.Text('model', message="Модель"),
-        inquirer.Text('api_url', message="API URL"),
-        inquirer.Text('api_key', message="API ключ (опционально)")
+        inquirer.Text('name', message=t('Name')),
+        inquirer.Text('model', message=t('Model')),
+        inquirer.Text('api_url', message='API URL'),
+        inquirer.Text('api_key', message=t('API key'))
     ]
 
     answers = prompt_clean(questions)
@@ -218,33 +224,33 @@ def add_llm():
                 answers['api_url'],
                 answers.get('api_key', '')
             )
-            print("Нейросеть добавлена")
+            print(t('Added'))
         except ValueError as e:
-            print(f"Ошибка: {e}")
+            print(f"Error: {e}")
     else:
-        print("Все поля обязательны кроме API ключа")
+        print("All fields are required except API key")
 
 
 def select_current_llm():
-    """Выбор текущей нейросети из списка доступных."""
+    """Select current LLM from available list."""
     while True:
         available_llms = config.get_available_llms()
         if not available_llms:
-            print("Нет доступных нейросетей. Сначала добавьте хотя бы одну.")
+            print("No available LLMs. Please add one first.")
             return
 
         current_llm = config.current_llm
         choices = []
         for llm in available_llms:
-            marker = " [текущая]" if llm == current_llm else ""
+            marker = f" [{t('current')}]" if llm == current_llm else ""
             choices.append((f"{llm}{marker}", llm))
 
-        choices.append(('Назад', 'back'))
+        choices.append((t('Back'), 'back'))
 
         questions = [
             inquirer.List(
                 'llm',
-                message="Выберите текущую нейросеть",
+                message=t('Select current LLM'),
                 choices=choices,
                 default=current_llm if current_llm in available_llms else None,
                 carousel=True,
@@ -258,64 +264,65 @@ def select_current_llm():
                 return
             if selected != current_llm:
                 config.current_llm = selected
-                print(f"Текущая нейросеть установлена: {selected}")
+                print(f"Current LLM set: {selected}")
                 continue  # Остаемся в меню с новым маркером
             else:
-                print("Эта нейросеть уже текущая")
+                print("This LLM is already current")
                 continue  # Остаемся в меню
         else:
-            print("Выбор нейросети отменен")
+            print("LLM selection cancelled")
             return  # Остаемся в меню
 
 
 def edit_user_content():
-    """Редактирование пользовательского контента."""
+    """Edit user content."""
     current_content = config.user_content
 
-    print(f"\nТекущий контент:")
+    print(f"\nCurrent content:")
     print("-" * 60)
     print(current_content)
     print("-" * 60)
 
-    print("\nИнструкция: Введите новый контент.")
-    print("Для многострочного текста используйте \\n для новой строки.")
-    print("Пример: Первая строка\\nВторая строка\\nТретья строка")
-    print("Оставьте пустым и нажмите Enter для отмены изменений.")
+    print("\nInstruction: Enter new content.")
+    print("For multiline text use \\n to insert new lines.")
+    print("Example: First line\\nSecond line\\nThird line")
+    print("Leave empty and press Enter to cancel.")
     print()
 
     try:
-        # Используем обычный input для избежания эхоинга каждой буквы
-        user_input = input("Новый контент: ").strip()
+        # Use plain input to avoid echoing each char
+        user_input = input("New content: ").strip()
 
         if not user_input:
-            print("Изменения отменены - введен пустой текст")
+            print("Changes cancelled - empty input")
             return
 
-        # Заменяем \n на настоящие переносы строк
+    # Replace \n with real new lines
         new_content = user_input.replace('\\n', '\n')
 
         # Сохраняем новый контент
         config.user_content = new_content
-        print("Контент обновлен успешно")
+        print("Content updated")
 
     except KeyboardInterrupt:
-        print("\nИзменения отменены")
+        print("\nChanges cancelled")
     except Exception as e:
-        print(f"Ошибка при вводе: {e}")
-        print("Изменения отменены")
+        print(f"Input error: {e}")
+        print("Changes cancelled")
 
 
 def system_settings_menu():
-    """Меню системных настроек."""
+    """System settings menu."""
     while True:
         questions = [
             inquirer.List('choice',
-                         message="Системные настройки",
+                         message=t('System settings'),
                          choices=[
-                             ('Уровень логирования', 'logging'),
-                             ('Потоковый режим', 'stream'),
-                             ('JSON режим', 'json'),
-                             ('Назад', 'back')
+                             (t('Console log level'), 'logging'),
+                             (t('Stream mode'), 'stream'),
+                             (t('JSON mode'), 'json'),
+                             (t('Language'), 'language'),
+                             (t('Back'), 'back')
                          ],
                          carousel=True)
         ]
@@ -332,15 +339,17 @@ def system_settings_menu():
             set_stream_mode()
         elif choice == 'json':
             set_json_mode()
+        elif choice == 'language':
+            set_language()
         elif choice == 'back':
             break
 
 
 def set_log_level():
-    """Настройка уровня логирования."""
+    """Console log level setting."""
     questions = [
         inquirer.List('level',
-                     message="Уровень логирования",
+                     message=t('Console log level'),
                      choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                      default=config.console_log_level,
                      carousel=True)
@@ -349,15 +358,15 @@ def set_log_level():
     answers = prompt_clean(questions)
     if answers:
         config.console_log_level = answers['level']
-        print("Уровень логирования обновлен")
+        print(t('Updated'))
 
 
 def set_stream_mode():
-    """Настройка потокового режима."""
+    """Stream mode setting."""
     questions = [
         inquirer.List('mode',
-                     message="Потоковый режим",
-                     choices=[('Включен', True), ('Выключен', False)],
+                     message=t('Stream mode'),
+                     choices=[('On', True), ('Off', False)],
                      default=config.stream_mode,
                      carousel=True)
     ]
@@ -365,15 +374,15 @@ def set_stream_mode():
     answers = prompt_clean(questions)
     if answers:
         config.stream_mode = answers['mode']
-        print("Потоковый режим обновлен")
+        print(t('Updated'))
 
 
 def set_json_mode():
-    """Настройка JSON режима."""
+    """JSON mode setting."""
     questions = [
         inquirer.List('mode',
-                     message="JSON режим",
-                     choices=[('Включен', True), ('Выключен', False)],
+                     message=t('JSON mode'),
+                     choices=[('On', True), ('Off', False)],
                      default=config.json_mode,
                      carousel=True)
     ]
@@ -381,55 +390,92 @@ def set_json_mode():
     answers = prompt_clean(questions)
     if answers:
         config.json_mode = answers['mode']
-        print("JSON режим обновлен")
+        print(t('Updated'))
 
 
 def set_temperature():
-    """Настройка температуры генерации (0.0–1.0)."""
+    """Set generation temperature (0.0–1.0)."""
     current = config.temperature
-    print(f"\nТекущая температура: {current}")
-    print("Подсказка: Температура регулирует степень случайности и креативности генерируемых ответов.")
-    print("Допустимое значение от 0.0 до 1.0. Можно вводить через запятую или точку.")
+    print(f"\nCurrent temperature: {current}")
+    print("Hint: Temperature controls randomness/creativity of responses.")
+    print(t('Enter a value between 0.0 and 1.0 (dot or comma).'))
 
     while True:
         questions = [
             inquirer.Text(
                 'value',
-                message="Введите новое значение температуры (0.0–1.0)",
+                message='Temperature (0.0–1.0)',
                 default=str(current)
             )
         ]
 
         answers = prompt_clean(questions)
         if not answers:
-            print("Изменение температуры отменено")
+            print("Temperature change cancelled")
             return
 
         raw = str(answers.get('value', '')).strip()
         if raw == "":
-            print("Изменение температуры отменено")
+            print("Temperature change cancelled")
             return
 
         raw = raw.replace(',', '.')
         try:
             value = float(raw)
         except ValueError:
-            print("Ошибка: введите число в формате 0.0–1.0 (можно использовать запятую)")
+            print(t('Invalid number format.'))
             continue
 
         if not (0.0 <= value <= 1.0):
-            print("Ошибка: значение должно быть в диапазоне от 0.0 до 1.0")
+            print(t('Temperature must be between 0.0 and 1.0.'))
             continue
 
         config.temperature = value
-        print(f"Температура обновлена: {value}")
+        print(f"Temperature updated: {value}")
         return
+
+
+def _get_available_languages() -> list[tuple[str, str]]:
+    """Return list of (label, code) languages available. Always include English."""
+    langs = [('English (en)', 'en')]
+    try:
+        locales_dir = os.path.join(os.path.dirname(__file__), 'locales')
+        if os.path.isdir(locales_dir) and os.path.isfile(os.path.join(locales_dir, 'ru.json')):
+            langs.append(('Русский (ru)', 'ru'))
+    except Exception:
+        pass
+    return langs
+
+
+def set_language():
+    """Language selection setting."""
+    current = getattr(config, 'language', 'en')
+    choices = _get_available_languages()
+    questions = [
+        inquirer.List('lang', message=t('Language'), choices=choices, default=current, carousel=True)
+    ]
+    answers = prompt_clean(questions)
+    if not answers:
+        return
+    lang = answers['lang']
+    # Persist and apply
+    try:
+        # If ConfigManager exposes property
+        setattr(config, 'language', lang)
+    except Exception:
+        # Best-effort fallback: try to set top-level
+        try:
+            config.update_section('language', lang)  # not ideal, but prevents crash
+        except Exception:
+            pass
+    translator.set_language(lang)
+    print(t('Updated'))
 
 
 if __name__ == "__main__":
     try:
         main_menu()
     except KeyboardInterrupt:
-        print("\nВыход...")
+        print("\nExit...")
     except Exception as e:
-        print(f"Ошибка: {e}")
+        print(f"Error: {e}")

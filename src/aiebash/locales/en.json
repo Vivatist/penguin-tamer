@@ -1,0 +1,11 @@
+{
+  "Error 429: You have exceeded your current quota. Check your plan and billing, or try later if on a free tier. You can change LLM in settings: 'ai --settings'": "Error 429: You have exceeded your current quota. Check your plan and billing, or try later if on a free tier. You can change LLM in settings: 'ai --settings'",
+  "Error 400: {message}. Check model name.": "Error 400: {message}. Check model name.",
+  "Error 401: Authentication failed. Check your API_KEY. See docs for obtaining a key.": "Error 401: Authentication failed. Check your API_KEY. See docs for obtaining a key.",
+  "No connection. Please check your Internet connectivity.": "No connection. Please check your Internet connectivity.",
+  "Error 403: Your region is not supported. Use VPN or change the LLM in settings: 'ai --settings'": "Error 403: Your region is not supported. Use VPN or change the LLM in settings: 'ai --settings'",
+  "Error 404: Resource not found. Check API_URL in settings.": "Error 404: Resource not found. Check API_URL in settings.",
+  "API error: {error}": "API error: {error}",
+  "Check your API_KEY. See provider docs for obtaining a key.": "Check your API_KEY. See provider docs for obtaining a key.",
+  "Unknown error: {error}": "Unknown error: {error}"
+}
