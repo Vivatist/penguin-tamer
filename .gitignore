@@ -3,6 +3,8 @@ copilot-instructions.md
 .vscode/
 .notes.md
 .test.py
+.gitignore
+ai_ebash.egg-info/
 
 # secret kyeys and files
 *.key
