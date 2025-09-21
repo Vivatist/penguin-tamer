@@ -26,7 +26,7 @@ def connection_error(error: Exception) -> str:
     elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
         return (f"[dim]Ошибка 400: {getattr(error, 'body', None)['message']}. Проверьте название модели.[/dim]")
     elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
-        return ("[dim]Ошибка 401: Отказ в авторизации.Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-bash]Как получить ключ?[/link][/dim]")
+        return ("[dim]Ошибка 401: Отказ в авторизации. Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-ebash/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8]Как получить ключ?[/link][/dim]")
     elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
         return (f"[dim]Нет соединения, проверьте подключение к интернету[/dim]")
     elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
@@ -36,6 +36,6 @@ def connection_error(error: Exception) -> str:
     elif isinstance(error, _get_openai_exceptions()['APIError']):
         return (f"[dim]Ошибка API: {error}[/dim]")
     elif isinstance(error, _get_openai_exceptions()['OpenAIError']):
-        return (f"[dim]Ошибка клиента OpenAI: {error}[/dim]")
+        return (f"[dim]Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-ebash/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8]Как получить ключ?[/link][/dim]")
     else:
         return (f"[dim]Неизвестная ошибка: {error}[/dim]")

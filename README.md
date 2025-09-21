@@ -113,17 +113,17 @@ pipx uninstall ai-ebash
 
 ### If installed via DEB package
 ```bash
-sudo apt remove python3-ai-ebash
+sudo apt remove ai-ebash
 # Or for complete deletion, including configuration files:
-sudo apt purge python3-ai-ebash
+sudo apt purge ai-ebash
 ```
 
 or you can also use dpkg.:
 
 ```bash
-sudo dpkg -r python3-ai-ebash
+sudo dpkg -r ai-ebash
 # Or for complete deletion, including configuration files:
-sudo dpkg -P python3-ai-ebash
+sudo dpkg -P ai-ebash
 ```
 
 ### If installed via Windows:
