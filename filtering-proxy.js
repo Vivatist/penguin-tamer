@@ -4,7 +4,7 @@
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const targetUrl = "https://api.openai.com" + url.pathname + url.search;
+    const targetUrl = "https://openrouter.ai" + url.pathname + url.search;
 
     // Заголовки, которые НЕЛЬЗЯ пересылать (черный список).
     const stripHeaders = new Set([

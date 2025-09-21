@@ -49,7 +49,6 @@ def _get_openai_client():
 
 class OpenRouterClient:
 
-    @log_execution_time
     def _spinner(self, stop_spinner: threading.Event) -> None:
         """Визуальный индикатор работы ИИ с точечным спиннером.
         Пока stop_event не установлен, показывает "Аи печатает...".

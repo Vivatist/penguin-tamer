@@ -16,7 +16,6 @@ def format_api_key_display(api_key: str) -> str:
         return f"{api_key[:5]}...{api_key[-5:]}"
 
 
-@log_execution_time
 def extract_labeled_code_blocks(text: str) -> list[str]:
     """
     Извлекает содержимое блоков кода, у которых сверху есть подпись в квадратных скобках.
