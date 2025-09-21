@@ -10,3 +10,4 @@ rich==14.1.0
 urllib3==2.5.0
 openai==1.108.0
 PyYAML==6.0.2
+inquirer==3.4.0

@@ -32,7 +32,7 @@ def _get_live():
 
 # Ленивый импорт OpenAI (самый тяжелый модуль)
 _openai_client = None
-_openai_exceptions = None
+
 
 def _get_openai_client():
     """Ленивый импорт OpenAI клиента"""
@@ -42,22 +42,7 @@ def _get_openai_client():
         _openai_client = OpenAI
     return _openai_client
 
-def _get_openai_exceptions():
-    """Ленивый импорт OpenAI исключений"""
-    global _openai_exceptions
-    if _openai_exceptions is None:
-        from openai import RateLimitError, APIError, OpenAIError, AuthenticationError, APIConnectionError, PermissionDeniedError, NotFoundError, BadRequestError
-        _openai_exceptions = {
-            'RateLimitError': RateLimitError,
-            'APIError': APIError,
-            'OpenAIError': OpenAIError,
-            'AuthenticationError': AuthenticationError,
-            'APIConnectionError': APIConnectionError,
-            'PermissionDeniedError': PermissionDeniedError,
-            'NotFoundError': NotFoundError,
-            'BadRequestError': BadRequestError
-        }
-    return _openai_exceptions
+
 
 
 
@@ -76,10 +61,11 @@ class OpenRouterClient:
         # console.print("[green]Ai: [/green]")
 
     @log_execution_time
-    def __init__(self, console, api_key: str, api_url: str, model: str,
+    def __init__(self, console, logger, api_key: str, api_url: str, model: str,
                  system_content: str,
                  temperature: float = 0.7):
         self.console = console
+        self.logger = logger
         self.api_key = api_key
         self.api_url = api_url
         self.model = model
@@ -135,7 +121,8 @@ class OpenRouterClient:
             # Останавливаем спиннер
             stop_spinner.set()
             spinner_thread.join()
-            return self._handle_api_error(e)
+            raise
+
 
     @log_execution_time
     def ask_stream(self, user_input: str, educational_content: list = []) -> str:
@@ -182,31 +169,9 @@ class OpenRouterClient:
             # Останавливаем спиннер
             stop_spinner.set()
             spinner_thread.join()
-            return self._handle_api_error(e)
+            raise
+  
 
-    @log_execution_time
-    def _handle_api_error(self, error: Exception) -> str:
-        """Обработка ошибок API с соответствующим выводом сообщений"""   
-        if isinstance(error, _get_openai_exceptions()['RateLimitError']):
-            self.console.print(f"[dim]Ошибка 429: {getattr(error, 'body', None)['message']}. Превышен лимит запросов (попробуйте через некоторое время)[/dim]")
-        elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
-            self.console.print(f"[dim]Ошибка 400: {getattr(error, 'body', None)['message']}. Проверьте название модели.[/dim]")
-        elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
-            self.console.print("[dim]Ошибка 401: Отказ в авторизации.Проверьте свой ключ API_KEY. Для получения ключа обратитесь к поставщику API. [link=https://github.com/Vivatist/ai-bash]Как получить ключ?[/link][/dim]")
-        elif isinstance(error, _get_openai_exceptions()['APIConnectionError']):
-            self.console.print(f"[dim]Нет соединения, проверьте подключение к интернету[/dim]")
-        elif isinstance(error, _get_openai_exceptions()['PermissionDeniedError']):
-            self.console.print(f"[dim]Ошибка 403: Ваш регион не поддерживается, используйте VPN.[/dim]")
-        elif isinstance(error, _get_openai_exceptions()['NotFoundError']):
-            self.console.print("[dim]Ошибка 404: Ресурс не найден. Проверьте API_URL в настройках.[/dim]")
-        elif isinstance(error, _get_openai_exceptions()['APIError']):
-            self.console.print(f"[dim]Ошибка API: {error}[/dim]")
-        elif isinstance(error, _get_openai_exceptions()['OpenAIError']):
-            self.console.print(f"[dim]Ошибка клиента OpenAI: {error}[/dim]")
-        else:
-            self.console.print(f"[dim]Неизвестная ошибка: {error}[/dim]")
-
-        return "Ошибка при получении ответа."
 
     def __str__(self) -> str:
         """Человекочитаемое представление клиента со всеми полями.

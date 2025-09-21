@@ -1,575 +1,408 @@
 #!/usr/bin/env python3
 """
-Модуль для управления конфигурацией приложения.
-Использует JSON для всех настроек с современным меню навигацией стрелками.
+Новый менеджер конфигурации для приложения ai-ebash.
+
+ОСОБЕННОСТИ:
+- Автоматическое создание config.yaml из default_config.yaml при первом запуске
+- Удобные свойства для доступа к основным настройкам
+- Полная поддержка YAML формата
+- Безопасная работа с файлами конфигурации
+
+ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ:
+
+# Базовое использование
+from config_manager import config
+
+# Чтение настроек
+current_llm = config.current_llm
+temperature = config.temperature
+user_content = config.user_content
+
+# Изменение настроек
+config.temperature = 0.7
+config.stream_mode = True
+config.user_content = "Новый контент"
+
+# Работа с LLM
+available_llms = config.get_available_llms()
+current_config = config.get_current_llm_config()
+
+# Добавление новой LLM
+config.add_llm("My LLM", "gpt-4", "https://api.example.com/v1", "api-key")
+
+# Сброс к настройкам по умолчанию
+config.reset_to_defaults()
 """
 
 import yaml
 import os
+import shutil
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from rich.console import Console
-from rich.prompt import Prompt, Confirm
-from rich.panel import Panel
-from rich.table import Table
-from rich.text import Text
-from rich.columns import Columns
-from rich.align import Align
-from rich.layout import Layout
+from typing import Dict, Any, Optional, List
 from platformdirs import user_config_dir
-
-from aiebash.logger import log_execution_time
-
-try:
-    from .formatter_text import format_api_key_display
-except ImportError:
-    # Для случаев, когда модуль запускается напрямую
-    from aiebash.formatter_text import format_api_key_display
-
-
-# === Настройки ===
-APP_NAME = "ai-ebash"
-USER_CONFIG_DIR = Path(user_config_dir(APP_NAME))
-USER_CONFIG_PATH = USER_CONFIG_DIR / "config.yaml"
-DEFAULT_CONFIG_PATH = Path(__file__).parent / "default_config.yaml"
-
-
-class MenuSystem:
-    """Класс для создания интерактивного меню"""
-
-    def __init__(self, console: Console):
-        self.console = console
-
-    def display_menu(self, title: str, options: List[str]) -> None:
-        """Отображает меню с пронумерованными опциями"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-
-        # Заголовок уже показан в run_configuration_menu
-        self.console.print()
-
-        # Опции меню
-        for i, option in enumerate(options, 1):
-            self.console.print(f"  [cyan]{i}[/cyan]. {option}")
-
-        self.console.print()
-        self.console.print("[dim]Введите номер пункта меню или 0 для выхода[/dim]")
-
-    def navigate_menu(self, options: List[str], title: str) -> Optional[int]:
-        """Простая навигация по меню с вводом номера"""
-        while True:
-            self.display_menu(title, options)
-
-            try:
-                choice = Prompt.ask("Ваш выбор", default="")
-                if not choice:
-                    continue
-
-                choice_num = int(choice)
-                if choice_num == 0:
-                    return None
-                elif 1 <= choice_num <= len(options):
-                    return choice_num - 1
-                else:
-                    self.console.print(f"[red]Введите число от 1 до {len(options)} или 0 для выхода[/red]")
-                    self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-
-            except ValueError:
-                self.console.print("[red]Введите корректное число[/red]")
-                self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-            except KeyboardInterrupt:
-                return None
-
-    def get_user_input(self, prompt: str, default: str = "", password: bool = False) -> str:
-        """Получение ввода от пользователя"""
-        if password:
-            return Prompt.ask(prompt, default=default, password=True)
-        return Prompt.ask(prompt, default=default)
 
 
 class ConfigManager:
-    """Класс для управления конфигурацией с современным меню"""
+    """
+    Менеджер конфигурации для управления настройками приложения.
 
-    def __init__(self):
-        self.console = Console()
-        self.menu = MenuSystem(self.console)
-        self.yaml_config = {}
+    Автоматически создает файл конфигурации из шаблона default_config.yaml,
+    если пользовательский config.yaml не существует.
+    """
+
+    def __init__(self, app_name: str = "ai-ebash"):
+        """
+        Инициализация менеджера конфигурации.
+
+        Args:
+            app_name: Имя приложения для определения директории конфигурации
+        """
+        self.app_name = app_name
+        self.user_config_dir = Path(user_config_dir(app_name))
+        self.user_config_path = self.user_config_dir / "config.yaml"
+        self._default_config_path = Path(__file__).parent / "default_config.yaml"
+
+        # Создаем директорию если не существует
+        self.user_config_dir.mkdir(parents=True, exist_ok=True)
+
+        # Автоматически создаем конфигурацию из шаблона если нужно
         self._ensure_config_exists()
-        self._load_yaml_config()
+
+        # Загружаем конфигурацию
+        self._config = self._load_config()
 
     def _ensure_config_exists(self) -> None:
-        """Убеждается, что файл конфигурации существует"""
+        """
+        Убеждается, что файл конфигурации существует.
+        Если config.yaml не найден, копирует default_config.yaml.
+        """
+        if not self.user_config_path.exists():
+            if self._default_config_path.exists():
+                try:
+                    shutil.copy2(self._default_config_path, self.user_config_path)
+                    print(f"✅ Создана конфигурация из шаблона: {self.user_config_path}")
+                except Exception as e:
+                    raise RuntimeError(f"Не удалось создать файл конфигурации: {e}")
+            else:
+                raise FileNotFoundError(f"Файл шаблона конфигурации не найден: {self._default_config_path}")
+
+    def _load_config(self) -> Dict[str, Any]:
+        """
+        Загружает конфигурацию из YAML файла.
+
+        Returns:
+            Dict[str, Any]: Загруженная конфигурация
+        """
         try:
-            if not USER_CONFIG_PATH.exists():
-                USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-                if DEFAULT_CONFIG_PATH.exists():
-                    import shutil
-                    shutil.copy(DEFAULT_CONFIG_PATH, USER_CONFIG_PATH)
+            with open(self.user_config_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f) or {}
         except Exception as e:
-            self.console.print(f"[red]Ошибка при создании файла конфигурации: {e}[/red]")
+            print(f"⚠️  Ошибка загрузки конфигурации: {e}")
+            return {}
 
-
-    def _load_yaml_config(self) -> None:
-        """Загружает полную конфигурацию из YAML"""
+    def _save_config(self) -> None:
+        """
+        Сохраняет текущую конфигурацию в YAML файл.
+        """
         try:
-            with open(USER_CONFIG_PATH, 'r', encoding='utf-8') as f:
-                self.yaml_config = yaml.safe_load(f)
-        except Exception:
-            self.yaml_config = {}
-
-    def _save_yaml_config(self) -> None:
-        """Сохраняет полную конфигурацию в YAML"""
-        try:
-            USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-            with open(USER_CONFIG_PATH, 'w', encoding='utf-8') as f:
-                yaml.safe_dump(self.yaml_config, f, indent=2, allow_unicode=True, default_flow_style=False)
+            with open(self.user_config_path, 'w', encoding='utf-8') as f:
+                yaml.safe_dump(
+                    self._config,
+                    f,
+                    indent=2,
+                    allow_unicode=True,
+                    default_flow_style=False,
+                    sort_keys=False
+                )
         except Exception as e:
-            self.console.print(f"[red]Ошибка сохранения настроек: {e}[/red]")
+            raise RuntimeError(f"Не удалось сохранить конфигурацию: {e}")
 
-    @log_execution_time
-    def get_value(self, section: str, key: str, default: Any = None) -> Any:
-        """Получает значение из настроек"""
-        return self.yaml_config.get(section, {}).get(key, default)
+    def reload(self) -> None:
+        """
+        Перезагружает конфигурацию из файла.
+        """
+        self._config = self._load_config()
 
-    def set_value(self, section: str, key: str, value: Any) -> None:
-        """Устанавливает значение в настройках"""
-        self.yaml_config.setdefault(section, {})[key] = value
-        self._save_yaml_config()
+    def save(self) -> None:
+        """
+        Сохраняет текущую конфигурацию в файл.
+        """
+        self._save_config()
 
-    @log_execution_time
-    def get_logging_config(self) -> Dict[str, Any]:
-        """Возвращает настройки логирования"""
-        return self.yaml_config.get("logging", {})
+    def get(self, section: str, key: str = None, default: Any = None) -> Any:
+        """
+        Получает значение из конфигурации.
 
-    @log_execution_time
-    def get_current_llm_name(self) -> str:
-        """Возвращает имя текущего LLM"""
-        return self.yaml_config.get("global", {}).get("current_LLM", "openai_over_proxy")
+        Args:
+            section: Секция конфигурации (например, 'global', 'logging')
+            key: Ключ в секции (если None, возвращает всю секцию)
+            default: Значение по умолчанию
 
-    @log_execution_time
-    def get_current_llm_config(self) -> Dict[str, Any]:
-        """Возвращает конфигурацию текущего LLM"""
-        current_llm = self.get_current_llm_name()
-        return self.yaml_config.get("supported_LLMs", {}).get(current_llm, {})
+        Returns:
+            Значение из конфигурации или default
+        """
+        section_data = self._config.get(section, {})
 
-    def _show_current_settings(self) -> None:
-        """Показывает текущие настройки перед главным меню"""
-        current_content = self.get_value("global", "user_content", "")
-        current_llm = self.get_current_llm_name()
-        current_llm_config = self.get_current_llm_config()
-        available_llms = self.get_available_llms()
+        if key is None:
+            return section_data
 
-        # Показываем контекст
-        if current_content:
-            content_panel = Panel(
-                Text(current_content, style="white"),
-                title="Контекст для всех нейронок",
-                border_style="white",
-                padding=(1, 2)
-            )
-            self.console.print(content_panel)
-        else:
-            content_panel = Panel(
-                Text("[dim]Контекст не задан[/dim]", style="dim white"),
-                title="[bold]Контекст[/bold]",
-                border_style="white",
-                padding=(1, 2)
-            )
-            self.console.print(content_panel)
+        return section_data.get(key, default)
 
-        self.console.print()
+    def set(self, section: str, key: str, value: Any) -> None:
+        """
+        Устанавливает значение в конфигурации.
 
-        # Информация о текущей нейросети
-        current_info = Table(show_header=False, box=None, padding=(0, 2))
-        current_info.add_column("Параметр", style="white", no_wrap=True)
-        current_info.add_column("Значение", style="white")
+        Args:
+            section: Секция конфигурации
+            key: Ключ в секции
+            value: Новое значение
+        """
+        if section not in self._config:
+            self._config[section] = {}
 
-        current_info.add_row("Текущая нейросеть", current_llm)
-        current_info.add_row("Модель", current_llm_config.get("model", "не указана"))
-        current_info.add_row("API URL", current_llm_config.get("api_url", "не указан"))
-        current_info.add_row("Всего нейросетей", str(len(available_llms)))
+        self._config[section][key] = value
+        self._save_config()
 
-        info_panel = Panel(
-            current_info,
-            title="Текущая конфигурация",
-            border_style="white",
-            padding=(1, 2)
-        )
-        self.console.print(info_panel)
+    def update_section(self, section: str, data: Dict[str, Any]) -> None:
+        """
+        Обновляет всю секцию конфигурации.
 
-        self.console.print()
+        Args:
+            section: Секция для обновления
+            data: Новые данные секции
+        """
+        self._config[section] = data
+        self._save_config()
 
-        # Показываем таблицу всех LLM
-        self._show_llms_table()
+    def get_all(self) -> Dict[str, Any]:
+        """
+        Возвращает всю конфигурацию.
+
+        Returns:
+            Dict[str, Any]: Полная конфигурация
+        """
+        return self._config.copy()
+
+    # === Удобные методы для работы с конкретными настройками ===
+
+    @property
+    def current_llm(self) -> str:
+        """Текущая выбранная LLM."""
+        return self.get("global", "current_LLM", "")
+
+    @current_llm.setter
+    def current_llm(self, value: str) -> None:
+        """Устанавливает текущую LLM."""
+        self.set("global", "current_LLM", value)
+
+    @property
+    def user_content(self) -> str:
+        """Пользовательский контент для всех LLM."""
+        return self.get("global", "user_content", "")
+
+    @user_content.setter
+    def user_content(self, value: str) -> None:
+        """Устанавливает пользовательский контент."""
+        self.set("global", "user_content", value)
+
+    @property
+    def temperature(self) -> float:
+        """Температура генерации ответов."""
+        return self.get("global", "temperature", 0.2)
+
+    @temperature.setter
+    def temperature(self, value: float) -> None:
+        """Устанавливает температуру генерации."""
+        self.set("global", "temperature", value)
+
+    @property
+    def stream_mode(self) -> bool:
+        """Режим потокового вывода."""
+        return self.get("global", "stream_output_mode", False)
+
+    @stream_mode.setter
+    def stream_mode(self, value: bool) -> None:
+        """Устанавливает режим потокового вывода."""
+        self.set("global", "stream_output_mode", value)
+
+    @property
+    def json_mode(self) -> bool:
+        """JSON режим."""
+        return self.get("global", "json_mode", False)
+
+    @json_mode.setter
+    def json_mode(self, value: bool) -> None:
+        """Устанавливает JSON режим."""
+        self.set("global", "json_mode", value)
+
+    @property
+    def console_log_level(self) -> str:
+        """Уровень логирования в консоль."""
+        return self.get("logging", "console_level", "CRITICAL")
+
+    @console_log_level.setter
+    def console_log_level(self, value: str) -> None:
+        """Устанавливает уровень логирования в консоль."""
+        self.set("logging", "console_level", value)
+
+    @property
+    def file_log_level(self) -> str:
+        """Уровень логирования в файл."""
+        return self.get("logging", "file_level", "DEBUG")
+
+    @file_log_level.setter
+    def file_log_level(self, value: str) -> None:
+        """Устанавливает уровень логирования в файл."""
+        self.set("logging", "file_level", value)
 
     def get_available_llms(self) -> List[str]:
-        """Возвращает список доступных LLM"""
-        supported_llms = self.yaml_config.get("supported_LLMs", {})
-        return list(supported_llms.keys())
+        """
+        Возвращает список доступных LLM.
 
-    @log_execution_time
-    def run_configuration_menu(self) -> None:
-        """Запускает главное меню конфигурации"""
-        main_menu_options = [
-            "Изменить контекст",
-            "Выбрать нейросеть",
-            "Добавить нейросеть",
-            "Редактировать нейросеть",
-            "Удалить нейросеть",
-            "Language (в разработке)",
-            "Выход"
-        ]
+        Returns:
+            List[str]: Список имен LLM
+        """
+        supported_llms = self.get("supported_LLMs")
+        if isinstance(supported_llms, dict):
+            return list(supported_llms.keys())
+        return []
 
-        while True:
-            # Показываем заголовок
-            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-            title_panel = Panel(
-                Align.center(Text("AI-ebash Конфигуратор", style="white")),
-                border_style="white",
-                padding=(1, 2)
-            )
-            self.console.print(title_panel)
+    def get_llm_config(self, llm_name: str) -> Dict[str, Any]:
+        """
+        Возвращает конфигурацию конкретной LLM.
 
-            # Показываем текущие настройки
-            self._show_current_settings()
+        Args:
+            llm_name: Имя LLM
 
-            choice = self.menu.navigate_menu(main_menu_options, "AI-ebash Конфигуратор")
+        Returns:
+            Dict[str, Any]: Конфигурация LLM
+        """
+        supported_llms = self.get("supported_LLMs")
+        if isinstance(supported_llms, dict):
+            return supported_llms.get(llm_name, {})
+        return {}
 
-            if choice is None or choice == 6:  # Выход
-                break
+    def get_current_llm_config(self) -> Dict[str, Any]:
+        """
+        Возвращает конфигурацию текущей LLM.
 
-            elif choice == 0:  # Изменить контекст
-                self._set_content_menu()
+        Returns:
+            Dict[str, Any]: Конфигурация текущей LLM
+        """
+        return self.get_llm_config(self.current_llm)
 
-            elif choice == 1:  # Выбрать нейросеть
-                self._select_llm_menu()
+    def add_llm(self, name: str, model: str, api_url: str, api_key: str = "") -> None:
+        """
+        Добавляет новую LLM.
 
-            elif choice == 2:  # Добавить нейросеть
-                self._add_llm_menu()
+        Args:
+            name: Имя LLM
+            model: Модель LLM
+            api_url: API URL
+            api_key: API ключ (опционально)
+        """
+        supported_llms = self.get("supported_LLMs") or {}
 
-            elif choice == 3:  # Редактировать нейросеть
-                self._edit_llm_menu()
+        if name in supported_llms:
+            raise ValueError(f"LLM с именем '{name}' уже существует")
 
-            elif choice == 4:  # Удалить нейросеть
-                self._delete_llm_menu()
-
-            elif choice == 5:  # Language (заглушка)
-                self._language_menu()
-
-    def _set_content_menu(self) -> None:
-        """Меню настройки контекста"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-
-        current_content = self.get_value("global", "content", "")
-
-        panel = Panel(
-            Text("Текущий контекст:", style="white") + "\n\n" +
-            (current_content if current_content else "[dim](не задан)[/dim]"),
-            title="Настройка контекста",
-            border_style="white"
-        )
-        self.console.print(panel)
-        self.console.print()
-
-        new_content = self.menu.get_user_input(
-            "Введите новый контекст (или Enter для отмены)",
-            default=current_content
-        )
-
-        if new_content and new_content != current_content:
-            self.set_value("global", "content", new_content)
-            self.console.print("[white]✓ Контекст обновлен![/white]")
-        elif not new_content and current_content:
-            if Confirm.ask("Очистить контекст?", default=False):
-                self.set_value("global", "content", "")
-                self.console.print("[white]✓ Контекст очищен![/white]")
-        else:
-            self.console.print("[dim]Контекст оставлен без изменений[/dim]")
-
-        self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-
-    def _select_llm_menu(self) -> None:
-        """Меню выбора нейросети"""
-        available_llms = self.get_available_llms()
-        current_llm = self.get_current_llm_name()
-
-        if not available_llms:
-            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-            self.console.print("[red]Нет доступных нейросетей![/red]")
-            self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-            return
-
-        # Создаем опции меню из доступных LLM
-        menu_options = []
-        for llm in available_llms:
-            marker = " (текущая)" if llm == current_llm else ""
-            menu_options.append(f"{llm}{marker}")
-
-        choice = self.menu.navigate_menu(menu_options, "Выбор нейросети")
-
-        if choice is not None:
-            selected_llm = available_llms[choice]
-            if selected_llm != current_llm:
-                self.set_value("global", "current_LLM", selected_llm)
-                # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-                self.console.print(f"[white]✓ Выбрана нейросеть: {selected_llm}[/white]")
-                # Показываем обновленную таблицу всех LLM
-                self._show_llms_table()
-            else:
-                # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-                self.console.print("[dim]Нейросеть оставлена без изменений[/dim]")
-
-            # Показываем таблицу всех LLM
-
-
-    def _show_all_llms_menu(self) -> None:
-        """Меню показа всех нейросетей"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-
-        panel = Panel(
-            Text("Все доступные нейросети", style="white"),
-            border_style="white"
-        )
-        self.console.print(panel)
-        self.console.print()
-
-        # Показываем таблицу всех LLM
-        self._show_llms_table()
-
-        self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-
-    def _show_llms_table(self) -> None:
-        """Показывает таблицу всех LLM"""
-        available_llms = self.get_available_llms()
-        current_llm = self.get_current_llm_name()
-
-        if not available_llms:
-            return
-
-        table = Table(title="Доступные нейросети", show_header=True, header_style="white")
-        table.add_column("Название", style="white", no_wrap=True)
-        table.add_column("Модель", style="dim white")
-        table.add_column("API URL", style="dim white")
-        table.add_column("API Key", style="dim white") 
-        table.add_column("Статус", style="cyan")
-
-        for llm_name in available_llms:
-            llm_config = self.yaml_config.get("supported_LLMs", {}).get(llm_name, {})
-            model = llm_config.get("model", "не указана")
-            api_url = llm_config.get("api_url", "не указан")
-            api_key = format_api_key_display(llm_config.get("api_key", ""))
-            status = "✓ Текущая" if llm_name == current_llm else ""
-
-            table.add_row(llm_name, model, api_url, api_key, status)
-
-        self.console.print(table)
-        self.console.print()
-
-    def _delete_llm_menu(self) -> None:
-        """Меню удаления нейросети"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-
-        available_llms = self.get_available_llms()
-        current_llm = self.get_current_llm_name()
-
-        if not available_llms:
-            self.console.print("[red]Нет нейросетей для удаления![/red]")
-            self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-            return
-
-        # Исключаем текущую нейросеть из списка для удаления
-        deletable_llms = [llm for llm in available_llms if llm != current_llm]
-
-        if not deletable_llms:
-            self.console.print("[dim white]Нельзя удалить единственную нейросеть![/dim white]")
-            self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-            return
-
-        menu_options = [f"Удалить: {llm}" for llm in deletable_llms]
-
-        choice = self.menu.navigate_menu(menu_options, "Удаление нейросети")
-
-        if choice is not None:
-            selected_llm = deletable_llms[choice]
-
-            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-            if Confirm.ask(f"Удалить нейросеть '{selected_llm}'?", default=False):
-                del self.yaml_config["supported_LLMs"][selected_llm]
-                self._save_yaml_config()
-                self.console.print(f"[white]✓ Нейросеть '{selected_llm}' удалена![/white]")
-                # Показываем обновленную таблицу всех LLM
-                self._show_llms_table()
-            else:
-                self.console.print("[dim]Удаление отменено[/dim]")
-
-    def _add_llm_menu(self) -> None:
-        """Меню добавления новой нейросети"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-
-        panel = Panel(
-            Text("Добавление новой нейросети", style="white"),
-            border_style="white"
-        )
-        self.console.print(panel)
-        self.console.print()
-
-        # Ввод данных
-        name = self.menu.get_user_input("Название нейросети (может быть любым уникальным именем)")
-        if not name:
-            self.console.print("[red]Название не может быть пустым![/red]")
-            self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-            return
-
-        # Проверяем, существует ли уже такая нейросеть
-        if name in self.get_available_llms():
-            self.console.print(f"[red]Нейросеть '{name}' уже существует![/red]")
-            self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-            return
-
-        model = self.menu.get_user_input("Модель")
-        api_url = self.menu.get_user_input("API URL")
-        api_key = self.menu.get_user_input("API Key", password=True)
-
-        # Создаем конфигурацию
-        new_llm_config = {
+        supported_llms[name] = {
             "model": model,
             "api_url": api_url,
             "api_key": api_key
         }
 
-        # Сохраняем
-        self.yaml_config.setdefault("supported_LLMs", {})[name] = new_llm_config
-        self._save_yaml_config()
+        self.set("supported_LLMs", name, supported_llms[name])
 
-        self.console.print(f"[white]✓ Нейросеть '{name}' добавлена![/white]")
-        
-        # Показываем таблицу всех LLM
-        self._show_llms_table()
+    def update_llm(self, name: str, model: str = None, api_url: str = None, api_key: str = None) -> None:
+        """
+        Обновляет конфигурацию LLM.
 
-    def _edit_llm_menu(self) -> None:
-        """Меню редактирования нейросети"""
-        available_llms = self.get_available_llms()
+        Args:
+            name: Имя LLM для обновления
+            model: Новая модель (опционально)
+            api_url: Новый API URL (опционально)
+            api_key: Новый API ключ (опционально)
+        """
+        supported_llms = self.get("supported_LLMs") or {}
 
-        if not available_llms:
-            # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-            self.console.print("[red]Нет нейросетей для редактирования![/red]")
-            self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-            return
+        if name not in supported_llms:
+            raise ValueError(f"LLM с именем '{name}' не найдена")
 
-        menu_options = [f"Редактировать: {llm}" for llm in available_llms]
+        # Создаем копию текущей конфигурации
+        current_config = supported_llms[name].copy()
 
-        choice = self.menu.navigate_menu(menu_options, "Редактирование нейросети")
+        if model is not None:
+            current_config["model"] = model
+        if api_url is not None:
+            current_config["api_url"] = api_url
+        if api_key is not None:
+            current_config["api_key"] = api_key
 
-        if choice is not None:
-            selected_llm = available_llms[choice]
-            self._edit_specific_llm(selected_llm)
-        
+        # Обновляем всю секцию supported_LLMs
+        supported_llms[name] = current_config
+        self.update_section("supported_LLMs", supported_llms)
 
+    def remove_llm(self, name: str) -> None:
+        """
+        Удаляет LLM.
 
-    def _edit_specific_llm(self, llm_name: str) -> None:
-        """Редактирование конкретной нейросети"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
+        Args:
+            name: Имя LLM для удаления
+        """
+        if name == self.current_llm:
+            raise ValueError("Нельзя удалить текущую LLM")
 
-        current_config = self.yaml_config.get("supported_LLMs", {}).get(llm_name, {})
+        supported_llms = self.get("supported_LLMs") or {}
 
-        panel = Panel(
-            Text(f"Редактирование нейросети: {llm_name}", style="white"),
-            border_style="white"
-        )
-        self.console.print(panel)
-        self.console.print()
+        if name not in supported_llms:
+            raise ValueError(f"LLM с именем '{name}' не найдена")
 
-        # Показываем текущие значения
-        self.console.print(f"Текущее название: [white]{llm_name}[/white]")
-        self.console.print(f"Текущая модель: [dim white]{current_config.get('model', 'не указана')}[/dim white]")
-        self.console.print(f"Текущий API URL: [dim white]{current_config.get('api_url', 'не указан')}[/dim white]")
-        self.console.print(f"API Key: [dim white]{format_api_key_display(current_config.get('api_key', ''))}[/dim white]")
-        self.console.print()
+        del supported_llms[name]
+        self.update_section("supported_LLMs", supported_llms)
 
-        # Ввод нового названия
-        new_name = self.menu.get_user_input(
-            "Новое название нейросети",
-            default=llm_name
-        )
-
-        # Проверяем новое название
-        if new_name != llm_name:
-            if not new_name:
-                self.console.print("[red]Название не может быть пустым![/red]")
-                self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-                return
-
-            if new_name in self.get_available_llms():
-                self.console.print(f"[red]Нейросеть '{new_name}' уже существует![/red]")
-                self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
-                return
-
-        # Ввод новых значений
-        new_model = self.menu.get_user_input(
-            "Модель",
-            default=current_config.get('model', '')
-        )
-        new_api_url = self.menu.get_user_input(
-            "API URL",
-            default=current_config.get('api_url', '')
-        )
-        new_api_key = self.menu.get_user_input(
-            "API Key (оставьте пустым, чтобы не менять)",
-            password=True
-        )
-
-        # Обновляем конфигурацию
-        updated_config = current_config.copy()
-        if new_model:
-            updated_config['model'] = new_model
-        if new_api_url:
-            updated_config['api_url'] = new_api_url
-        if new_api_key:  # Только если ввели новый ключ
-            updated_config['api_key'] = new_api_key
-
-        # Сохраняем изменения
-        if new_name != llm_name:
-            # Удаляем старую конфигурацию
-            del self.yaml_config["supported_LLMs"][llm_name]
-            # Сохраняем под новым именем
-            self.yaml_config.setdefault("supported_LLMs", {})[new_name] = updated_config
-
-            # Если это была текущая нейросеть, обновляем ссылку
-            if self.get_current_llm_name() == llm_name:
-                self.set_value("global", "current_LLM", new_name)
-
-            self.console.print(f"[white]✓ Нейросеть переименована в '{new_name}' и обновлена![/white]")
+    def reset_to_defaults(self) -> None:
+        """
+        Сбрасывает конфигурацию к настройкам по умолчанию.
+        """
+        if self._default_config_path.exists():
+            shutil.copy2(self._default_config_path, self.user_config_path)
+            self.reload()
         else:
-            # Просто обновляем существующую
-            self.yaml_config.setdefault("supported_LLMs", {})[llm_name] = updated_config
-            self.console.print(f"[white]✓ Нейросеть '{llm_name}' обновлена![/white]")
+            raise FileNotFoundError("Файл с настройками по умолчанию не найден")
 
-        self._save_yaml_config()
+    @property
+    def config_path(self) -> Path:
+        """Путь к файлу конфигурации."""
+        return self.user_config_path
 
-        # Показываем таблицу всех LLM
-        self._show_llms_table()
+    @property
+    def default_config_path(self) -> Path:
+        """Путь к файлу с настройками по умолчанию."""
+        return self._default_config_path
 
-    def _language_menu(self) -> None:
-        """Заглушка для меню языка"""
-        # self.console.clear()  # Убрано для отмены перемотки экрана вверх
-
-        panel = Panel(
-            Text("Функция выбора языка находится в разработке", style="white"),
-            title="Language",
-            border_style="white"
-        )
-        self.console.print(panel)
-        self.console.input("\n[cyan]Нажмите Enter для продолжения...[/cyan]")
+    def __repr__(self) -> str:
+        return f"ConfigManager(app_name='{self.app_name}', config_path='{self.user_config_path}')"
 
 
-# Создаем глобальный экземпляр
-config_manager = ConfigManager()
-
-
-@log_execution_time
-def run_configuration_dialog() -> None:
-    """Запуск интерактивной настройки"""
-    config_manager.run_configuration_menu()
+# Глобальный экземпляр для удобства использования
+config = ConfigManager()
 
 
 if __name__ == "__main__":
-    run_configuration_dialog()
+    # Пример использования
+    print("=== Тестирование ConfigManager ===")
+
+    # Показываем текущие настройки
+    print(f"Текущая LLM: {config.current_llm}")
+    print(f"Температура: {config.temperature}")
+    print(f"Потоковый режим: {config.stream_mode}")
+    print(f"JSON режим: {config.json_mode}")
+    print(f"Уровень логирования: {config.console_log_level}")
+    print(f"Доступные LLM: {config.get_available_llms()}")
+
+    # Показываем конфигурацию текущей LLM
+    current_llm_config = config.get_current_llm_config()
+    print(f"Конфигурация текущей LLM: {current_llm_config}")
+
+    print("\n✅ ConfigManager работает корректно!")

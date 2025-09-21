@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
-import os
-import platform
 import sys
 from pathlib import Path
-
-from aiebash.formatter_text import extract_labeled_code_blocks
 
 # Добавляем parent (src) в sys.path для локального запуска
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # Сначала импортируем настройки без импорта логгера
-from aiebash.config_manager import config_manager
+from aiebash.config_manager import config   
 
 # Теперь импортируем и настраиваем логгер
 from aiebash.logger import configure_logger, log_execution_time
 
 # Получаем настройки логирования и настраиваем логгер
-logging_config = config_manager.get_logging_config()
-logger = configure_logger(logging_config)
+logger = configure_logger(config.get("logging"))
 
 # Импортируем OpenRouterChat вместо старых модулей
 from aiebash.llm_client import OpenRouterClient
@@ -25,19 +20,12 @@ from aiebash.arguments import parse_args
 from rich.console import Console
 from aiebash.script_executor import run_code_block
 from aiebash.sys_info import get_system_info_text
+from aiebash.formatter_text import extract_labeled_code_blocks
+from aiebash.error_messages import connection_error
 
-# === Считываем глобальные настройки ===
-logger.info("Загрузка настроек...")
-USER_CONTENT: str = config_manager.get_value("global", "user_content", "")
-CURRENT_LLM: str = config_manager.get_value("global", "current_LLM", "openai_over_proxy")
-STREAM_OUTPUT_MODE: bool = config_manager.get_value("global","stream_output_mode", False)
-JSON_MODE: bool = config_manager.get_value("global", "json_mode", False)
 
-logger.info(f"Заданы настройки - Контент пользователя: {'(пусто)' if not USER_CONTENT else USER_CONTENT[:30] + '...'}")
-logger.info(f"Заданы настройки - Текущий LLM: {CURRENT_LLM}")
+STREAM_OUTPUT_MODE: bool = config.get("global","stream_output_mode")
 logger.info(f"Заданы настройки - Режим потокового вывода: {STREAM_OUTPUT_MODE}")
-logger.info(f"Заданы настройки - Режим ответов в формате JSON: {JSON_MODE}")
-
 
 # Ленивый импорт Markdown из rich (легкий модуль) для ускорения загрузки
 _markdown = None
@@ -47,8 +35,6 @@ def _get_markdown():
         from rich.markdown import Markdown
         _markdown = Markdown
     return _markdown
-
-console = Console()
 
 educational_text = \
     f"ВСЕГДА нумеруй блоки кода в ответах, чтобы пользователь мог " \
@@ -61,8 +47,8 @@ EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text},]
 @log_execution_time
 def get_system_content() -> str:
     """Конструирует системный контент"""
-    user_content = config_manager.get_value("global", "user_content", "")
-    json_mode = config_manager.get_value("global", "json_mode", False)
+    user_content = config.get("global", "user_content", "")
+    json_mode = config.get("global", "json_mode", False)
 
     if json_mode:
         additional_content_json = f"Вы всегда отвечаете одним объектом JSON, содержащим поля 'cmd' и 'info'. "
@@ -70,29 +56,14 @@ def get_system_content() -> str:
         additional_content_json = ""
 
     additional_content_main= \
-        f"Ты называешься - Ai-eBash, продвинутая утилита, ассистент системного администратора. Ты и пользователь всегда работате в терминале. " \
+        f"Ты называешься - Ai-eBash, ассистент системного администратора. Ты и пользователь всегда работате в терминале. " \
         f"Окружение в котором ты и пользователь работаете: {get_system_info_text()}, " \
-        f"давай ответы исходя из этого. " \
+        f"давай ответы исходя из этой информации если пользователь явно не укажет другое. " \
     
     system_content = f"{user_content} {additional_content_json} {additional_content_main}".strip()
     return system_content
 
-# === Инициализация OpenRouterChat клиента ===
-logger.info("Инициализация OpenRouterChat клиента")
 
-try:
-    chat_client = OpenRouterClient(
-        console=console,
-        api_key=config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_key", ""),
-        api_url=config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("api_url", ""),
-        model=config_manager.get_value("supported_LLMs", CURRENT_LLM, {}).get("model", ""),
-        system_content=get_system_content(),
-        temperature=config_manager.get_value("global","temperature", 0.7)
-    )
-    logger.info("OpenRouterChat клиент создан:" + f"{chat_client}")
-except Exception as e:
-    logger.error(f"Ошибка при создании OpenRouterChat клиента: {e}", exc_info=True)
-    sys.exit(1)
 
 # === Основная логика ===
 @log_execution_time
@@ -105,10 +76,9 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
         else:
             reply = chat_client.ask(query)
             console.print(_get_markdown()(reply))
-        logger.info("Запрос выполнен успешно")
     except Exception as e:
-        logger.error(f"Ошибка при выполнении запроса: {e}")
-        console.print(f"[dim]Ошибка:[/dim] {e}")
+        console.print(connection_error(e))
+        logger.error(f"Ошибка соединения: {e}")
 
 @log_execution_time
 def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
@@ -133,10 +103,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
                 console.print(_get_markdown()(reply))
             last_code_blocks = extract_labeled_code_blocks(reply)
         except Exception as e:
-            logger.error(f"Ошибка при обработке начального запроса: {e}")
-            console.print(f"[dim]Ошибка:[/dim] {e}")
+            console.print(connection_error(e))
+            logger.error(f"Ошибка соединения: {e}")
         console.print()
 
+
+   
     # Основной цикл диалога
     while True:
         try:
@@ -174,26 +146,41 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
         except KeyboardInterrupt:
             break
         except Exception as e:
-            logger.error(f"Ошибка в режиме диалога: {e}")
-            console.print(f"[dim]Ошибка:[/dim] {e}")
-
-
+            console.print(connection_error(e))
+            logger.error(f"Ошибка соединения: {e}")
 
 
 @log_execution_time
 def main() -> None:
+
+    console = Console()
+
+    # === Инициализация OpenRouterChat клиента ===
+    logger.info("Инициализация OpenRouterChat клиента")
+
+    llm_config = config.get_current_llm_config()
+    chat_client = OpenRouterClient(
+        console=console,
+        logger=logger,
+        api_key = llm_config["api_key"],
+        api_url = llm_config["api_url"],
+        model = llm_config["model"],
+        system_content=get_system_content(),
+        temperature=config.get("global","temperature", 0.7)
+    )
+    logger.info("OpenRouterChat клиент создан:" + f"{chat_client}")
+    
+
     try:
         args = parse_args()
-
 
         # Обработка режима настройки
         if args.settings:
             logger.info("Запуск конфигурационного режима")
-            from aiebash.config_manager import run_configuration_dialog
-            run_configuration_dialog()
+            from aiebash.config_menu import main_menu
+            main_menu()
             logger.info("Конфигурационный режим завершен")
             return 0
-
 
         # Определяем режим работы
         dialog_mode: bool = args.dialog
