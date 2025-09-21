@@ -1,4 +1,4 @@
-# AI-eBash!
+# Ai-eBash!
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,7 +12,7 @@
 
 ## Содержание
 
-- [AI-eBash!](#ai-ebash)
+- [Ai-eBash!](#ai-ebash)
   - [Содержание](#содержание)
   - [Описание](#описание)
     - [Возможности](#возможности)
