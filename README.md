@@ -287,8 +287,8 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
 I’ll be glad for any help!
 
 ### Areas for Contribution
-
-- 🌍 **Localization** — Adding support for new languages, including README.md
+ 
+- 🌍 **Localization** — Adding support for new languages ([template](https://github.com/Vivatist/ai-ebash/blob/main/src/aiebash/locales/template_locale.json)), including [README.md](https://github.com/Vivatist/ai-ebash/blob/main/README.md)
 - 🤖 **AI Providers** — Integrating new AI providers
 - 🎨 **UI/UX** — Improving the configuration manager interface (yes, it’s not perfect)
 - 🔧 **Tools** — Creating additional utilities
