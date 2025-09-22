@@ -93,9 +93,9 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
         logger.addHandler(file_handler)
     
     # Логируем системную информацию при запуске
-    logger.info(f"Запуск ai-ebash на {platform.system()} {platform.release()}")
-    logger.debug(f"Python {platform.python_version()}, интерпретатор: {sys.executable}")
-    logger.debug(f"Уровень логирования: консоль={console_level}, файл={file_level if file_enabled else 'отключено'}")
+    logger.info(f"Starting ai-ebash on {platform.system()} {platform.release()}")
+    logger.debug(f"Python {platform.python_version()}, interpreter: {sys.executable}")
+    logger.debug(f"Log level: console={console_level}, file={file_level if file_enabled else 'disabled'}")
     
     return logger
 
@@ -109,7 +109,7 @@ def update_logger_config(config_data: dict):
     """
     global logger
     logger = configure_logger(config_data)
-    logger.debug("Настройки логгера обновлены из конфигурационного файла")
+    logger.debug("Logger settings updated from config file")
 
 # Вспомогательная функция для логирования времени выполнения
 def log_execution_time(func):
@@ -120,9 +120,9 @@ def log_execution_time(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
-        #logger.debug(f"Начало выполнения {func.__name__}")
+        #logger.debug(f"Starting execution of {func.__name__}")
         result = func(*args, **kwargs)
         execution_time = time.time() - start_time
-        logger.debug(f"Функция {func.__name__} выполнена за {execution_time:.3f} сек")
+        logger.debug(f"Function {func.__name__} executed in {execution_time:.3f} s")
         return result
     return wrapper

@@ -10,9 +10,20 @@ from aiebash.config_manager import config
 
 # Теперь импортируем и настраиваем логгер
 from aiebash.logger import configure_logger, log_execution_time
+from aiebash.i18n import t, translator
 
 # Получаем настройки логирования и настраиваем логгер
 logger = configure_logger(config.get("logging"))
+
+# Initialize translator language from config (default 'en')
+try:
+    translator.set_language(getattr(config, 'language', 'en'))
+except Exception:
+    pass
+
+from prompt_toolkit import prompt
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.styles import Style
 
 # Импортируем OpenRouterChat вместо старых модулей
 from aiebash.llm_client import OpenRouterClient
@@ -25,7 +36,7 @@ from aiebash.error_messages import connection_error
 
 
 STREAM_OUTPUT_MODE: bool = config.get("global","stream_output_mode")
-logger.info(f"Заданы настройки - Режим потокового вывода: {STREAM_OUTPUT_MODE}")
+logger.info(f"Settings - Stream output mode: {STREAM_OUTPUT_MODE}")
 
 # Ленивый импорт Markdown из rich (легкий модуль) для ускорения загрузки
 _markdown = None
@@ -36,31 +47,33 @@ def _get_markdown():
         _markdown = Markdown
     return _markdown
 
-educational_text = \
-    f"ВСЕГДА нумеруй блоки кода в ответах, чтобы пользователь мог " \
-    f"ссылаться на них. Формат нумерации: [Код #1]\n```bash ... ```, [Код 2]\n```bash ... ```, и так далее. " \
-    f"Если в ответе есть несколько блоков кода, нумеруй их последовательно. " \
-    f"В каждом своем новом ответе начинай нумерацию с начала 1, 2, 3 и т.д.. Обсуждать с пользователем " \
-    f"нумерацию не нужно, просто делай это автоматически."
+educational_text = (
+    "ALWAYS number code blocks in your replies so the user can reference them. "
+    "Numbering format: [Code #1]\n```bash ... ```, [Code #2]\n```bash ... ```, etc. "
+    "If there are multiple code blocks, number them sequentially. "
+    "In each new reply, start numbering from 1 again. Do not discuss numbering; just do it automatically."
+)
 EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text},]
 
 @log_execution_time
 def get_system_content() -> str:
-    """Конструирует системный контент"""
+    """Construct system prompt content"""
     user_content = config.get("global", "user_content", "")
     json_mode = config.get("global", "json_mode", False)
 
     if json_mode:
-        additional_content_json = f"Вы всегда отвечаете одним объектом JSON, содержащим поля 'cmd' и 'info'. "
+        additional_content_json = (
+            "You must always respond with a single JSON object containing fields 'cmd' and 'info'. "
+        )
     else:
         additional_content_json = ""
 
-    additional_content_main= \
-        f"Ты называешься - Ai-eBash, ассистент системного администратора. Всегда указывай " \
-        f"это когда тебя спрашивают кто ты такой. Так же, обязательно указывай название  нейросети и модели. " \
-        f"Ты и пользователь всегда работате в терминале. " \
-        f"Окружение в котором ты и пользователь работаете: {get_system_info_text()}, " \
-        f"давай ответы исходя из этой информации если пользователь явно не укажет другое. " \
+    additional_content_main = (
+        "Your name is Ai-eBash, a sysadmin assistant. Always state this when asked who you are. "
+        "Also, always include the LLM provider and model in your answers. "
+        "You and the user always work in a terminal. "
+        f"Environment for both of you: {get_system_info_text()}, respond based on this unless user specifies otherwise. "
+    )
     
     system_content = f"{user_content} {additional_content_json} {additional_content_main}".strip()
     return system_content
@@ -70,8 +83,8 @@ def get_system_content() -> str:
 # === Основная логика ===
 @log_execution_time
 def run_single_query(chat_client: OpenRouterClient, query: str, console: Console) -> None:
-    """Выполнение одиночного запроса в потоковом режиме"""
-    logger.info(f"Выполнение запроса: '{query[:50]}'...")
+    """Run a single query (optionally streaming)"""
+    logger.info(f"Running query: '{query[:50]}'...")
     try:
         if STREAM_OUTPUT_MODE:
             reply = chat_client.ask_stream(query)
@@ -80,20 +93,22 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
             console.print(_get_markdown()(reply))
     except Exception as e:
         console.print(connection_error(e))
-        logger.error(f"Ошибка соединения: {e}")
+        logger.error(f"Connection error: {e}")
 
 @log_execution_time
 def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
-    """Интерактивный режим диалога"""
+    """Interactive dialog mode"""
     
-    logger.info("Запуск режима диалога")
+    history = FileHistory(".cmd_history")
 
-    # Используем модульную глобальную переменную EDUCATIONAL_CONTENT внутри функции
+    logger.info("Starting dialog mode")
+
+    # Use module global EDUCATIONAL_CONTENT inside the function
     global EDUCATIONAL_CONTENT
 
-    last_code_blocks = []  # Список блоков кода из последнего ответа AI
+    last_code_blocks = []  # code blocks from the last AI answer
 
-    # Если есть начальный промпт, обрабатываем его
+    # If there is an initial prompt, process it
     if initial_user_prompt:
         initial_user_prompt
         try:
@@ -101,30 +116,37 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
                 reply = chat_client.ask_stream(initial_user_prompt)
             else:
                 reply = chat_client.ask(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                EDUCATIONAL_CONTENT = [] # Очищаем образовательный контент после первого использования
+                EDUCATIONAL_CONTENT = []  # clear educational content after first use
                 console.print(_get_markdown()(reply))
             last_code_blocks = extract_labeled_code_blocks(reply)
         except Exception as e:
             console.print(connection_error(e))
-            logger.error(f"Ошибка соединения: {e}")
+            logger.error(f"Connection error: {e}")
         console.print()
 
 
    
-    # Основной цикл диалога
+    # Main dialog loop
     while True:
         try:
-            user_prompt = console.input("[cyan]Вы:[/cyan] ").strip()
 
-            # Запрет пустого ввода
+            # Define prompt styles
+            style = Style.from_dict({
+                "prompt": "bold fg:green",
+                "": "fg:white",  # сам ввод
+                })
+
+            user_prompt = prompt([("class:prompt", ">>> ")], history=history, style=style)
+
+            # Disallow empty input
             if not user_prompt:
                 continue
 
-            # Команды выхода
-            if user_prompt.lower() in ['exit', 'quit', 'q', 'выход']:
+            # Exit commands
+            if user_prompt.lower() in ['exit', 'quit', 'q']:
                 break
 
-            # Проверка, если введено число
+            # If a number is entered
             if user_prompt.isdigit():
                 block_index = int(user_prompt)
                 if 1 <= block_index <= len(last_code_blocks):
@@ -132,7 +154,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
                     console.print()
                     continue
                 else:
-                    console.print(f"[dim]Блок кода #{user_prompt} не найден.[/dim]")
+                    console.print(f"[dim]Code block #{user_prompt} not found.[/dim]")
                     continue
 
             # Если введен текст, отправляем как запрос к AI
@@ -141,15 +163,15 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
             else:
                 reply = chat_client.ask(user_prompt, educational_content=EDUCATIONAL_CONTENT)    
                 console.print(_get_markdown()(reply))
-            EDUCATIONAL_CONTENT = [] # Очищаем образовательный контент после первого использования
+            EDUCATIONAL_CONTENT = []  # clear educational content after first use
             last_code_blocks = extract_labeled_code_blocks(reply)
-            console.print()  # Новая строка после ответа
+            console.print()  # new line after answer
 
         except KeyboardInterrupt:
             break
         except Exception as e:
             console.print(connection_error(e))
-            logger.error(f"Ошибка соединения: {e}")
+            logger.error(f"Connection error: {e}")
 
 
 @log_execution_time
@@ -157,8 +179,8 @@ def main() -> None:
 
     console = Console()
 
-    # === Инициализация OpenRouterChat клиента ===
-    logger.info("Инициализация OpenRouterChat клиента")
+    # === Initialize OpenRouterChat client ===
+    logger.info("Initializing OpenRouterChat client")
 
     llm_config = config.get_current_llm_config()
     chat_client = OpenRouterClient(
@@ -170,45 +192,45 @@ def main() -> None:
         system_content=get_system_content(),
         temperature=config.get("global","temperature", 0.7)
     )
-    logger.info("OpenRouterChat клиент создан:" + f"{chat_client}")
+    logger.info("OpenRouterChat client created: " + f"{chat_client}")
     
 
     try:
         args = parse_args()
 
-        # Обработка режима настройки
+        # Settings mode
         if args.settings:
-            logger.info("Запуск конфигурационного режима")
+            logger.info("Starting configuration mode")
             from aiebash.config_menu import main_menu
             main_menu()
-            logger.info("Конфигурационный режим завершен")
+            logger.info("Configuration mode finished")
             return 0
 
-        # Определяем режим работы
+        # Determine execution mode
         dialog_mode: bool = args.dialog
         prompt_parts: list = args.prompt or []
         prompt: str = " ".join(prompt_parts).strip()
 
         if dialog_mode or not prompt:
-            # Режим диалога
-            logger.info("Запуск в режиме диалога")
+            # Dialog mode
+            logger.info("Starting in dialog mode")
             run_dialog_mode(chat_client, console, prompt if prompt else None)
         else:
-            # Обычный режим (одиночный запрос)
-            logger.info("Запуск в режиме одиночного запроса")
+            # Single query mode
+            logger.info("Starting in single-query mode")
 
             run_single_query(chat_client, prompt, console)
 
     except KeyboardInterrupt:
-        logger.info("Программа прервана пользователем")
+        logger.info("Interrupted by user")
         return 130
     except Exception as e:
-        logger.critical(f"Необработанная ошибка: {e}", exc_info=True)
+        logger.critical(f"Unhandled error: {e}", exc_info=True)
         return 1
     finally:
-        print()  # Печатаем пустую строку в любом случае
+        print()  # print empty line anyway
 
-    logger.info("Программа завершена успешно")
+    logger.info("Program finished successfully")
     return 0
 
 

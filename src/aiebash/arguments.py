@@ -1,48 +1,39 @@
 import argparse
 
 from aiebash.logger import logger, log_execution_time
+from aiebash.i18n import t
 
 
 parser = argparse.ArgumentParser(
     prog="ai",
-    description=(
-        "Утилита для общения с нейросетью "
-        "(OpenAI, HuggingFace, Ollama и др.) "
-        "не покидая командной строки."
-    ),
+    description=t("A CLI to chat with LLMs (OpenAI, HuggingFace, Ollama, etc.) directly from your terminal."),
 )
 
 parser.add_argument(
     "-d",
     "--dialog",
     action="store_true",
-    help=(
-        "Режим диалога с возможностью выполнять блоки кода из ответа. "
-        "Чтобы выполнить блок кода предложенного Ai просто введите номер этого блока и нажмите Enter. "
-        "Выход из диалога: exit, quit, выход или Ctrl+C."
-    ),
+    help=t("Dialog mode with ability to execute code blocks from the answer. Type the block number and press Enter. Exit: exit, quit or Ctrl+C."),
 )
 
 parser.add_argument(
     "-s",
     "--settings",
     action="store_true",
-    help="Запуск интерактивного режима настройки приложения.",
+    help=t("Open interactive settings menu."),
 )
 
 parser.add_argument(
     "prompt",
     nargs="*",
-    help="Ваш запрос к ИИ.",
+    help=t("Your prompt to the AI."),
 )
 
 
 @log_execution_time
 def parse_args() -> argparse.Namespace:
-    """
-    Разбор аргументов командной строки.
-    """
+    """Parse command line arguments."""
     args = parser.parse_args()
-    logger.info("Разбор аргументов командной строки...")
-    logger.debug(f"Полученные аргументы: dialog={args.dialog}, settings={args.settings}, prompt={args.prompt or '(пусто)'}")
+    logger.info("Parsing command line arguments...")
+    logger.debug(f"Args received: dialog={args.dialog}, settings={args.settings}, prompt={args.prompt or '(empty)'}")
     return args

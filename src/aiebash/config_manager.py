@@ -40,6 +40,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from platformdirs import user_config_dir
+from aiebash.i18n import detect_system_language
 
 
 class ConfigManager:
@@ -80,7 +81,17 @@ class ConfigManager:
             if self._default_config_path.exists():
                 try:
                     shutil.copy2(self._default_config_path, self.user_config_path)
-                    print(f"✅ Создана конфигурация из шаблона: {self.user_config_path}")
+                    # After creating user config from defaults, set language based on system locale
+                    try:
+                        with open(self.user_config_path, 'r', encoding='utf-8') as f:
+                            cfg = yaml.safe_load(f) or {}
+                        sys_lang = detect_system_language(["en", "ru"]) or "en"
+                        cfg["language"] = sys_lang
+                        with open(self.user_config_path, 'w', encoding='utf-8') as f:
+                            yaml.safe_dump(cfg, f, indent=2, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                    except Exception:
+                        pass
+                    (f"Создана конфигурация из шаблона: {self.user_config_path}")
                 except Exception as e:
                     raise RuntimeError(f"Не удалось создать файл конфигурации: {e}")
             else:
@@ -383,6 +394,23 @@ class ConfigManager:
 
     def __repr__(self) -> str:
         return f"ConfigManager(app_name='{self.app_name}', config_path='{self.user_config_path}')"
+
+    # === Language ===
+    @property
+    def language(self) -> str:
+        """Current UI language (top-level key)."""
+        try:
+            return self._config.get("language", "en")
+        except Exception:
+            return "en"
+
+    @language.setter
+    def language(self, value: str) -> None:
+        try:
+            self._config["language"] = value
+            self._save_config()
+        except Exception:
+            pass
 
 
 # Глобальный экземпляр для удобства использования

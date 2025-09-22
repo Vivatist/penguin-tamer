@@ -2,7 +2,7 @@ from setuptools import setup
 setup(
     options={
         'package_data': {
-            'aiebash': ['*.yaml'],
+            'aiebash': ['*.yaml', 'locales/*.json'],
         },
     },
 )
