@@ -12,7 +12,7 @@
 
 ## Table of Contents
 
-- [AI-eBash!](#ai-ebash)
+- [Ai-eBash!](#ai-ebash)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
     - [Features](#features)
@@ -57,13 +57,13 @@
 - **Code execution** — Execute scripts and commands suggested by AI in the console
 - **Friendly interface** — Formatted output with syntax highlighting — just like you’re used to when working with neural networks
 - **Multiple AI providers** — Support for OpenAI, OpenRouter, DeepSeek, Anthropic and other popular providers
-- **Ready for localization** — Multi-language support [(in progress)](#contributing)
+- **Multi-language support** — En and Ru are available now. You can [(help with translation)](#contributing) into other languages.
 
 ### Quick Start
 
 Install AI-eBash using one of the convenient [methods](#installation).
 
-Run the program → `ai who are you?`. In a couple of seconds, the neural network will respond:
+Run the program `ai who are you?`. In a couple of seconds, the neural network will respond:
 
 ![program response1](/docs/img/ru_img1.png)
 
