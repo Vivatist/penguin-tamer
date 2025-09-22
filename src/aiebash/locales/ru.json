@@ -1,12 +1,13 @@
 {
   "Settings": "Настройки",
-  "Manage LLMs": "Управление LLM",
+  "Model management": "Управление моделями",
   "System": "Система",
   "User content": "Пользовательский контент",
-  "Temperature": "Температура",
-  "Show current settings": "Показать текущие настройки",
+  "Generation temperature": "Температура генерации",
+  "Current settings": "Текущие настройки",
   "Back": "Назад",
   "Exit": "Выход",
+  "Ai thinking...": "Ai думает...",
 
   "LLM management": "Управление LLM",
   "Add LLM": "Добавить LLM",

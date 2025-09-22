@@ -2,6 +2,7 @@ import threading
 from typing import List, Dict
 import time
 from aiebash.formatter_text import format_api_key_display
+from aiebash.i18n import t
 from aiebash.logger import log_execution_time
 
 # Ленивый импорт Rich
@@ -54,7 +55,7 @@ class OpenRouterClient:
         Пока stop_event не установлен, показывает "Аи печатает...".
         """
         console = _get_console()
-        with console.status("[dim]Ai думает...[/dim]", spinner="dots", spinner_style="dim"):
+        with console.status("[dim]"+t('Ai thinking...') + "[/dim]", spinner="dots", spinner_style="dim"):
             while not stop_spinner.is_set():
                 time.sleep(0.1)
         # console.print("[green]Ai: [/green]")

@@ -70,8 +70,8 @@ def main_menu():
                          message=t("Settings"),
                          choices=[
                             (t('Select current LLM'), 'select'),
-                            (t('Manage LLMs'), 'llm'),
-                            (t('Temperature'), 'temp'),
+                            (t('Model management'), 'llm'),
+                            (t('Generation temperature'), 'temp'),
                             (t('User content'), 'content'),
                             (t('System'), 'system'),
                             (t('Show current settings'), 'overview'),
