@@ -136,7 +136,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
                 "": "fg:white",  # сам ввод
                 })
 
-            user_prompt = prompt([("class:prompt", t("You: "))], history=history, style=style)
+            user_prompt = prompt([("class:prompt", ">>> ")], history=history, style=style)
 
             # Disallow empty input
             if not user_prompt:
