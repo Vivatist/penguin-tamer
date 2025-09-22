@@ -1,5 +1,7 @@
 include src/aiebash/default_config.yaml
 include src/aiebash/locales/*.json
+include docs/img/*.gif
+include docs/img/*.png
 
 # Exclude CI and packaging for other distros
 prune .github

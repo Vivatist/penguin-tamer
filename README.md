@@ -9,6 +9,7 @@
 
 🌍 **Available in:** [English](README.md) | [Русский](/docs/locales/README_ru.md)
 
+![pgram response1](/docs/img/en_main_img.gif)
 
 ## Table of Contents
 
@@ -21,6 +22,12 @@
     - [Getting a Token (API\_KEY) and Connecting to a Pre-installed Model](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model)
     - [Adding a New Model](#adding-a-new-model)
       - [Connection Example](#connection-example)
+  - [Examples](#examples)
+    - [Quick Query](#quick-query)
+    - [Dialog Mode](#dialog-mode)
+    - [Running Code from AI Response](#running-code-from-ai-response)
+  - [Security](#security)
+    - [Best Practices](#best-practices)
   - [Installation](#installation)
     - [Ubuntu/Debian (pipx)](#ubuntudebian-pipx)
     - [Ubuntu/Debian (DEB Package)](#ubuntudebian-deb-package)
@@ -34,12 +41,6 @@
     - [Supported AI Providers](#supported-ai-providers)
     - [Configuration File](#configuration-file)
     - [Reset Settings](#reset-settings)
-  - [Examples](#examples)
-    - [Quick Query](#quick-query)
-    - [Dialog Mode](#dialog-mode)
-    - [Running Code from AI Response](#running-code-from-ai-response)
-  - [Security](#security)
-    - [Best Practices](#best-practices)
   - [Contributing](#contributing)
     - [Areas for Contribution](#areas-for-contribution)
     - [Development Environment Setup](#development-environment-setup)
@@ -117,6 +118,54 @@ Among the connection examples, look for information similar to:
 How to get **API_KEY** is described [above](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model).
 
 Enter these values (***without quotes***) in AI-eBash settings and set this model as current. Now ***Meta: Llama 3.1*** will answer your questions.
+
+## Examples
+
+### Quick Query
+
+```bash
+# Simple question
+ai kernel update script
+```
+
+### Dialog Mode
+
+To start a dialog, use the `-d` key or simply type `ai` and press `Enter`.
+In dialog mode, AI-eBash preserves the conversation context throughout the session.
+
+```bash
+a i -d what python version is installed?
+```
+
+```bash
+a i  # Enter
+```
+
+### Running Code from AI Response
+
+When **in dialog mode**, if the response contains code blocks — they are numbered. To run code, simply enter the block number in the console.
+
+![dialog mode](/docs/img/en_img4.gif)
+
+## Security
+
+> [!WARNING]
+> Never execute code suggested by the neural network if you’re not sure what it does!
+
+### Best Practices
+
+1. **Review code before execution**
+   ```bash
+   # Always check what AI suggests
+   ai Delete all files from /tmp  # Don’t run this blindly!
+   ```
+
+2. **Use safe commands**
+   ```bash
+   # Prefer these over destructive operations
+   ai Show disk usage
+   ai Show running processes
+   ```
 
 ## Installation
 
@@ -233,54 +282,6 @@ rm ~/.config/ai-ebash/config.yaml
 # For Windows
 rm %APPDATA%\ai-ebash\config.yaml
 ```
-
-## Examples
-
-### Quick Query
-
-```bash
-# Simple question
-ai kernel update script
-```
-
-### Dialog Mode
-
-To start a dialog, use the **-d** key or simply type `ai` and press `Enter`.
-In dialog mode, AI-eBash preserves the conversation context throughout the session.
-
-```bash
-a i -d what python version is installed?
-```
-
-```bash
-a i  # Enter
-```
-
-### Running Code from AI Response
-
-When **in dialog mode**, if the response contains code blocks — they are numbered. To run code, simply enter the block number in the console.
-
-![dialog mode](/docs/img/ru_img4.png)
-
-## Security
-
-> [!WARNING]
-> Never execute code suggested by the neural network if you’re not sure what it does!
-
-### Best Practices
-
-1. **Review code before execution**
-   ```bash
-   # Always check what AI suggests
-   ai Delete all files from /tmp  # Don’t run this blindly!
-   ```
-
-2. **Use safe commands**
-   ```bash
-   # Prefer these over destructive operations
-   ai Show disk usage
-   ai Show running processes
-   ```
 
 ## Contributing
 
