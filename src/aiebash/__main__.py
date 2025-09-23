@@ -21,7 +21,7 @@ try:
 except Exception:
     pass
 
-from prompt_toolkit import prompt
+from prompt_toolkit import HTML, prompt
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.styles import Style
 
@@ -133,16 +133,18 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
             # Define prompt styles
             style = Style.from_dict({
                 "prompt": "bold fg:green",
-                "": "fg:white",  # сам ввод
                 })
+            if last_code_blocks:
+                placeholder = HTML("<i><ansiblack>The number of the code block to execute or the next question... Ctrl+C - exit</ansiblack></i>")
+            else:
+                placeholder = HTML("<i><ansiblack>Your question... Ctrl+C - exit</ansiblack></i>")
 
-            # user_prompt = prompt([("class:prompt", ">>> ")], history=history, style=style)
-            user_prompt = prompt([("class:prompt", ">>> ")], history=history, style=style, multiline=False, wrap_lines=True, enable_history_search=True)
+            user_prompt = prompt([("class:prompt", ">>> ")], placeholder=placeholder, history=history, style=style, multiline=False, wrap_lines=True, enable_history_search=True)
             # Disallow empty input
             if not user_prompt:
                 continue
 
-            # Exit commands
+            # Exit commandsКто 
             if user_prompt.lower() in ['exit', 'quit', 'q']:
                 break
 
