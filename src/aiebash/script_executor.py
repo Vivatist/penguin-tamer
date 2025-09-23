@@ -272,6 +272,7 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         
         # Выполняем код через соответствующий исполнитель
         logger.debug("Starting code block execution...")
+        console.print(t("[dim]>>> Result:[/dim]").format(idx=idx))
         process = executor.execute(code)
         
         # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
