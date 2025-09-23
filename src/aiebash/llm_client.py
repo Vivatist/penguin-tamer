@@ -44,10 +44,6 @@ def _get_openai_client():
     return _openai_client
 
 
-
-
-
-
 class OpenRouterClient:
 
     def _spinner(self, stop_spinner: threading.Event) -> None:
@@ -184,7 +180,7 @@ class OpenRouterClient:
         for k, v in self.__dict__.items():
             if k == 'api_key':
                 items[k] = format_api_key_display(v)
-            elif k == 'messages' or k == 'console' or k == '_client':
+            elif k == 'messages' or k == 'console' or k == '_client' or k == 'logger':
                 continue
             else:
                 try:

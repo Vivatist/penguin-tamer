@@ -113,11 +113,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
         initial_user_prompt
         try:
             if STREAM_OUTPUT_MODE:
-                reply = chat_client.ask_stream(initial_user_prompt)
+                reply = chat_client.ask_stream(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
+                console.print(_get_markdown()(reply))
             else:
                 reply = chat_client.ask(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                EDUCATIONAL_CONTENT = []  # clear educational content after first use
                 console.print(_get_markdown()(reply))
+            EDUCATIONAL_CONTENT = []  # clear educational content after first use
             last_code_blocks = extract_labeled_code_blocks(reply)
         except Exception as e:
             console.print(connection_error(e))

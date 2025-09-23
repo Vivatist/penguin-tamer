@@ -22,15 +22,15 @@ def _get_openai_exceptions():
 
 
 def connection_error(error: Exception) -> str:
+    try:
+        body = getattr(error, 'body', None)
+        msg = body.get('message') if isinstance(body, dict) else str(error)
+    except Exception:
+        msg = str(error)
     """Map API errors to localized messages (English as keys)."""
     if isinstance(error, _get_openai_exceptions()['RateLimitError']):
-        return t("[dim]Error 429: You have exceeded your current quota; please check your plan and billing with your LLM provider. Or try again later if using a free tier. You can change LLM in settings: 'ai --settings'[/dim]")
+        return t("[dim]Error 429: Exceeding the quota. Message from the provider: {message}. You can change LLM in settings: 'ai --settings'[/dim]").format(message=msg)
     elif isinstance(error, _get_openai_exceptions()['BadRequestError']):
-        try:
-            body = getattr(error, 'body', None)
-            msg = body.get('message') if isinstance(body, dict) else str(error)
-        except Exception:
-            msg = str(error)
         return t("[dim]Error 400: {message}. Check model name.[/dim]").format(message=msg)
     elif isinstance(error, _get_openai_exceptions()['AuthenticationError']):
         return t("[dim]Error 401: Authentication failed. Check your API_KEY. [link=https://github.com/Vivatist/ai-ebash/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8]How to get a key?[/link][/dim]")
