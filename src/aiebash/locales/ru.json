@@ -16,6 +16,7 @@
   "Select current LLM": "Выбрать нейросеть",
 
   "Console log level": "Уровень логирования консоли",
+  "File logging": "Логирование в файл",
   "Stream mode": "Потоковый режим",
   "JSON mode": "JSON режим",
   "Language": "Language/Язык",
@@ -84,5 +85,7 @@
   "[dim]>>> Running block #{idx}:[/dim]": "[dim]>>> Выполняем блок #{idx}:[/dim]",
   "[dim]>>> Exit code: {code}[/dim]": "[dim]>>> Код завершения: {code}[/dim]",
   "[yellow]>>> Error:[/yellow]": "[yellow]>>> Ошибка:[/yellow]",
-  "[dim]Script execution error: {error}[/dim]": "[dim]Ошибка выполнения скрипта: {error}[/dim]"
+  "[dim]Script execution error: {error}[/dim]": "[dim]Ошибка выполнения скрипта: {error}[/dim]",
+  "The number of the code block to execute or the next question... Ctrl+C - exit": "Номер блока для выполнения или следующий вопрос... Ctrl+C - выход",
+  "Your question... Ctrl+C - exit": "Ваш вопрос... Ctrl+C - выход"
 }

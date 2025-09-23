@@ -21,7 +21,7 @@ try:
 except Exception:
     pass
 
-from prompt_toolkit import prompt
+from prompt_toolkit import HTML, prompt
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.styles import Style
 
@@ -49,7 +49,8 @@ def _get_markdown():
 
 educational_text = (
     "ALWAYS number code blocks in your replies so the user can reference them. "
-    "Numbering format: [Code #1]\n```bash ... ```, [Code #2]\n```bash ... ```, etc. "
+    "Numbering format: [Code #1]\n```bash ... ```, [Code #2]\n```bash ... ```, "
+    "etc. Insert the numbering BEFORE the block "
     "If there are multiple code blocks, number them sequentially. "
     "In each new reply, start numbering from 1 again. Do not discuss numbering; just do it automatically."
 )
@@ -70,7 +71,6 @@ def get_system_content() -> str:
 
     additional_content_main = (
         "Your name is Ai-eBash, a sysadmin assistant. Always state this when asked who you are. "
-        "Also, always include the LLM provider and model in your answers. "
         "You and the user always work in a terminal. "
         f"Environment for both of you: {get_system_info_text()}, respond based on this unless user specifies otherwise. "
     )
@@ -133,16 +133,18 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
             # Define prompt styles
             style = Style.from_dict({
                 "prompt": "bold fg:green",
-                "": "fg:white",  # сам ввод
                 })
+            if last_code_blocks:
+                placeholder = HTML("<i><ansiblack>The number of the code block to execute or the next question... Ctrl+C - exit</ansiblack></i>")
+            else:
+                placeholder = HTML("<i><ansiblack>Your question... Ctrl+C - exit</ansiblack></i>")
 
-            user_prompt = prompt([("class:prompt", ">>> ")], history=history, style=style)
-
+            user_prompt = prompt([("class:prompt", ">>> ")], placeholder=placeholder, history=history, style=style, multiline=False, wrap_lines=True, enable_history_search=True)
             # Disallow empty input
             if not user_prompt:
                 continue
 
-            # Exit commands
+            # Exit commandsКто 
             if user_prompt.lower() in ['exit', 'quit', 'q']:
                 break
 

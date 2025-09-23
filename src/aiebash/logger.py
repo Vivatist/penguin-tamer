@@ -49,14 +49,14 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
     log_level = logging.INFO
     console_level = logging.CRITICAL
     file_level = logging.DEBUG
-    file_enabled = True
+    file_enabled = False
     
     # Применяем настройки из конфигурации, если они есть
     if config_data:      
         log_level = get_log_level(config_data.get('level', 'INFO'))
         console_level = get_log_level(config_data.get('console_level', 'INFO'))
         file_level = get_log_level(config_data.get('file_level', 'DEBUG'))
-        file_enabled = config_data.get('file_enabled', True)
+        file_enabled = config_data.get('file_enabled', False)
     
     # Создаем новый логгер
     logger = logging.getLogger('ai-ebash')

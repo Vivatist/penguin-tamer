@@ -322,6 +322,7 @@ def system_settings_menu():
                          message=t('System settings'),
                          choices=[
                              (t('Console log level'), 'logging'),
+                             (t('File logging'), 'file_logging'),
                              (t('Stream mode'), 'stream'),
                              (t('JSON mode'), 'json'),
                              (t('Back'), 'back')
@@ -337,6 +338,8 @@ def system_settings_menu():
 
         if choice == 'logging':
             set_log_level()
+        elif choice == 'file_logging':
+            set_file_logging()
         elif choice == 'stream':
             set_stream_mode()
         elif choice == 'json':
@@ -358,6 +361,23 @@ def set_log_level():
     answers = prompt_clean(questions)
     if answers:
         config.console_log_level = answers['level']
+        print(t('Updated'))
+
+
+def set_file_logging():
+    """File logging setting."""
+    current_state = getattr(config, 'file_enabled', False)
+    questions = [
+        inquirer.List('enabled',
+                     message=t('File logging'),
+                     choices=[('On', True), ('Off', False)],
+                     default=current_state,
+                     carousel=True)
+    ]
+
+    answers = prompt_clean(questions)
+    if answers:
+        config.file_enabled = answers['enabled']
         print(t('Updated'))
 
 

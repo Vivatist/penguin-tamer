@@ -10,6 +10,7 @@ global:
 
 # "DEBUG" - для просмотра отладочной информации в консоли, "CRITICAL" - только критические ошибки
 logging:
+  file_enabled: false # Включить логирование в файл (лог-файл будет создан в домашней директории пользователя)
   level: "DEBUG"
   console_level: "CRITICAL" 
   file_level: "DEBUG"
