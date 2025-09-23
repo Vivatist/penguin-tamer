@@ -137,7 +137,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
             if last_code_blocks:
                 placeholder = HTML(t("<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>"))
             else:
-                placeholder = HTML("<i><gray>Your question... Ctrl+C - exit</gray></i>")
+                placeholder = HTML(t("<i><gray>Your question... Ctrl+C - exit</gray></i>"))
 
             user_prompt = prompt([("class:prompt", ">>> ")], placeholder=placeholder, history=history, style=style, multiline=False, wrap_lines=True, enable_history_search=True)
             # Disallow empty input
