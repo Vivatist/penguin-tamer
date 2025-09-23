@@ -86,6 +86,8 @@
   "[dim]>>> Exit code: {code}[/dim]": "[dim]>>> Код завершения: {code}[/dim]",
   "[yellow]>>> Error:[/yellow]": "[yellow]>>> Ошибка:[/yellow]",
   "[dim]Script execution error: {error}[/dim]": "[dim]Ошибка выполнения скрипта: {error}[/dim]",
-  "The number of the code block to execute or the next question... Ctrl+C - exit": "Номер блока для выполнения или следующий вопрос... Ctrl+C - выход",
-  "Your question... Ctrl+C - exit": "Ваш вопрос... Ctrl+C - выход"
+
+  "[dim]>>> Result:[/dim]": "[dim]>>> Результат:[/dim]",
+  "<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>": "<i><gray>Номер блока для выполнения или следующий вопрос... Ctrl+C - выход</gray></i>",
+  "<i><gray>Your question... Ctrl+C - exit</gray></i>": "<i><gray>Ваш вопрос... Ctrl+C - выход</gray></i>"
 }

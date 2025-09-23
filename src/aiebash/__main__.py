@@ -135,7 +135,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
                 "prompt": "bold fg:green",
                 })
             if last_code_blocks:
-                placeholder = HTML("<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>")
+                placeholder = HTML(t("<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>"))
             else:
                 placeholder = HTML("<i><gray>Your question... Ctrl+C - exit</gray></i>")
 
