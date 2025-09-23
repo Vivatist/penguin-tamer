@@ -105,12 +105,6 @@ class OpenRouterClient:
 
             self.messages.append({"role": "assistant", "content": reply})
 
-            # токены
-            # usage = response.usage
-            # if usage:
-            #     print(f"[TOKENS] input={usage.prompt_tokens}, "
-            #           f"output={usage.completion_tokens}, "
-            #           f"total={usage.total_tokens}")
             return reply
 
         except Exception as e:
@@ -125,14 +119,12 @@ class OpenRouterClient:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
         self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
-
-        reply_parts = ['**Ai:** ']
-
+        reply_parts = []
         # Показ спиннера в отдельном потоке
         stop_spinner = threading.Event()
         spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,))
         spinner_thread.start()
-
+        
         try:
             stream = self.client.chat.completions.create(
                 model=self.model,
@@ -141,13 +133,27 @@ class OpenRouterClient:
                 stream=True
             )
 
-            # Останавливаем спиннер
+            # Ждем первый чанк с контентом перед запуском Live
+            first_content_chunk = None
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    first_content_chunk = chunk.choices[0].delta.content
+                    reply_parts.append(first_content_chunk)
+                    break
+            
+            # Останавливаем спиннер после получения первого чанка
             stop_spinner.set()
-            spinner_thread.join()
+            if spinner_thread.is_alive():
+                spinner_thread.join()
 
             # Используем Live для динамического обновления отображения с Markdown
-
-            with _get_live()(console=self.console, refresh_per_second=20, auto_refresh=True) as live:
+            with _get_live()(console=self.console, refresh_per_second=10, auto_refresh=True) as live:
+                # Показываем первый чанк
+                if first_content_chunk:
+                    markdown = _get_markdown()(first_content_chunk)
+                    live.update(markdown)
+                
+                # Продолжаем обрабатывать остальные чанки
                 for chunk in stream:
                     if chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
@@ -162,9 +168,10 @@ class OpenRouterClient:
             return reply
 
         except Exception as e:
-            # Останавливаем спиннер
+            # Останавливаем спиннер в случае ошибки
             stop_spinner.set()
-            spinner_thread.join()
+            if spinner_thread.is_alive():
+                spinner_thread.join()
             raise
   
 
