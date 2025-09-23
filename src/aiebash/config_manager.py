@@ -257,6 +257,16 @@ class ConfigManager:
         self.set("logging", "console_level", value)
 
     @property
+    def file_enabled(self) -> bool:
+        """Включение логирования в файл."""
+        return self.get("logging", "file_enabled", False)
+
+    @file_enabled.setter
+    def file_enabled(self, value: bool) -> None:
+        """Устанавливает включение логирования в файл."""
+        self.set("logging", "file_enabled", value)
+
+    @property
     def file_log_level(self) -> str:
         """Уровень логирования в файл."""
         return self.get("logging", "file_level", "DEBUG")
