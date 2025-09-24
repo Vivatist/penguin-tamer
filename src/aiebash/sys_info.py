@@ -4,8 +4,6 @@ import platform
 import socket
 from datetime import datetime
 import getpass
-import os
-import subprocess
 
 def get_system_info_text() -> str:
     """Возвращает информацию о рабочем окружении в виде читаемого текста"""
@@ -15,28 +13,25 @@ def get_system_info_text() -> str:
     except Exception as e:
         local_ip = f"не удалось получить ({e})"
 
-    # Определяем shell
+    # Определяем shell без медленных вызовов subprocess
     shell_exec = os.environ.get('SHELL') or os.environ.get('COMSPEC') or os.environ.get('TERMINAL') or ''
     shell_name = os.path.basename(shell_exec) if shell_exec else 'unknown'
+    
+    # Быстрое определение версии shell без subprocess вызовов
     shell_version = 'unknown'
-    if shell_exec:
-        # Попробуем получить версию через --version, иначе специфичные команды
-        try:
-            # Определяем кодировку для Windows
-            encoding = 'cp866' if platform.system() == 'Windows' else 'utf-8'
-            out = subprocess.check_output([shell_exec, '--version'], stderr=subprocess.STDOUT, 
-                                        encoding=encoding, errors='replace', timeout=2)
-            shell_version = out.strip().splitlines()[0]
-        except Exception:
-            # powershell/pwsh variant
-            try:
-                if 'powershell' in shell_name.lower() or 'pwsh' in shell_name.lower():
-                    encoding = 'cp866' if platform.system() == 'Windows' else 'utf-8'
-                    out = subprocess.check_output([shell_exec, '-Command', '$PSVersionTable.PSVersion.ToString()'], 
-                                                stderr=subprocess.STDOUT, encoding=encoding, errors='replace', timeout=2)
-                    shell_version = out.strip().splitlines()[0]
-            except Exception:
-                shell_version = 'unknown'
+    if shell_exec and os.path.exists(shell_exec):
+        # Определяем версию только по известным паттернам, без вызова процесса
+        if 'cmd.exe' in shell_exec.lower():
+            shell_version = 'Windows Command Line'
+        elif 'powershell.exe' in shell_exec.lower():
+            shell_version = 'Windows PowerShell'
+        elif 'pwsh' in shell_exec.lower():
+            shell_version = 'PowerShell Core'
+        elif 'bash' in shell_exec.lower():
+            shell_version = 'Bash shell'
+        elif 'zsh' in shell_exec.lower():
+            shell_version = 'Z shell'
+        # Для остальных случаев оставляем 'unknown' чтобы не тратить время на subprocess
 
     info_text = f"""
 Сведения о системе:

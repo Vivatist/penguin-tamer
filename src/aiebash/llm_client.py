@@ -51,7 +51,7 @@ class OpenRouterClient:
         Пока stop_event не установлен, показывает "Аи печатает...".
         """
         console = _get_console()
-        with console.status("[dim]"+t('Ai thinking...') + "[/dim]", spinner="dots", spinner_style="dim"):
+        with console.status("[dim]" + t('Ai thinking...') + "[/dim]", spinner="dots", spinner_style="dim"):
             while not stop_spinner.is_set():
                 time.sleep(0.1)
         # console.print("[green]Ai: [/green]")
@@ -79,8 +79,10 @@ class OpenRouterClient:
         return self._client
 
     @log_execution_time
-    def ask(self, user_input: str, educational_content: list = []) -> str:
+    def ask(self, user_input: str, educational_content: list = None) -> str:
         """Обычный (не потоковый) режим с сохранением контекста"""
+        if educational_content is None:
+            educational_content = []
         self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
 
@@ -115,8 +117,10 @@ class OpenRouterClient:
 
 
     @log_execution_time
-    def ask_stream(self, user_input: str, educational_content: list = []) -> str:
+    def ask_stream(self, user_input: str, educational_content: list = None) -> str:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
+        if educational_content is None:
+            educational_content = []
         self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
         reply_parts = []

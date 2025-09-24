@@ -91,7 +91,7 @@ class ConfigManager:
                             yaml.safe_dump(cfg, f, indent=2, allow_unicode=True, default_flow_style=False, sort_keys=False)
                     except Exception:
                         pass
-                    (f"Создана конфигурация из шаблона: {self.user_config_path}")
+                    print(f"Создана конфигурация из шаблона: {self.user_config_path}")
                 except Exception as e:
                     raise RuntimeError(f"Не удалось создать файл конфигурации: {e}")
             else:

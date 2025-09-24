@@ -21,30 +21,30 @@ class Settings:
     def __init__(self):
         self.config_data = {}
         self.load_settings()
-        
+
     @log_execution_time
     def load_settings(self) -> None:
         """Загружает настройки из файла или создает файл с настройками по умолчанию"""
-        
+
         # Если файл настроек пользователя не существует
         if not USER_CONFIG_PATH.exists():
-            
+
             # Создаем директорию, если ее нет
             USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-            
+
             # Проверяем наличие файла дефолтного конфига
             if DEFAULT_CONFIG_PATH.exists():
                 shutil.copy(DEFAULT_CONFIG_PATH, USER_CONFIG_PATH)
             else:
-                return 
-        
+                return
+
         # Загружаем настройки из файла
         try:
             with open(USER_CONFIG_PATH, 'r', encoding='utf-8') as f:
                 self.config_data = yaml.safe_load(f)
         except Exception:
             self.config_data = {}
-            
+
     @log_execution_time
     def save_settings(self) -> None:
         """Сохраняет настройки в файл"""
@@ -56,7 +56,7 @@ class Settings:
                 yaml.safe_dump(self.config_data, f, indent=2, allow_unicode=True, default_flow_style=False)
         except Exception:
             pass
-            
+
     @log_execution_time
     def get_value(self, section: str, key: str, default: Any = None) -> Any:
         """Получает значение из настроек"""
@@ -73,7 +73,7 @@ class Settings:
                 return value
         except Exception:
             return default
-            
+
     @log_execution_time
     def set_value(self, section: str, key: str, value: Any) -> None:
         """Устанавливает значение в настройках"""
@@ -93,19 +93,17 @@ class Settings:
                 if section not in self.config_data["supported_LLMs"]:
                     self.config_data["supported_LLMs"][section] = {}
                 self.config_data["supported_LLMs"][section][key.lower()] = value
-            
+
             self.save_settings()
         except Exception:
             pass
-            
-        
+
     @log_execution_time
     def get_current_llm_name(self) -> str:
         """Возвращает имя текущего LLM"""
         current_llm = self.get_value("global", "current_LLM", "openai_over_proxy")
         return current_llm
-        
-        
+
     @log_execution_time
     def get_current_llm_config(self) -> Dict[str, Any]:
         """Возвращает конфигурацию текущего LLM"""
