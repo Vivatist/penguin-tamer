@@ -33,7 +33,6 @@
 
   "Current settings:": "Текущие настройки:",
   "Language auto-detected: {lang}": "Авто-определённый язык: {lang}",
-  "Available LLMs (current marked):": "Доступные LLM (текущая помечена):",
   "User content:": "Пользовательский контент:",
   "Console log level: {level}": "Уровень логов консоли: {level}",
   "Stream mode: {mode}": "Потоковый режим: {mode}",
@@ -69,7 +68,7 @@
   "Content & Temperature": "Контент и Температура",
   "Content": "Контент",
   "(empty)": "(пусто)",
-  "Available LLMs": "Доступные нейросети",
+  "Added LLMs (current marked):": "Добавленные нейросети (текущая помечена):",
   "LLM": "Нейросеть",
   "No LLMs added": "Нет добавленных нейросетей",
   "Logging": "Логирование",
@@ -89,5 +88,6 @@
 
   "[dim]>>> Result:[/dim]": "[dim]>>> Результат:[/dim]",
   "<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>": "<i><gray>Номер блока для выполнения или следующий вопрос... Ctrl+C - выход</gray></i>",
-  "<i><gray>Your question... Ctrl+C - exit</gray></i>": "<i><gray>Ваш вопрос... Ctrl+C - выход</gray></i>"
+  "<i><gray>Your question... Ctrl+C - exit</gray></i>": "<i><gray>Ваш вопрос... Ctrl+C - выход</gray></i>",
+  "Show current settings": "Показать текущие настройки"
 }

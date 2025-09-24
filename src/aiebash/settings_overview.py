@@ -52,9 +52,10 @@ def _plain_overview_print():
         print("-" * len(header))
         for name in llms:
             cfg = config.get_llm_config(name) or {}
-            mark = f" [{t('current')}]" if name == config.current_llm else ""
+            is_current = name == config.current_llm
+            current_mark = " ✓" if is_current else "  "
             row = [
-                f"{name}{mark}",
+                f"{current_mark}{name}",
                 cfg.get('model', '') or '',
                 cfg.get('api_url', '') or '',
                 format_api_key_display(cfg.get('api_key', '') or ''),
@@ -64,6 +65,14 @@ def _plain_overview_print():
     # Логирование
     print("\n" + t("Logging") + ":")
     print(f"  {t('Console log level')}: {config.console_log_level}")
+    
+    file_enabled = getattr(config, 'file_enabled', False)
+    if file_enabled:
+        file_level = getattr(config, 'file_log_level', 'DEBUG')
+        print(f"  {t('File logging')}: On ({file_level})")
+    else:
+        print(f"  {t('File logging')}: Off")
+    
     print("=" * 60)
 
 
@@ -121,18 +130,41 @@ def print_settings_overview(console: Optional[object] = None) -> None:
 
         for name in llms:
             cfg = config.get_llm_config(name) or {}
-            name_display = f"{name} [{t('current')}]" if name == current_llm else name
+            is_current = name == current_llm
+            
+            # Выделяем текущую LLM зеленым цветом
+            if is_current:
+                name_display = f"[green]{name}[/green]"
+                model_display = f"[green]{cfg.get('model', '') or ''}[/green]"
+                url_display = f"[green]{cfg.get('api_url', '') or ''}[/green]"
+                key_display = f"[green]{format_api_key_display(cfg.get('api_key', '') or '')}[/green]"
+            else:
+                name_display = name
+                model_display = cfg.get('model', '') or ''
+                url_display = cfg.get('api_url', '') or ''
+                key_display = format_api_key_display(cfg.get('api_key', '') or '')
+            
             table.add_row(
                 name_display,
-                cfg.get('model', '') or '',
-                cfg.get('api_url', '') or '',
-                format_api_key_display(cfg.get('api_key', '') or ''),
+                model_display,
+                url_display,
+                key_display,
             )
         console.print(table)
     else:
-        console.print(Panel.fit(t("No LLMs added"), title=t("Available LLMs")))
+        console.print(Panel.fit(t("No LLMs added"), title=t("Added LLMs")))
 
     # Логирование
-    console.print(Panel.fit(f"{t('Console log level')}: [bold]{config.console_log_level}[/bold]", title=t("Logging")))
+    logging_info = []
+    logging_info.append(f"{t('Console log level')}: [bold]{config.console_log_level}[/bold]")
+    
+    file_enabled = getattr(config, 'file_enabled', False)
+    if file_enabled:
+        file_level = getattr(config, 'file_log_level', 'DEBUG')
+        logging_info.append(f"{t('File logging')}: [green]On[/green] ({file_level})")
+    else:
+        logging_info.append(f"{t('File logging')}: [dim]Off[/dim]")
+    
+    console.print(Panel.fit("\n".join(logging_info), title=t("Logging")))
 
     console.rule()

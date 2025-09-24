@@ -147,7 +147,8 @@ class OpenRouterClient:
                 spinner_thread.join()
 
             # Используем Live для динамического обновления отображения с Markdown
-            with _get_live()(console=self.console, refresh_per_second=10, auto_refresh=True) as live:
+            # TODO: сократить частоту обновлений для снижения нагрузки
+            with _get_live()(console=self.console, refresh_per_second=100, auto_refresh=True) as live:
                 # Показываем первый чанк
                 if first_content_chunk:
                     markdown = _get_markdown()(first_content_chunk)
