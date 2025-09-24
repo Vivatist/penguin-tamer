@@ -6,10 +6,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # Сначала импортируем настройки без импорта логгера
-from aiebash.config_manager import config   
+from aiebash.config_manager import config
+
 
 # Простой ленивый логгер
 _logger = None
+
+
 def _get_logger():
     global _logger
     if _logger is None:
@@ -17,12 +20,20 @@ def _get_logger():
         _logger = configure_logger(config.get("logging"))
     return _logger
 
+
 # Простой класс-заглушка для логгера
 class LazyLogger:
-    def info(self, msg): _get_logger().info(msg)
-    def debug(self, msg): _get_logger().debug(msg)
-    def error(self, msg): _get_logger().error(msg)
-    def critical(self, msg, exc_info=None): _get_logger().critical(msg, exc_info=exc_info)
+    def info(self, msg):
+        _get_logger().info(msg)
+
+    def debug(self, msg):
+        _get_logger().debug(msg)
+
+    def error(self, msg):
+        _get_logger().error(msg)
+
+    def critical(self, msg, exc_info=None):
+        _get_logger().critical(msg, exc_info=exc_info)
 
 logger = LazyLogger()
 
@@ -31,8 +42,11 @@ def log_execution_time(func):
     """Простой декоратор времени выполнения"""
     return func  # Временно отключаем для ускорения загрузки
 
+
 # Ленивый импорт i18n
 _i18n_initialized = False
+
+
 def _ensure_i18n():
     global _i18n_initialized, t, translator
     if not _i18n_initialized:
@@ -44,10 +58,12 @@ def _ensure_i18n():
             pass
         _i18n_initialized = True
 
+
 def t_lazy(text, **kwargs):
     """Ленивая загрузка переводчика"""
     _ensure_i18n()
     return t(text, **kwargs)
+
 
 # Используем t_lazy вместо t для отложенной инициализации
 t = t_lazy
@@ -68,6 +84,7 @@ def _ensure_prompt_toolkit():
         from prompt_toolkit.styles import Style
         _prompt_toolkit_imported = True
 
+
 def _get_console():
     """Ленивый импорт rich.console"""
     global _rich_console
@@ -76,6 +93,7 @@ def _get_console():
         _rich_console = Console
     return _rich_console
 
+
 def _get_script_executor():
     """Ленивый импорт script_executor"""
     global _script_executor
@@ -83,6 +101,7 @@ def _get_script_executor():
         from aiebash.script_executor import run_code_block
         _script_executor = run_code_block
     return _script_executor
+
 
 def _get_formatter_text():
     """Ленивый импорт formatter_text"""
@@ -98,11 +117,13 @@ from aiebash.arguments import parse_args
 from aiebash.error_messages import connection_error
 
 
-STREAM_OUTPUT_MODE: bool = config.get("global","stream_output_mode")
+STREAM_OUTPUT_MODE: bool = config.get("global", "stream_output_mode")
 logger.info(f"Settings - Stream output mode: {STREAM_OUTPUT_MODE}")
 
 # Ленивый импорт Markdown из rich (легкий модуль) для ускорения загрузки
 _markdown = None
+
+
 def _get_markdown():
     global _markdown
     if _markdown is None:
@@ -117,7 +138,7 @@ educational_text = (
     "If there are multiple code blocks, number them sequentially. "
     "In each new reply, start numbering from 1 again. Do not discuss numbering; just do it automatically."
 )
-EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text},]
+EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text}]
 
 @log_execution_time
 def get_system_content() -> str:
@@ -143,7 +164,6 @@ def get_system_content() -> str:
     return system_content
 
 
-
 # === Основная логика ===
 @log_execution_time
 def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None:
@@ -158,6 +178,7 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None
     except Exception as e:
         console.print(connection_error(e))
         logger.error(f"Connection error: {e}")
+
 
 @log_execution_time
 def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
@@ -194,8 +215,6 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             logger.error(f"Connection error: {e}")
         console.print()
 
-
-   
     # Main dialog loop
     while True:
         try:
@@ -203,18 +222,19 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             # Define prompt styles
             style = Style.from_dict({
                 "prompt": "bold fg:green",
-                })
+            })
             if last_code_blocks:
                 placeholder = HTML(t("<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>"))
             else:
                 placeholder = HTML(t("<i><gray>Your question... Ctrl+C - exit</gray></i>"))
 
-            user_prompt = prompt([("class:prompt", ">>> ")], placeholder=placeholder, history=history, style=style, multiline=False, wrap_lines=True, enable_history_search=True)
+            user_prompt = prompt([("class:prompt", ">>> ")], placeholder=placeholder, history=history, 
+                                style=style, multiline=False, wrap_lines=True, enable_history_search=True)
             # Disallow empty input
             if not user_prompt:
                 continue
 
-            # Exit commandsКто 
+            # Exit commands
             if user_prompt.lower() in ['exit', 'quit', 'q']:
                 break
 
@@ -233,7 +253,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             if STREAM_OUTPUT_MODE:
                 reply = chat_client.ask_stream(user_prompt, educational_content=EDUCATIONAL_CONTENT)
             else:
-                reply = chat_client.ask(user_prompt, educational_content=EDUCATIONAL_CONTENT)    
+                reply = chat_client.ask(user_prompt, educational_content=EDUCATIONAL_CONTENT)
                 console.print(_get_markdown()(reply))
             EDUCATIONAL_CONTENT = []  # clear educational content after first use
             last_code_blocks = _get_formatter_text()(reply)
@@ -255,14 +275,15 @@ def _create_chat_client(console):
     chat_client = OpenRouterClient(
         console=console,
         logger=logger,
-        api_key = llm_config["api_key"],
-        api_url = llm_config["api_url"],
-        model = llm_config["model"],
+        api_key=llm_config["api_key"],
+        api_url=llm_config["api_url"],
+        model=llm_config["model"],
         system_content=get_system_content(),
-        temperature=config.get("global","temperature", 0.7)
+        temperature=config.get("global", "temperature", 0.7)
     )
     logger.info("OpenRouterChat client created: " + f"{chat_client}")
     return chat_client
+
 
 @log_execution_time
 def main() -> None:

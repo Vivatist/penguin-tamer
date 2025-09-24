@@ -4,8 +4,6 @@ import platform
 import socket
 from datetime import datetime
 import getpass
-import os
-import subprocess
 
 def get_system_info_text() -> str:
     """Возвращает информацию о рабочем окружении в виде читаемого текста"""
