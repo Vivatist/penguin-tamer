@@ -98,8 +98,8 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console: Console
 @log_execution_time
 def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode"""
-    
-    # История команд должна храниться рядом с настройками в пользовательской папке
+
+    # История команд хранится рядом с настройками в пользовательской папке
     history_file_path = config.user_config_dir / "cmd_history"
     history = FileHistory(str(history_file_path))
 
