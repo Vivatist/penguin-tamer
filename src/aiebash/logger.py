@@ -3,9 +3,6 @@ import yaml
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
-from rich.logging import RichHandler
-from rich.console import Console
-from rich.traceback import install
 import platform
 from logging.handlers import RotatingFileHandler
 from platformdirs import user_config_dir
@@ -18,8 +15,34 @@ log_dir.mkdir(parents=True, exist_ok=True)
 # Заглушка для логгера по умолчанию (будет заменен)
 logger = logging.getLogger('ai-ebash')
 
-# Устанавливаем Rich для форматирования трейсбеков
-install(show_locals=True)
+# Ленивые импорты Rich для ускорения загрузки
+_rich_handler = None
+_rich_console = None
+_rich_installed = False
+
+def _get_rich_handler():
+    """Ленивый импорт RichHandler"""
+    global _rich_handler
+    if _rich_handler is None:
+        from rich.logging import RichHandler
+        _rich_handler = RichHandler
+    return _rich_handler
+
+def _get_rich_console():
+    """Ленивый импорт Rich Console"""
+    global _rich_console
+    if _rich_console is None:
+        from rich.console import Console
+        _rich_console = Console
+    return _rich_console
+
+def _ensure_rich_traceback():
+    """Ленивая установка Rich traceback"""
+    global _rich_installed
+    if not _rich_installed:
+        from rich.traceback import install
+        install(show_locals=True)
+        _rich_installed = True
 
 # Преобразование строковых уровней в константы logging
 def get_log_level(level_name: str) -> int:
@@ -66,8 +89,9 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
     if logger.hasHandlers():
         logger.handlers.clear()
     
-    # Консольный вывод
-    console = Console()
+    # Консольный вывод с ленивой загрузкой Rich
+    console = _get_rich_console()()
+    RichHandler = _get_rich_handler()
     console_handler = RichHandler(
         console=console,
         rich_tracebacks=True,
@@ -76,6 +100,9 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
     )
     console_handler.setLevel(console_level)
     logger.addHandler(console_handler)
+    
+    # Устанавливаем Rich traceback только при создании консольного обработчика
+    _ensure_rich_traceback()
     
     # Файловый вывод
     if file_enabled:
