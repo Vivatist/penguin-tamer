@@ -9,7 +9,7 @@
 
 🌍 **Available in:** [English](README.md) | [Русский](/docs/locales/README_ru.md)
 
-![pgram response1](/docs/img/en_main_img.gif)
+![pgram response1](/docs/img/en_intro.gif)
 
 ## Table of Contents
 
