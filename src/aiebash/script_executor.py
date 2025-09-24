@@ -53,44 +53,46 @@ class LinuxCommandExecutor(CommandExecutor):
         # Читаем stdout построчно
         if process.stdout:
             for line in process.stdout:
-                try:
-                    decoded_line = line.decode('utf-8', errors='replace').strip()
-                    if decoded_line:  # Игнорируем пустые строки
-                        print(decoded_line)  # Выводим в реальном времени
-                        stdout_lines.append(decoded_line)
-                except UnicodeDecodeError:
-                    # Если UTF-8 не работает, пробуем системную кодировку
+                if line:  # Проверяем, что линия не пустая
                     try:
-                        decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
-                        if decoded_line:
-                            print(decoded_line)
+                        decoded_line = line.decode('utf-8', errors='replace').strip()
+                        if decoded_line:  # Игнорируем пустые строки
+                            print(decoded_line)  # Выводим в реальном времени
                             stdout_lines.append(decoded_line)
-                    except:
-                        # В крайнем случае выводим как есть
-                        raw_line = line.decode('latin1', errors='replace').strip()
-                        if raw_line:
-                            print(raw_line)
-                            stdout_lines.append(raw_line)
+                    except UnicodeDecodeError:
+                        # Если UTF-8 не работает, пробуем системную кодировку
+                        try:
+                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
+                            if decoded_line:
+                                print(decoded_line)
+                                stdout_lines.append(decoded_line)
+                        except:
+                            # В крайнем случае выводим как есть
+                            raw_line = line.decode('latin1', errors='replace').strip()
+                            if raw_line:
+                                print(raw_line)
+                                stdout_lines.append(raw_line)
         
         # Читаем stderr построчно
         if process.stderr:
             for line in process.stderr:
-                try:
-                    decoded_line = line.decode('utf-8', errors='replace').strip()
-                    if decoded_line:  # Игнорируем пустые строки
-                        print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
-                        stderr_lines.append(decoded_line)
-                except UnicodeDecodeError:
+                if line:  # Проверяем, что линия не пустая
                     try:
-                        decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
-                        if decoded_line:
-                            print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
+                        decoded_line = line.decode('utf-8', errors='replace').strip()
+                        if decoded_line:  # Игнорируем пустые строки
+                            print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
                             stderr_lines.append(decoded_line)
-                    except:
-                        raw_line = line.decode('latin1', errors='replace').strip()
-                        if raw_line:
-                            print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
-                            stderr_lines.append(raw_line)
+                    except UnicodeDecodeError:
+                        try:
+                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
+                            if decoded_line:
+                                print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
+                                stderr_lines.append(decoded_line)
+                        except:
+                            raw_line = line.decode('latin1', errors='replace').strip()
+                            if raw_line:
+                                print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
+                                stderr_lines.append(raw_line)
         
         # Ждем завершения процесса
         process.wait()
@@ -117,6 +119,24 @@ class LinuxCommandExecutor(CommandExecutor):
 class WindowsCommandExecutor(CommandExecutor):
     """Исполнитель команд для Windows систем"""
     
+    def _decode_line_windows(self, line_bytes: bytes) -> str:
+        """Безопасное декодирование строки в Windows с учетом разных кодировок"""
+        # Список кодировок для попытки декодирования в Windows
+        encodings = ['cp866', 'cp1251', 'utf-8', 'ascii']
+        
+        for encoding in encodings:
+            try:
+                decoded = line_bytes.decode(encoding, errors='strict')
+                return decoded.strip()
+            except UnicodeDecodeError:
+                continue
+        
+        # Если ничего не сработало, используем замену с ошибками
+        try:
+            return line_bytes.decode('utf-8', errors='replace').strip()
+        except:
+            return line_bytes.decode('latin1', errors='replace').strip()
+
     @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bat-команды в Windows через временный файл с выводом в реальном времени"""
@@ -126,12 +146,12 @@ class WindowsCommandExecutor(CommandExecutor):
         
         logger.debug(f"Preparing Windows command: {code[:80]}...")
         
-        # Создаем временный .bat файл
+        # Создаем временный .bat файл с правильной кодировкой
         fd, temp_path = tempfile.mkstemp(suffix='.bat')
         logger.debug(f"Created temporary file: {temp_path}")
         
         try:
-            with os.fdopen(fd, 'w') as f:
+            with os.fdopen(fd, 'w', encoding='cp1251', errors='replace') as f:
                 f.write(code)
             
             # Запускаем с кодировкой консоли Windows и выводом в реальном времени
@@ -142,7 +162,8 @@ class WindowsCommandExecutor(CommandExecutor):
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=False  # Используем байты для корректной работы
+                text=False,  # Используем байты для корректной работы
+                creationflags=subprocess.CREATE_NO_WINDOW  # Предотвращаем создание окна консоли
             )
             
             # Читаем вывод в реальном времени
@@ -152,42 +173,20 @@ class WindowsCommandExecutor(CommandExecutor):
             # Читаем stdout построчно
             if process.stdout:
                 for line in process.stdout:
-                    try:
-                        decoded_line = line.decode('cp1251', errors='replace').strip()
+                    if line:  # Проверяем, что линия не пустая
+                        decoded_line = self._decode_line_windows(line)
                         if decoded_line:  # Игнорируем пустые строки
                             print(decoded_line)  # Выводим в реальном времени
                             stdout_lines.append(decoded_line)
-                    except UnicodeDecodeError:
-                        try:
-                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
-                            if decoded_line:
-                                print(decoded_line)
-                                stdout_lines.append(decoded_line)
-                        except:
-                            raw_line = line.decode('latin1', errors='replace').strip()
-                            if raw_line:
-                                print(raw_line)
-                                stdout_lines.append(raw_line)
             
             # Читаем stderr построчно
             if process.stderr:
                 for line in process.stderr:
-                    try:
-                        decoded_line = line.decode('cp1251', errors='replace').strip()
+                    if line:  # Проверяем, что линия не пустая
+                        decoded_line = self._decode_line_windows(line)
                         if decoded_line:  # Игнорируем пустые строки
                             print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
                             stderr_lines.append(decoded_line)
-                    except UnicodeDecodeError:
-                        try:
-                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
-                            if decoded_line:
-                                print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
-                                stderr_lines.append(decoded_line)
-                        except:
-                            raw_line = line.decode('latin1', errors='replace').strip()
-                            if raw_line:
-                                print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
-                                stderr_lines.append(raw_line)
             
             # Ждем завершения процесса
             process.wait()

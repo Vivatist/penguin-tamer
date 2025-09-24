@@ -22,13 +22,18 @@ def get_system_info_text() -> str:
     if shell_exec:
         # Попробуем получить версию через --version, иначе специфичные команды
         try:
-            out = subprocess.check_output([shell_exec, '--version'], stderr=subprocess.STDOUT, encoding='utf-8', timeout=2)
+            # Определяем кодировку для Windows
+            encoding = 'cp866' if platform.system() == 'Windows' else 'utf-8'
+            out = subprocess.check_output([shell_exec, '--version'], stderr=subprocess.STDOUT, 
+                                        encoding=encoding, errors='replace', timeout=2)
             shell_version = out.strip().splitlines()[0]
         except Exception:
             # powershell/pwsh variant
             try:
                 if 'powershell' in shell_name.lower() or 'pwsh' in shell_name.lower():
-                    out = subprocess.check_output([shell_exec, '-Command', '$PSVersionTable.PSVersion.ToString()'], stderr=subprocess.STDOUT, encoding='utf-8', timeout=2)
+                    encoding = 'cp866' if platform.system() == 'Windows' else 'utf-8'
+                    out = subprocess.check_output([shell_exec, '-Command', '$PSVersionTable.PSVersion.ToString()'], 
+                                                stderr=subprocess.STDOUT, encoding=encoding, errors='replace', timeout=2)
                     shell_version = out.strip().splitlines()[0]
             except Exception:
                 shell_version = 'unknown'
