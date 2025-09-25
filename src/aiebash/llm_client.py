@@ -166,7 +166,7 @@ class OpenRouterClient:
                         full_text = "".join(reply_parts)
                         markdown = _get_markdown()(full_text)
                         live.update(markdown)
-                        time.sleep(0.01)  # Небольшая задержка для плавности обновления
+                        time.sleep(0.1)  # Небольшая задержка для плавности обновления
             reply = "".join(reply_parts)
             self.messages.append({"role": "assistant", "content": reply})
             return reply
