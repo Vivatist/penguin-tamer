@@ -153,11 +153,11 @@ class OpenRouterClient:
 
             sleep_time = config.get("global", "sleep_time", 0.01)
             
-            # Полное отключение автообновления и контроль частоты обновлений
+            # Минимальное автообновление с ручным контролем
             with _get_live()(
                 console=self.console, 
                 auto_refresh=False,
-                refresh_per_second=0  # Полностью отключаем автообновление
+                refresh_per_second=1  # Минимальное значение, но auto_refresh=False его отключает
             ) as live:
                 # Показываем первый чанк
                 if first_content_chunk:
