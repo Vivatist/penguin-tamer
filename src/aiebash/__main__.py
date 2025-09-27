@@ -155,7 +155,7 @@ def get_system_content() -> str:
 
     # Базовая информация без вызова медленной системной информации
     additional_content_main = (
-        "Your name is Ai-eBash, a sysadmin assistant. Always state this when asked who you are. "
+        "Your name is Ai-eBash, a sysadmin assistant. "
         "You and the user always work in a terminal. "
         "Respond based on the user's environment and commands. "
     )
