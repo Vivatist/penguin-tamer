@@ -325,6 +325,8 @@ def system_settings_menu():
                              (t('File logging'), 'file_logging'),
                              (t('Stream mode'), 'stream'),
                              (t('JSON mode'), 'json'),
+                             (t('Stream delay'), 'sleep_time'),
+                             (t('Stream refresh rate'), 'refresh_rate'),
                              (t('Back'), 'back')
                          ],
                          carousel=True)
@@ -344,6 +346,10 @@ def system_settings_menu():
             set_stream_mode()
         elif choice == 'json':
             set_json_mode()
+        elif choice == 'sleep_time':
+            set_sleep_time()
+        elif choice == 'refresh_rate':
+            set_refresh_rate()
         elif choice == 'back':
             break
 
@@ -411,6 +417,68 @@ def set_json_mode():
     if answers:
         config.json_mode = answers['mode']
         print(t('Updated'))
+
+
+def set_sleep_time():
+    """Set streaming delay (0.001-0.1 seconds)."""
+    current = config.get("global", "sleep_time", 0.01)
+    print(f"\n{t('Current stream delay')}: {current} {t('seconds')}")
+    print(t('Controls delay between text updates in stream mode.'))
+    print(t('Lower values = faster updates, higher CPU usage'))
+    print(t('Enter a value between 0.001 and 0.1 seconds.'))
+
+    while True:
+        questions = [
+            inquirer.Text('value', 
+                         message=t('Stream delay (seconds)'), 
+                         default=str(current))
+        ]
+        
+        answers = prompt_clean(questions)
+        if not answers:
+            break
+            
+        try:
+            value = float(answers['value'].replace(',', '.'))
+            if 0.001 <= value <= 0.1:
+                config.set("global", "sleep_time", value)
+                print(t('Updated'))
+                break
+            else:
+                print(t('Please enter a value between 0.001 and 0.1'))
+        except ValueError:
+            print(t('Please enter a valid number'))
+
+
+def set_refresh_rate():
+    """Set streaming refresh rate (1-60 updates per second)."""
+    current = config.get("global", "refresh_per_second", 10)
+    print(f"\n{t('Current refresh rate')}: {current} {t('updates per second')}")
+    print(t('Controls how often the interface updates in stream mode.'))
+    print(t('Higher values = smoother display, higher CPU usage'))
+    print(t('Enter a value between 1 and 60.'))
+
+    while True:
+        questions = [
+            inquirer.Text('value', 
+                         message=t('Updates per second'), 
+                         default=str(current))
+        ]
+        
+        answers = prompt_clean(questions)
+        if not answers:
+            break
+            
+        try:
+            value = int(answers['value'])
+            if 1 <= value <= 60:
+                config.set("global", "refresh_per_second", value)
+                print(t('Updated'))
+                break
+            else:
+                print(t('Please enter a value between 1 and 60'))
+        except ValueError:
+            print(t('Please enter a valid integer'))
 
 
 def set_temperature():

@@ -4,6 +4,7 @@ import time
 from aiebash.formatter_text import format_api_key_display
 from aiebash.i18n import t
 from aiebash.logger import log_execution_time
+from aiebash.config_manager import config
 
 # Ленивый импорт Rich
 _console = None
@@ -150,8 +151,10 @@ class OpenRouterClient:
             if spinner_thread.is_alive():
                 spinner_thread.join()
 
+            sleep_time = config.get("global", "sleep_time", 0.01)
+            refresh_per_second = config.get("global", "refresh_per_second", 10)
             # Используем Live для динамического обновления отображения с Markdown
-            with _get_live()(console=self.console, refresh_per_second=10, auto_refresh=True) as live:
+            with _get_live()(console=self.console, refresh_per_second=refresh_per_second, auto_refresh=True) as live:
                 # Показываем первый чанк
                 if first_content_chunk:
                     markdown = _get_markdown()(first_content_chunk)
@@ -166,7 +169,7 @@ class OpenRouterClient:
                         full_text = "".join(reply_parts)
                         markdown = _get_markdown()(full_text)
                         live.update(markdown)
-                        time.sleep(0.1)  # Небольшая задержка для плавности обновления
+                        time.sleep(sleep_time)  # Небольшая задержка для плавности обновления
             reply = "".join(reply_parts)
             self.messages.append({"role": "assistant", "content": reply})
             return reply

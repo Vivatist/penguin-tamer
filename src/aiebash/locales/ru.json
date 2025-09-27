@@ -89,5 +89,24 @@
   "[dim]>>> Result:[/dim]": "[dim]>>> Результат:[/dim]",
   "<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>": "<i><gray>Номер блока для выполнения или следующий вопрос... Ctrl+C - выход</gray></i>",
   "<i><gray>Your question... Ctrl+C - exit</gray></i>": "<i><gray>Ваш вопрос... Ctrl+C - выход</gray></i>",
-  "Show current settings": "Показать текущие настройки"
+  "Show current settings": "Показать текущие настройки",
+
+  "Stream delay": "Задержка потока",
+  "Stream refresh rate": "Частота обновления потока",
+  "Current stream delay": "Текущая задержка потока",
+  "seconds": "секунд",
+  "Controls delay between text updates in stream mode.": "Контролирует задержку между обновлениями текста в потоковом режиме.",
+  "Lower values = faster updates, higher CPU usage": "Меньшие значения = быстрее обновления, больше загрузка ЦП",
+  "Enter a value between 0.001 and 0.1 seconds.": "Введите значение от 0.001 до 0.1 секунд.",
+  "Stream delay (seconds)": "Задержка потока (секунды)",
+  "Please enter a value between 0.001 and 0.1": "Пожалуйста, введите значение от 0.001 до 0.1",
+  "Current refresh rate": "Текущая частота обновления",
+  "updates per second": "обновлений в секунду",
+  "Controls how often the interface updates in stream mode.": "Контролирует частоту обновления интерфейса в потоковом режиме.",
+  "Higher values = smoother display, higher CPU usage": "Большие значения = более плавное отображение, больше загрузка ЦП",
+  "Updates per second": "Обновлений в секунду",
+  "Please enter a value between 1 and 60": "Пожалуйста, введите значение от 1 до 60",
+  "Enter a value between 1 and 60.": "Введите значение от 1 до 60.",
+  "Please enter a valid number": "Пожалуйста, введите корректное число",
+  "Please enter a valid integer": "Пожалуйста, введите корректное целое число"
 }
