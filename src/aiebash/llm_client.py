@@ -152,18 +152,13 @@ class OpenRouterClient:
                 spinner_thread.join()
 
             sleep_time = config.get("global", "sleep_time", 0.01)
-            
-            # Минимальное автообновление с ручным контролем
-            with _get_live()(
-                console=self.console, 
-                auto_refresh=False,
-                refresh_per_second=1  # Минимальное значение, но auto_refresh=False его отключает
-            ) as live:
+            refresh_per_second = config.get("global", "refresh_per_second", 10)
+            # Используем Live для динамического обновления отображения с Markdown
+            with _get_live()(console=self.console, refresh_per_second=refresh_per_second, auto_refresh=True) as live:
                 # Показываем первый чанк
                 if first_content_chunk:
                     markdown = _get_markdown()(first_content_chunk)
                     live.update(markdown)
-                    live.refresh()  # Явное обновление
                 
                 # Продолжаем обрабатывать остальные чанки
                 for chunk in stream:
@@ -174,8 +169,7 @@ class OpenRouterClient:
                         full_text = "".join(reply_parts)
                         markdown = _get_markdown()(full_text)
                         live.update(markdown)
-                        live.refresh()  # Явное обновление только здесь
-                        time.sleep(sleep_time)
+                        time.sleep(sleep_time)  # Небольшая задержка для плавности обновления
             reply = "".join(reply_parts)
             self.messages.append({"role": "assistant", "content": reply})
             return reply
