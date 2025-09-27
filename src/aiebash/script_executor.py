@@ -73,26 +73,26 @@ class LinuxCommandExecutor(CommandExecutor):
                                 print(raw_line)
                                 stdout_lines.append(raw_line)
         
-        # Читаем stderr построчно
-        if process.stderr:
-            for line in process.stderr:
-                if line:  # Проверяем, что линия не пустая
-                    try:
-                        decoded_line = line.decode('utf-8', errors='replace').strip()
-                        if decoded_line:  # Игнорируем пустые строки
-                            print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
-                            stderr_lines.append(decoded_line)
-                    except UnicodeDecodeError:
-                        try:
-                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
-                            if decoded_line:
-                                print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
-                                stderr_lines.append(decoded_line)
-                        except:
-                            raw_line = line.decode('latin1', errors='replace').strip()
-                            if raw_line:
-                                print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
-                                stderr_lines.append(raw_line)
+        # # Читаем stderr построчно
+        # if process.stderr:
+        #     for line in process.stderr:
+        #         if line:  # Проверяем, что линия не пустая
+        #             try:
+        #                 decoded_line = line.decode('utf-8', errors='replace').strip()
+        #                 if decoded_line:  # Игнорируем пустые строки
+        #                     print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
+        #                     stderr_lines.append(decoded_line)
+        #             except UnicodeDecodeError:
+        #                 try:
+        #                     decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
+        #                     if decoded_line:
+        #                         print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
+        #                         stderr_lines.append(decoded_line)
+        #                 except:
+        #                     raw_line = line.decode('latin1', errors='replace').strip()
+        #                     if raw_line:
+        #                         print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
+        #                         stderr_lines.append(raw_line)
         
         # Ждем завершения процесса
         process.wait()

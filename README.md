@@ -68,10 +68,6 @@ Run the program `ai who are you?`. In a couple of seconds, the neural network wi
 
 ![program response1](/docs/img/en_img1.gif)
 
-Try something more complex:
-
-![program response2](/docs/img/ru_img3.png)
-
 On first launch, the program uses a Microsoft-hosted model — **DeepSeek-R1-Lite-Preview** with a public token. This is not the best option since you may see a quota-exceeded message due to high traffic, but it’s fine for a test run.
 
 **For full operation, you need to [obtain](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model) a personal token and add it to the selected model in the program [settings](#installation).**
@@ -134,11 +130,11 @@ To start a dialog, use the `-d` key or simply type `ai` and press `Enter`.
 In dialog mode, AI-eBash preserves the conversation context throughout the session.
 
 ```bash
-a i -d what python version is installed?
+ai -d what python version is installed?
 ```
 
 ```bash
-a i  # Enter
+ai  # Enter
 ```
 
 ### Running Code from AI Response
