@@ -141,7 +141,7 @@ ai  # Enter
 
 When **in dialog mode**, if the response contains code blocks — they are numbered. To run code, simply enter the block number in the console.
 
-![dialog mode](/docs/img/en_img4.gif)
+![dialog mode](/docs/img/en_img2.gif)
 
 ## Security
 
