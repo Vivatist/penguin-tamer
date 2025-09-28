@@ -64,7 +64,7 @@
 
 Install AI-eBash using one of the convenient [methods](#installation).
 
-Run the program `ai who are you?`. In a couple of seconds, the neural network will respond:
+Try asking the assistant a question, for example `ai who are you?`. In a couple of seconds, the neural network will respond:
 
 ![program response1](/docs/img/en_img1.gif)
 
