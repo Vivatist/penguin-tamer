@@ -314,9 +314,9 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             logger.debug("DotCommandProcessor created for real-time highlighting")
             
             if last_code_blocks:
-                placeholder = HTML(t("<i><gray>Number for code block, .command for direct execution, or question... Ctrl+C - exit</gray></i>"))
+                placeholder = HTML(t("<i><gray>Number of the code block to execute or the next question... Ctrl+C - exit</gray></i>"))
             else:
-                placeholder = HTML(t("<i><gray>Your question or .command for direct execution... Ctrl+C - exit</gray></i>"))
+                placeholder = HTML(t("<i><gray>Your question... Ctrl+C - exit</gray></i>"))
 
             # Создаем кастомную функцию для динамической подсветки
             def get_prompt_tokens():
