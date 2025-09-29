@@ -179,14 +179,13 @@ class WindowsCommandExecutor(CommandExecutor):
                             print(decoded_line)  # Выводим в реальном времени
                             stdout_lines.append(decoded_line)
             
-            # Читаем stderr построчно
+            # Читаем stderr построчно (только собираем, не выводим сразу)
             if process.stderr:
                 for line in process.stderr:
                     if line:  # Проверяем, что линия не пустая
                         decoded_line = self._decode_line_windows(line)
                         if decoded_line:  # Игнорируем пустые строки
-                            print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
-                            stderr_lines.append(decoded_line)
+                            stderr_lines.append(decoded_line)  # Только собираем ошибки для итоговой сводки
             
             # Ждем завершения процесса
             process.wait()
@@ -242,6 +241,37 @@ class CommandExecutorFactory:
 
 
 @log_execution_time
+def execute_and_handle_result(console: Console, code: str) -> None:
+    """
+    Выполняет блок кода и обрабатывает результаты выполнения.
+    
+    Args:
+        console (Console): Консоль для вывода
+        code (str): Код для выполнения
+    """
+    # Получаем исполнитель для текущей ОС
+    try:
+        executor = CommandExecutorFactory.create_executor()
+        
+        # Выполняем код через соответствующий исполнитель
+        logger.debug("Starting code block execution...")
+        console.print(t("[dim]>>> Result:[/dim]"))
+        process = executor.execute(code)
+        
+        # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
+        exit_code = process.returncode
+        logger.info(f"Code execution finished with exit code {exit_code}")
+        console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
+        
+        # Показываем итоговую сводку только если есть stderr или особые случаи
+        if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
+            logger.debug(f"Additional stderr ({len(process.stderr)} chars)")
+            console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
+    except Exception as e:
+        logger.error(f"Code execution error: {e}", exc_info=True)
+        console.print(t("[dim]Script execution error: {error}[/dim]").format(error=e))
+
+
 def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
     """
     Печатает номер и содержимое блока, выполняет его и выводит результат.
@@ -265,24 +295,5 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
     console.print(t("[dim]>>> Running block #{idx}:[/dim]").format(idx=idx))
     console.print(code)
     
-    # Получаем исполнитель для текущей ОС
-    try:
-        executor = CommandExecutorFactory.create_executor()
-        
-        # Выполняем код через соответствующий исполнитель
-        logger.debug("Starting code block execution...")
-        console.print(t("[dim]>>> Result:[/dim]").format(idx=idx))
-        process = executor.execute(code)
-        
-        # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
-        exit_code = process.returncode
-        logger.info(f"Block #{idx} finished with exit code {exit_code}")
-        console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
-        
-        # Показываем итоговую сводку только если есть stderr или особые случаи
-        if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
-            logger.debug(f"Additional stderr ({len(process.stderr)} chars)")
-            console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
-    except Exception as e:
-        logger.error(f"Execution error in block #{idx}: {e}", exc_info=True)
-        console.print(t("[dim]Script execution error: {error}[/dim]").format(error=e))
+    # Выполняем код и обрабатываем результат
+    execute_and_handle_result(console, code)
