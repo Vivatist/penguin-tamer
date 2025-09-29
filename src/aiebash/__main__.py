@@ -281,7 +281,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             style = Style.from_dict({
                 "prompt": "bold fg:green",
                 "dot": "fg:gray",        # Серая точка
-                "command": "fg:blue",       # Светло-синий текст команды
+                "command": "fg:cyan",       # Светло-синий текст команды
                 "text": "",                 # Стандартный цвет консоли
             })
             
