@@ -103,6 +103,15 @@ def _get_script_executor():
     return _script_executor
 
 
+def _get_execute_handler():
+    """Ленивый импорт execute_and_handle_result для выполнения команд"""
+    global _execute_handler
+    if '_execute_handler' not in globals() or _execute_handler is None:
+        from aiebash.script_executor import execute_and_handle_result
+        _execute_handler = execute_and_handle_result
+    return _execute_handler
+
+
 def _get_formatter_text():
     """Ленивый импорт formatter_text"""
     global _formatter_text
@@ -224,9 +233,9 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                 "prompt": "bold fg:green",
             })
             if last_code_blocks:
-                placeholder = HTML(t("<i><gray>The number of the code block to execute or the next question... Ctrl+C - exit</gray></i>"))
+                placeholder = HTML(t("<i><gray>Number for code block, .command for direct execution, or question... Ctrl+C - exit</gray></i>"))
             else:
-                placeholder = HTML(t("<i><gray>Your question... Ctrl+C - exit</gray></i>"))
+                placeholder = HTML(t("<i><gray>Your question or .command for direct execution... Ctrl+C - exit</gray></i>"))
 
             user_prompt = prompt([("class:prompt", ">>> ")], placeholder=placeholder, history=history, 
                                 style=style, multiline=False, wrap_lines=True, enable_history_search=True)
@@ -237,6 +246,18 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             # Exit commands
             if user_prompt.lower() in ['exit', 'quit', 'q']:
                 break
+
+            # Command execution: if input starts with dot ".", execute as direct command
+            if user_prompt.startswith('.'):
+                command_to_execute = user_prompt[1:].strip()  # Remove the dot and strip spaces
+                if command_to_execute:  # Only execute if there's something after the dot
+                    console.print(f"[dim]>>> Executing command:[/dim] {command_to_execute}")
+                    _get_execute_handler()(console, command_to_execute)
+                    console.print()
+                    continue
+                else:
+                    console.print("[dim]Empty command after '.' - skipping.[/dim]")
+                    continue
 
             # If a number is entered
             if user_prompt.isdigit():
