@@ -78,10 +78,12 @@ def _ensure_prompt_toolkit():
     """Ленивый импорт prompt_toolkit"""
     global _prompt_toolkit_imported
     if not _prompt_toolkit_imported:
-        global HTML, prompt, FileHistory, Style
+        global HTML, prompt, FileHistory, Style, Lexer, PygmentsLexer
         from prompt_toolkit import HTML, prompt
         from prompt_toolkit.history import FileHistory
         from prompt_toolkit.styles import Style
+        from prompt_toolkit.lexers import Lexer, PygmentsLexer
+        from prompt_toolkit.layout.processors import Processor, Transformation
         _prompt_toolkit_imported = True
 
 
@@ -110,6 +112,47 @@ def _get_execute_handler():
         from aiebash.script_executor import execute_and_handle_result
         _execute_handler = execute_and_handle_result
     return _execute_handler
+
+
+def _create_dot_command_lexer():
+    """Создает безопасный лексер для подсветки команд с точкой"""
+    try:
+        from prompt_toolkit.lexers import Lexer
+        
+        class DotHighlightLexer(Lexer):
+            """Безопасный лексер для подсветки точки серым, команды желтым"""
+            
+            def lex_document(self, document):
+                def get_line_tokens(line_number):
+                    if line_number != 0:  # Работаем только с первой строкой
+                        return []
+                    
+                    text = document.text
+                    if not text:
+                        return []
+                    
+                    # Если начинается с точки
+                    if text.startswith('.'):
+                        result = []
+                        # Точка серая
+                        result.append((0, 'class:dot'))
+                        # Остальное желтое  
+                        for i in range(1, len(text)):
+                            result.append((i, 'class:command'))
+                        return result
+                    else:
+                        return []
+                
+                return get_line_tokens
+        
+        return DotHighlightLexer()
+        
+    except ImportError:
+        logger.debug("prompt_toolkit.lexers недоступен")
+        return None
+    except Exception as e:
+        logger.debug(f"Ошибка создания DotHighlightLexer: {e}")
+        return None
 
 
 def _get_formatter_text():
@@ -195,6 +238,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     
     # Загружаем prompt_toolkit только когда нужен диалоговый режим
     _ensure_prompt_toolkit()
+    
+    # Импортируем необходимые модули для подсветки
+    from prompt_toolkit import HTML, prompt
+    from prompt_toolkit.history import FileHistory
+    from prompt_toolkit.styles import Style
+    from prompt_toolkit.layout.processors import Processor, Transformation
 
     # История команд хранится рядом с настройками в пользовательской папке
     history_file_path = config.user_config_dir / "cmd_history"
@@ -228,17 +277,72 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     while True:
         try:
 
-            # Define prompt styles
+            # Define prompt styles с поддержкой подсветки команд
             style = Style.from_dict({
                 "prompt": "bold fg:green",
+                "dot": "fg:gray",        # Серая точка
+                "command": "fg:blue",       # Светло-синий текст команды
+                "text": "",                 # Стандартный цвет консоли
             })
+            
+            # Создаем процессор для real-time подсветки
+            class DotCommandProcessor(Processor):
+                """Процессор для real-time подсветки команд с точкой"""
+                
+                def apply_transformation(self, transformation_input):
+                    """Применяет трансформацию к вводу"""
+                    text = transformation_input.document.text
+                    
+                    if text.startswith('.') and len(text) > 0:
+                        # Создаем форматированный текст для команд с точкой
+                        formatted_fragments = [
+                            ('class:dot', '.'),
+                            ('class:command', text[1:])
+                        ]
+                    else:
+                        # Обычный текст
+                        formatted_fragments = [('class:text', text)]
+                    
+                    return Transformation(
+                        formatted_fragments,
+                        source_to_display=lambda i: i,
+                        display_to_source=lambda i: i
+                    )
+            
+            # Создаем экземпляр процессора
+            dot_processor = DotCommandProcessor()
+            logger.debug("DotCommandProcessor created for real-time highlighting")
+            
             if last_code_blocks:
                 placeholder = HTML(t("<i><gray>Number for code block, .command for direct execution, or question... Ctrl+C - exit</gray></i>"))
             else:
                 placeholder = HTML(t("<i><gray>Your question or .command for direct execution... Ctrl+C - exit</gray></i>"))
 
-            user_prompt = prompt([("class:prompt", ">>> ")], placeholder=placeholder, history=history, 
-                                style=style, multiline=False, wrap_lines=True, enable_history_search=True)
+            # Создаем кастомную функцию для динамической подсветки
+            def get_prompt_tokens():
+                """Возвращает токены промпта с подсветкой в зависимости от введенного текста"""
+                return [("class:prompt", ">>> ")]
+            
+            # Пытаемся использовать prompt_toolkit, если не получается - fallback на input()
+            try:
+                # Настраиваем параметры prompt с процессором для подсветки
+                prompt_kwargs = {
+                    'placeholder': placeholder,
+                    'history': history,
+                    'style': style,
+                    'multiline': False,
+                    'wrap_lines': True,
+                    'enable_history_search': True,
+                    'input_processors': [dot_processor]  # Добавляем процессор для real-time подсветки
+                }
+
+                user_prompt = prompt(get_prompt_tokens, **prompt_kwargs)
+                    
+            except Exception as e:
+                # Fallback на стандартный input() если prompt_toolkit не работает
+                logger.debug(f"prompt_toolkit failed, using fallback input(): {e}")
+                console.print("[dim]>>> [/dim]", end="")
+                user_prompt = input().strip()
             # Disallow empty input
             if not user_prompt:
                 continue
