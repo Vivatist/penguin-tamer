@@ -94,8 +94,21 @@ class LinuxCommandExecutor(CommandExecutor):
         #                         print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
         #                         stderr_lines.append(raw_line)
         
-        # Ждем завершения процесса
-        process.wait()
+        # Ждем завершения процесса с обработкой прерывания
+        try:
+            process.wait()
+        except KeyboardInterrupt:
+            # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
+            logger.info("Terminating process due to KeyboardInterrupt")
+            try:
+                process.terminate()
+                process.wait(timeout=5)  # Ждем 5 секунд на корректное завершение
+            except subprocess.TimeoutExpired:
+                logger.warning("Process didn't terminate gracefully, killing it")
+                process.kill()
+                process.wait()
+            # Пробрасываем KeyboardInterrupt дальше для обработки в execute_and_handle_result
+            raise
         
         # Создаем объект CompletedProcess для совместимости
         result = subprocess.CompletedProcess(
@@ -187,8 +200,21 @@ class WindowsCommandExecutor(CommandExecutor):
                         if decoded_line:  # Игнорируем пустые строки
                             stderr_lines.append(decoded_line)  # Только собираем ошибки для итоговой сводки
             
-            # Ждем завершения процесса
-            process.wait()
+            # Ждем завершения процесса с обработкой прерывания
+            try:
+                process.wait()
+            except KeyboardInterrupt:
+                # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
+                logger.info("Terminating Windows process due to KeyboardInterrupt")
+                try:
+                    process.terminate()
+                    process.wait(timeout=5)  # Ждем 5 секунд на корректное завершение
+                except subprocess.TimeoutExpired:
+                    logger.warning("Windows process didn't terminate gracefully, killing it")
+                    process.kill()
+                    process.wait()
+                # Пробрасываем KeyboardInterrupt дальше для обработки в execute_and_handle_result
+                raise
             
             # Создаем объект CompletedProcess для совместимости
             result = subprocess.CompletedProcess(
@@ -256,17 +282,25 @@ def execute_and_handle_result(console: Console, code: str) -> None:
         # Выполняем код через соответствующий исполнитель
         logger.debug("Starting code block execution...")
         console.print(t("[dim]>>> Result:[/dim]"))
-        process = executor.execute(code)
         
-        # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
-        exit_code = process.returncode
-        logger.info(f"Code execution finished with exit code {exit_code}")
-        console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
-        
-        # Показываем итоговую сводку только если есть stderr или особые случаи
-        if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
-            logger.debug(f"Additional stderr ({len(process.stderr)} chars)")
-            console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
+        try:
+            process = executor.execute(code)
+            
+            # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
+            exit_code = process.returncode
+            logger.info(f"Code execution finished with exit code {exit_code}")
+            console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
+            
+            # Показываем итоговую сводку только если есть stderr или особые случаи
+            if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
+                logger.debug(f"Additional stderr ({len(process.stderr)} chars)")
+                console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
+                
+        except KeyboardInterrupt:
+            # Перехватываем Ctrl+C во время выполнения команды
+            logger.info("Command execution interrupted by user (Ctrl+C)")
+            console.print(t("[dim]>>> Command interrupted by user (Ctrl+C)[/dim]"))
+            
     except Exception as e:
         logger.error(f"Code execution error: {e}", exc_info=True)
         console.print(t("[dim]Script execution error: {error}[/dim]").format(error=e))
