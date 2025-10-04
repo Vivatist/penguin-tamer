@@ -48,7 +48,7 @@ dynamic = ["version"]
 "Source" = "https://github.com/Vivatist/penguin-tamer"
 
 [project.scripts]
-pt = "penguin_tamer.__main__:main"
+pt = "penguin_tamer.cli:main"
 
 [tool.setuptools_scm]
 
