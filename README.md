@@ -29,12 +29,11 @@
   - [Security](#security)
     - [Best Practices](#best-practices)
   - [Installation](#installation)
-    - [Ubuntu/Debian (pipx)](#ubuntudebian-pipx)
-    - [Ubuntu/Debian (DEB Package)](#ubuntudebian-deb-package)
+    - [Linux/macOS (Quick Install)](#quick-install-recommended)
+    - [Manual Installation (pipx)](#manual-installation-pipx)
     - [Windows (Experimental)](#windows-experimental)
   - [Removal](#removal)
     - [If installed with pipx](#if-installed-with-pipx)
-    - [If installed as DEB package](#if-installed-as-deb-package)
     - [If installed on Windows](#if-installed-on-windows)
   - [Configuration](#configuration)
     - [Initial Setup](#initial-setup)
@@ -202,22 +201,6 @@ This script will:
 > pip install penguin-tamer
 > ```
 
-### Ubuntu/Debian (DEB Package)
-
-1. **Download the latest DEB package from [GitHub](https://github.com/Vivatist/penguin-tamer/releases/latest)**:
-   ```bash
-   wget -qO penguin-tamer.deb $(wget -qO- https://api.github.com/repos/Vivatist/penguin-tamer/releases/latest \
-     | grep "browser_download_url.*\.deb" | cut -d '"' -f 4)
-   ```
-
-2. **Install the package**:
-   ```bash
-   sudo dpkg -i ./penguin-tamer.deb
-   sudo apt-get install -f -y
-   ```
-
-3. **Restart the terminal**
-
 ### Windows (Experimental)
 
 1. **Install Python 3.11+** (if not installed)
@@ -234,21 +217,6 @@ This script will:
 ### If installed with pipx
 ```bash
 pipx uninstall penguin-tamer
-```
-
-### If installed as DEB package
-```bash
-sudo apt remove penguin-tamer
-# Or for complete deletion, including configuration files:
-sudo apt purge penguin-tamer
-```
-
-or you can also use dpkg:
-
-```bash
-sudo dpkg -r penguin-tamer
-# Or for complete deletion, including configuration files:
-sudo dpkg -P penguin-tamer
 ```
 
 ### If installed on Windows
