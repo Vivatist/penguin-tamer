@@ -255,36 +255,6 @@ class ConfigManager:
         """Устанавливает JSON режим."""
         self.set("global", "json_mode", value)
 
-    @property
-    def console_log_level(self) -> str:
-        """Уровень логирования в консоль."""
-        return self.get("logging", "console_level", "CRITICAL")
-
-    @console_log_level.setter
-    def console_log_level(self, value: str) -> None:
-        """Устанавливает уровень логирования в консоль."""
-        self.set("logging", "console_level", value)
-
-    @property
-    def file_enabled(self) -> bool:
-        """Включение логирования в файл."""
-        return self.get("logging", "file_enabled", False)
-
-    @file_enabled.setter
-    def file_enabled(self, value: bool) -> None:
-        """Устанавливает включение логирования в файл."""
-        self.set("logging", "file_enabled", value)
-
-    @property
-    def file_log_level(self) -> str:
-        """Уровень логирования в файл."""
-        return self.get("logging", "file_level", "DEBUG")
-
-    @file_log_level.setter
-    def file_log_level(self, value: str) -> None:
-        """Устанавливает уровень логирования в файл."""
-        self.set("logging", "file_level", value)
-
     def get_available_llms(self) -> List[str]:
         """
         Возвращает список доступных LLM.

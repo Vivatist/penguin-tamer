@@ -5,43 +5,8 @@ from pathlib import Path
 # Добавляем parent (src) в sys.path для локального запуска
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# Сначала импортируем настройки без импорта логгера
+# Сначала импортируем настройки
 from penguin_tamer.config_manager import config
-
-
-# Простой ленивый логгер
-_logger = None
-
-
-def _get_logger():
-    global _logger
-    if _logger is None:
-        from penguin_tamer.logger import configure_logger
-        _logger = configure_logger(config.get("logging"))
-    return _logger
-
-
-# Простой класс-заглушка для логгера
-class LazyLogger:
-    def info(self, msg):
-        _get_logger().info(msg)
-
-    def debug(self, msg):
-        _get_logger().debug(msg)
-
-    def error(self, msg):
-        _get_logger().error(msg)
-
-    def critical(self, msg, exc_info=None):
-        _get_logger().critical(msg, exc_info=exc_info)
-
-logger = LazyLogger()
-
-# Простой декоратор без импорта
-def log_execution_time(func):
-    """Простой декоратор времени выполнения"""
-    return func  # Временно отключаем для ускорения загрузки
-
 
 # Ленивый импорт i18n
 _i18n_initialized = False
@@ -148,10 +113,8 @@ def _create_dot_command_lexer():
         return DotHighlightLexer()
         
     except ImportError:
-        logger.debug("prompt_toolkit.lexers недоступен")
         return None
     except Exception as e:
-        logger.debug(f"Ошибка создания DotHighlightLexer: {e}")
         return None
 
 
@@ -170,7 +133,6 @@ from penguin_tamer.error_messages import connection_error
 
 
 STREAM_OUTPUT_MODE: bool = config.get("global", "stream_output_mode")
-logger.info(f"Settings - Stream output mode: {STREAM_OUTPUT_MODE}")
 
 # Ленивый импорт Markdown из rich (легкий модуль) для ускорения загрузки
 _markdown = None
@@ -192,7 +154,6 @@ educational_text = (
 )
 EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text}]
 
-@log_execution_time
 def get_system_content() -> str:
     """Construct system prompt content with lazy system info loading"""
     user_content = config.get("global", "user_content", "")
@@ -217,10 +178,8 @@ def get_system_content() -> str:
 
 
 # === Основная логика ===
-@log_execution_time
 def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None:
     """Run a single query (optionally streaming)"""
-    logger.info(f"Running query: '{query[:50]}'...")
     try:
         if STREAM_OUTPUT_MODE:
             reply = chat_client.ask_stream(query)
@@ -229,10 +188,8 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None
             console.print(_get_markdown()(reply))
     except Exception as e:
         console.print(connection_error(e))
-        logger.error(f"Connection error: {e}")
 
 
-@log_execution_time
 def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode"""
     
@@ -249,7 +206,6 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     history_file_path = config.user_config_dir / "cmd_history"
     history = FileHistory(str(history_file_path))
 
-    logger.info("Starting dialog mode")
 
     # Use module global EDUCATIONAL_CONTENT inside the function
     global EDUCATIONAL_CONTENT
@@ -270,7 +226,6 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             last_code_blocks = _get_formatter_text()(reply)
         except Exception as e:
             console.print(connection_error(e))
-            logger.error(f"Connection error: {e}")
         console.print()
 
     # Main dialog loop
@@ -311,7 +266,6 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             
             # Создаем экземпляр процессора
             dot_processor = DotCommandProcessor()
-            logger.debug("DotCommandProcessor created for real-time highlighting")
             
             if last_code_blocks:
                 placeholder = HTML(t("<i><gray>Number of the code block to execute or the next question... Ctrl+C - exit</gray></i>"))
@@ -340,7 +294,6 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                     
             except Exception as e:
                 # Fallback на стандартный input() если prompt_toolkit не работает
-                logger.debug(f"prompt_toolkit failed, using fallback input(): {e}")
                 console.print("[dim]>>> [/dim]", end="")
                 user_prompt = input().strip()
             # Disallow empty input
@@ -388,29 +341,24 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             break
         except Exception as e:
             console.print(connection_error(e))
-            logger.error(f"Connection error: {e}")
 
 
 def _create_chat_client(console):
     """Ленивое создание LLM клиента только когда он действительно нужен"""
-    logger.info("Initializing OpenRouterChat client")
 
     llm_config = config.get_current_llm_config()
     
     chat_client = OpenRouterClient(
         console=console,
-        logger=logger,
         api_key=llm_config["api_key"],
         api_url=llm_config["api_url"],
         model=llm_config["model"],
         system_content=get_system_content(),
         temperature=config.get("global", "temperature", 0.7)
     )
-    logger.info("OpenRouterChat client created: " + f"{chat_client}")
     return chat_client
 
 
-@log_execution_time
 def main() -> None:
 
     try:
@@ -418,10 +366,8 @@ def main() -> None:
 
         # Settings mode - не нужен LLM клиент
         if args.settings:
-            logger.info("Starting configuration mode")
             from penguin_tamer.config_menu import main_menu
             main_menu()
-            logger.info("Configuration mode finished")
             return 0
 
         # Создаем консоль и клиент только если они нужны для AI операций
@@ -435,24 +381,19 @@ def main() -> None:
 
         if dialog_mode or not prompt:
             # Dialog mode
-            logger.info("Starting in dialog mode")
             run_dialog_mode(chat_client, console, prompt if prompt else None)
         else:
             # Single query mode
-            logger.info("Starting in single-query mode")
 
             run_single_query(chat_client, prompt, console)
 
     except KeyboardInterrupt:
-        logger.info("Interrupted by user")
         return 130
     except Exception as e:
-        logger.critical(f"Unhandled error: {e}", exc_info=True)
         return 1
     finally:
         print()  # print empty line anyway
 
-    logger.info("Program finished successfully")
     return 0
 
 

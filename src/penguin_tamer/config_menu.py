@@ -315,14 +315,12 @@ def edit_user_content():
 
 
 def system_settings_menu():
-    """System settings menu."""
+    """Системные настройки меню."""
     while True:
         questions = [
             inquirer.List('choice',
                          message=t('System settings'),
                          choices=[
-                             (t('Console log level'), 'logging'),
-                             (t('File logging'), 'file_logging'),
                              (t('Stream mode'), 'stream'),
                              (t('JSON mode'), 'json'),
                              (t('Stream delay'), 'sleep_time'),
@@ -338,11 +336,7 @@ def system_settings_menu():
 
         choice = answers['choice']
 
-        if choice == 'logging':
-            set_log_level()
-        elif choice == 'file_logging':
-            set_file_logging()
-        elif choice == 'stream':
+        if choice == 'stream':
             set_stream_mode()
         elif choice == 'json':
             set_json_mode()
@@ -352,39 +346,6 @@ def system_settings_menu():
             set_refresh_rate()
         elif choice == 'back':
             break
-
-
-def set_log_level():
-    """Console log level setting."""
-    questions = [
-        inquirer.List('level',
-                     message=t('Console log level'),
-                     choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                     default=config.console_log_level,
-                     carousel=True)
-    ]
-
-    answers = prompt_clean(questions)
-    if answers:
-        config.console_log_level = answers['level']
-        print(t('Updated'))
-
-
-def set_file_logging():
-    """File logging setting."""
-    current_state = getattr(config, 'file_enabled', False)
-    questions = [
-        inquirer.List('enabled',
-                     message=t('File logging'),
-                     choices=[('On', True), ('Off', False)],
-                     default=current_state,
-                     carousel=True)
-    ]
-
-    answers = prompt_clean(questions)
-    if answers:
-        config.file_enabled = answers['enabled']
-        print(t('Updated'))
 
 
 def set_stream_mode():

@@ -3,7 +3,6 @@ from typing import List, Dict
 import time
 from penguin_tamer.formatter_text import format_api_key_display
 from penguin_tamer.i18n import t
-from penguin_tamer.logger import log_execution_time
 from penguin_tamer.config_manager import config
 
 # Ленивый импорт Rich
@@ -57,12 +56,10 @@ class OpenRouterClient:
                 time.sleep(0.1)
         # console.print("[green]Ai: [/green]")
 
-    @log_execution_time
-    def __init__(self, console, logger, api_key: str, api_url: str, model: str,
+    def __init__(self, console, api_key: str, api_url: str, model: str,
                  system_content: str,
                  temperature: float = 0.7):
         self.console = console
-        self.logger = logger
         self.api_key = api_key
         self.api_url = api_url
         self.model = model
@@ -79,7 +76,6 @@ class OpenRouterClient:
             self._client = _get_openai_client()(api_key=self.api_key, base_url=self.api_url)
         return self._client
 
-    @log_execution_time
     def ask(self, user_input: str, educational_content: list = None) -> str:
         """Обычный (не потоковый) режим с сохранением контекста"""
         if educational_content is None:
@@ -117,7 +113,6 @@ class OpenRouterClient:
             raise
 
 
-    @log_execution_time
     def ask_stream(self, user_input: str, educational_content: list = None) -> str:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
         if educational_content is None:
@@ -194,7 +189,7 @@ class OpenRouterClient:
         for k, v in self.__dict__.items():
             if k == 'api_key':
                 items[k] = format_api_key_display(v)
-            elif k == 'messages' or k == 'console' or k == '_client' or k == 'logger':
+            elif k == 'messages' or k == 'console' or k == '_client':
                 continue
             else:
                 try:

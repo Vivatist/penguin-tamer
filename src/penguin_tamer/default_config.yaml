@@ -11,13 +11,6 @@ global:
   sleep_time: 0.01 # Задержка между обновлениями в потоковом режиме (секунды)
   refresh_per_second: 10 # Частота обновления интерфейса в потоковом режиме (обновлений в секунду)
 
-# "DEBUG" - для просмотра отладочной информации в консоли, "CRITICAL" - только критические ошибки
-logging:
-  file_enabled: false # Включить логирование в файл (лог-файл будет создан в домашней директории пользователя)
-  level: "DEBUG"
-  console_level: "CRITICAL" 
-  file_level: "DEBUG"
-
 supported_LLMs:
   "PUBLIC Microsoft: MAI DS R1":
     model: "microsoft/mai-ds-r1:free"

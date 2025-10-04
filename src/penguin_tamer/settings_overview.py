@@ -6,7 +6,7 @@ Shows:
 1) Current LLM and its settings
 2) User content and temperature
 3) Table of all added LLMs and their settings (current marked)
-4) Console log level
+4) Paths to config and Python executable
 """
 from typing import Optional
 
@@ -62,17 +62,6 @@ def _plain_overview_print():
             ]
             print(f"{row[0]:20} | {row[1]:20} | {row[2]:30} | {row[3]}")
 
-    # Логирование
-    print("\n" + t("Logging") + ":")
-    print(f"  {t('Console log level')}: {config.console_log_level}")
-    
-    file_enabled = getattr(config, 'file_enabled', False)
-    if file_enabled:
-        file_level = getattr(config, 'file_log_level', 'DEBUG')
-        print(f"  {t('File logging')}: On ({file_level})")
-    else:
-        print(f"  {t('File logging')}: Off")
-    
     # Пути
     print("\n" + t("Paths") + ":")
     print(f"  {t('Config file')}: {config.config_path}")
@@ -160,19 +149,6 @@ def print_settings_overview(console: Optional[object] = None) -> None:
         console.print(table)
     else:
         console.print(Panel.fit(t("No LLMs added"), title=t("Added LLMs")))
-
-    # Логирование
-    logging_info = []
-    logging_info.append(f"{t('Console log level')}: [bold]{config.console_log_level}[/bold]")
-    
-    file_enabled = getattr(config, 'file_enabled', False)
-    if file_enabled:
-        file_level = getattr(config, 'file_log_level', 'DEBUG')
-        logging_info.append(f"{t('File logging')}: [green]On[/green] ({file_level})")
-    else:
-        logging_info.append(f"{t('File logging')}: [dim]Off[/dim]")
-    
-    console.print(Panel.fit("\n".join(logging_info), title=t("Logging")))
 
     # Пути
     import sys
