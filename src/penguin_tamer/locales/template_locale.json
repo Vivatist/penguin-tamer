@@ -7,6 +7,8 @@
   "Show current settings": "Показать текущие настройки",
   "Back": "Назад",
   "Exit": "Выход",
+  "Ai thinking...": "AI думает...",
+  "Sending request...": "Отправка запроса...",
   "LLM management": "Управление LLM",
   "Add LLM": "Добавить LLM",
   "Edit LLM": "Редактировать LLM",

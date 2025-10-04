@@ -199,6 +199,9 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
 def _create_chat_client(console):
     """Ленивое создание LLM клиента только когда он действительно нужен"""
+    
+    # Убеждаемся, что i18n инициализирован перед созданием клиента
+    _ensure_i18n()
 
     llm_config = config.get_current_llm_config()
     

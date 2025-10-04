@@ -6,16 +6,8 @@ from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
 
 # Ленивый импорт Rich
-_console = None
 _markdown = None
 _live = None
-
-def _get_console():
-    global _console
-    if _console is None:
-        from rich.console import Console
-        _console = Console()
-    return _console
 
 def _get_markdown():
     global _markdown
@@ -46,14 +38,16 @@ def _get_openai_client():
 
 class OpenRouterClient:
 
-    def _spinner(self, stop_spinner: threading.Event) -> None:
-        """Визуальный индикатор работы ИИ с точечным спиннером.
-        Пока stop_event не установлен, показывает "Аи печатает...".
+    def _spinner(self, stop_spinner: threading.Event, status_message: dict) -> None:
+        """Визуальный индикатор работы ИИ с динамическим статусом.
+        status_message - словарь с ключом 'text' для обновления сообщения.
         """
-        console = _get_console()
         try:
-            with console.status("[dim]" + t('Ai thinking...') + "[/dim]", spinner="dots", spinner_style="dim"):
+            with self.console.status("[dim]" + status_message.get('text', t('Ai thinking...')) + "[/dim]", spinner="dots", spinner_style="dim") as status:
                 while not stop_spinner.is_set():
+                    # Обновляем статус, если он изменился
+                    current_text = status_message.get('text', t('Ai thinking...'))
+                    status.update(f"[dim]{current_text}[/dim]")
                     time.sleep(0.1)
         except KeyboardInterrupt:
             pass
@@ -86,15 +80,17 @@ class OpenRouterClient:
         self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
         reply_parts = []
-        # Показ спиннера в отдельном потоке
+        # Показ спиннера в отдельном потоке с динамическим статусом
         stop_spinner = threading.Event()
-        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,), daemon=True)
+        status_message = {'text': t('Sending request...')}
+        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner, status_message), daemon=True)
         spinner_thread.start()
         
         # Флаг прерывания для потока
         interrupted = threading.Event()
         
         try:
+            # Фаза 1: Отправка запроса
             stream = self.client.chat.completions.create(
                 model=self.model,
                 messages=self.messages,
@@ -102,6 +98,9 @@ class OpenRouterClient:
                 stream=True
             )
 
+            # Фаза 2: Ожидание ответа от модели
+            status_message['text'] = t('Ai thinking...')
+            
             # Ждем первый чанк с контентом перед запуском Live
             first_content_chunk = None
             for chunk in stream:
