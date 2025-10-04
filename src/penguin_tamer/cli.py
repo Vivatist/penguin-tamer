@@ -36,6 +36,26 @@ t = t_lazy
 _script_executor = None
 _formatter_text = None
 _execute_handler = None
+_console_class = None
+_markdown_class = None
+
+
+def _get_console_class():
+    """Ленивый импорт Console"""
+    global _console_class
+    if _console_class is None:
+        from rich.console import Console
+        _console_class = Console
+    return _console_class
+
+
+def _get_markdown_class():
+    """Ленивый импорт Markdown"""
+    global _markdown_class
+    if _markdown_class is None:
+        from rich.markdown import Markdown
+        _markdown_class = Markdown
+    return _markdown_class
 
 
 def _get_script_executor():
@@ -68,8 +88,6 @@ from penguin_tamer.llm_client import OpenRouterClient
 from penguin_tamer.arguments import parse_args
 from penguin_tamer.error_handlers import connection_error
 from penguin_tamer.dialog_input import DialogInputFormatter
-from rich.console import Console
-from rich.markdown import Markdown
 
 STREAM_OUTPUT_MODE: bool = config.get("global", "stream_output_mode")
 
@@ -106,19 +124,20 @@ def get_system_content() -> str:
 
 
 # === Основная логика ===
-def run_single_query(chat_client: OpenRouterClient, query: str, console: Console) -> None:
+def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None:
     """Run a single query (optionally streaming)"""
     try:
         if STREAM_OUTPUT_MODE:
             reply = chat_client.ask_stream(query)
         else:
             reply = chat_client.ask(query)
+            Markdown = _get_markdown_class()
             console.print(Markdown(reply))
     except Exception as e:
         console.print(connection_error(e))
 
 
-def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
+def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode"""
     
     # История команд хранится рядом с настройками в пользовательской папке
@@ -136,6 +155,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
     if initial_user_prompt:
         initial_user_prompt
         try:
+            Markdown = _get_markdown_class()
             if STREAM_OUTPUT_MODE:
                 reply = chat_client.ask_stream(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
                 console.print(Markdown(reply))
@@ -188,6 +208,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_use
             if STREAM_OUTPUT_MODE:
                 reply = chat_client.ask_stream(user_prompt, educational_content=EDUCATIONAL_CONTENT)
             else:
+                Markdown = _get_markdown_class()
                 reply = chat_client.ask(user_prompt, educational_content=EDUCATIONAL_CONTENT)
                 console.print(Markdown(reply))
             EDUCATIONAL_CONTENT = []  # clear educational content after first use
@@ -228,6 +249,7 @@ def main() -> None:
             return 0
 
         # Создаем консоль и клиент только если они нужны для AI операций
+        Console = _get_console_class()
         console = Console()
         chat_client = _create_chat_client(console)
 

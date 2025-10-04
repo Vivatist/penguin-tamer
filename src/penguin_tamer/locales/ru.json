@@ -96,5 +96,8 @@
   "[dim]>>> Command interrupted by user (Ctrl+C)[/dim]": "[dim]>>> Команда прервана пользователем (Ctrl+C)[/dim]",
   "Paths": "Пути",
   "Config file": "Файл конфигурации",
-  "Python executable": "Исполняемый файл Python"
+  "Python executable": "Исполняемый файл Python",
+  "[dim]>>> Executing command:[/dim] {command}": "[dim]>>> Выполняем команду:[/dim] {command}",
+  "[dim]Empty command after '.' - skipping.[/dim]": "[dim]Пустая команда после '.' - пропускаем.[/dim]",
+  "[dim]Code block #{number} not found.[/dim]": "[dim]Блок кода #{number} не найден.[/dim]"
 }
