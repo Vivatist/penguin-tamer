@@ -165,9 +165,23 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
 
 ## Installation
 
-### Ubuntu/Debian (pipx)
+### 🚀 Quick Install (Recommended)
 
-**Recommended installation method**
+**One-line installation script for Linux/macOS:**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/install.sh | bash
+```
+
+This script will:
+- ✅ Check Python 3.11+ installation
+- 📦 Install pipx if needed  
+- 🐧 Install Penguin Tamer from PyPI
+- 🎯 Verify installation
+
+### Manual Installation (pipx)
+
+**If you prefer manual control:**
 
 1. **Install pipx** (if not installed):
    ```bash
