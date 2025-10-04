@@ -28,12 +28,12 @@ done
 if [ -z "$PYTHON_CMD" ]; then
     echo "[!] Python 3.11+ not found."
     echo ">>> Please install Python 3.11 or newer first:"
-    echo "   • Ubuntu/Debian: sudo apt update && sudo apt install python3.11 python3.11-venv -y"
-    echo "   • CentOS/RHEL: sudo yum install python3.11 -y"
-    echo "   • Fedora: sudo dnf install python3.11 -y"
-    echo "   • Arch: sudo pacman -S python -y"
-    echo "   • macOS: brew install python@3.11"
-    echo "   • Windows: Download from https://python.org/downloads/"
+    echo "   - Ubuntu/Debian: sudo apt update && sudo apt install python3.11 python3.11-venv -y"
+    echo "   - CentOS/RHEL: sudo yum install python3.11 -y"
+    echo "   - Fedora: sudo dnf install python3.11 -y"
+    echo "   - Arch: sudo pacman -S python -y"
+    echo "   - macOS: brew install python@3.11"
+    echo "   - Windows: Download from https://python.org/downloads/"
     exit 1
 fi
 
@@ -54,16 +54,16 @@ if ! command_exists pipx; then
         sudo yum install -y python3-pip python3-venv
         $PYTHON_CMD -m pip install --user pipx
     elif command_exists dnf; then
-        echo "🔄 Using dnf (Fedora)..."
+        echo ">>> Using dnf (Fedora)..."
         sudo dnf install -y pipx python3-venv
     elif command_exists pacman; then
-        echo "🔄 Using pacman (Arch Linux)..."
+        echo ">>> Using pacman (Arch Linux)..."
         sudo pacman -S --noconfirm python-pipx
     elif command_exists brew; then
-        echo "🔄 Using brew (macOS)..."
+        echo ">>> Using brew (macOS)..."
         brew install pipx
     else
-        echo "🔄 Installing via pip..."
+        echo ">>> Installing via pip..."
         $PYTHON_CMD -m pip install --user pipx
     fi
     
@@ -80,7 +80,7 @@ else
 fi
 
 # 3. Ensure pipx path is configured
-echo "� Configuring pipx path..."
+echo "[*] Configuring pipx path..."
 if command_exists pipx; then
     pipx ensurepath >/dev/null 2>&1 || true
 elif $PYTHON_CMD -m pipx --version >/dev/null 2>&1; then
@@ -149,7 +149,7 @@ if command_exists pt; then
 else
     echo "[!] Installation completed, but 'pt' command not found in current PATH."
     echo ""
-    echo "� Please restart your terminal or run:"
+    echo "[*] Please restart your terminal or run:"
     echo "   source ~/.bashrc"
     echo "   # or"
     echo "   source ~/.zshrc"
