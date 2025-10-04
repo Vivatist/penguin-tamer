@@ -1,7 +1,26 @@
 import argparse
 
 from penguin_tamer.i18n import t
-from penguin_tamer._version import __version__
+
+
+def _get_version() -> str:
+    """Get version from installed package metadata."""
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            return version("penguin-tamer")
+        except PackageNotFoundError:
+            return "0.7.0.dev0"
+    except ImportError:
+        # Fallback for older Python versions
+        try:
+            import pkg_resources
+            return pkg_resources.get_distribution("penguin-tamer").version
+        except Exception:
+            return "0.7.0.dev0"
+
+
+__version__ = _get_version()
 
 
 parser = argparse.ArgumentParser(
