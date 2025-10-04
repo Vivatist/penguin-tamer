@@ -164,19 +164,19 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
 
 ## Installation
 
-### 🚀 Quick Install (Recommended)
+### Quick Install (Recommended)
 
-**One-line installation script for Linux/macOS:**
+**One-line installation script for Linux/macOS (compatible with all terminals):**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/quick-install.sh | bash
 ```
 
 This script will:
-- ✅ Check Python 3.11+ installation
-- 📦 Install pipx if needed  
-- 🐧 Install Penguin Tamer from PyPI
-- 🎯 Verify installation
+- Check Python 3.11+ installation
+- Install pipx if needed  
+- Install Penguin Tamer from PyPI
+- Verify installation and show usage instructions
 
 ### Manual Installation (pipx)
 
