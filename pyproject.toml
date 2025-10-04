@@ -51,8 +51,6 @@ dynamic = ["version"]
 pt = "penguin_tamer.__main__:main"
 
 [tool.setuptools_scm]
-version_scheme = "release-branch-semver"
-local_scheme = "no-local-version"
 
 [tool.setuptools.packages.find]
 where = ["src"]
