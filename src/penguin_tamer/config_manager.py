@@ -411,11 +411,14 @@ if __name__ == "__main__":
     print(f"Температура: {config.temperature}")
     print(f"Потоковый режим: {config.stream_mode}")
     print(f"JSON режим: {config.json_mode}")
-    print(f"Уровень логирования: {config.console_log_level}")
+    print(f"Язык: {config.language}")
     print(f"Доступные LLM: {config.get_available_llms()}")
 
     # Показываем конфигурацию текущей LLM
     current_llm_config = config.get_current_llm_config()
     print(f"Конфигурация текущей LLM: {current_llm_config}")
+    
+    # Показываем пути
+    print(f"\nПуть к конфигурации: {config.config_path}")
 
     print("\n✅ ConfigManager работает корректно!")
