@@ -12,4 +12,3 @@ openai==1.108.0
 PyYAML==6.0.2
 inquirer==3.4.0
 prompt-toolkit==3.0.52
--e .
