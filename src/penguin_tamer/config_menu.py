@@ -321,7 +321,6 @@ def system_settings_menu():
             inquirer.List('choice',
                          message=t('System settings'),
                          choices=[
-                             (t('Stream mode'), 'stream'),
                              (t('JSON mode'), 'json'),
                              (t('Stream delay'), 'sleep_time'),
                              (t('Stream refresh rate'), 'refresh_rate'),
@@ -336,9 +335,7 @@ def system_settings_menu():
 
         choice = answers['choice']
 
-        if choice == 'stream':
-            set_stream_mode()
-        elif choice == 'json':
+        if choice == 'json':
             set_json_mode()
         elif choice == 'sleep_time':
             set_sleep_time()
@@ -346,22 +343,6 @@ def system_settings_menu():
             set_refresh_rate()
         elif choice == 'back':
             break
-
-
-def set_stream_mode():
-    """Stream mode setting."""
-    questions = [
-        inquirer.List('mode',
-                     message=t('Stream mode'),
-                     choices=[('On', True), ('Off', False)],
-                     default=config.stream_mode,
-                     carousel=True)
-    ]
-
-    answers = prompt_clean(questions)
-    if answers:
-        config.stream_mode = answers['mode']
-        print(t('Updated'))
 
 
 def set_json_mode():

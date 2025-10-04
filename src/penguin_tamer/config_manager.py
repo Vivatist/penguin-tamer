@@ -231,16 +231,6 @@ class ConfigManager:
         self.set("global", "temperature", value)
 
     @property
-    def stream_mode(self) -> bool:
-        """Режим потокового вывода."""
-        return self.get("global", "stream_output_mode", False)
-
-    @stream_mode.setter
-    def stream_mode(self, value: bool) -> None:
-        """Устанавливает режим потокового вывода."""
-        self.set("global", "stream_output_mode", value)
-
-    @property
     def json_mode(self) -> bool:
         """JSON режим."""
         return self.get("global", "json_mode", False)

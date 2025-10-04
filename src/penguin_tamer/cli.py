@@ -89,8 +89,6 @@ from penguin_tamer.arguments import parse_args
 from penguin_tamer.error_handlers import connection_error
 from penguin_tamer.dialog_input import DialogInputFormatter
 
-STREAM_OUTPUT_MODE: bool = config.get("global", "stream_output_mode")
-
 educational_text = (
     "ALWAYS number code blocks in your replies so the user can reference them. "
     "Numbering format: [Code #1]\n```bash ... ```, [Code #2]\n```bash ... ```, "
