@@ -127,12 +127,7 @@ def get_system_content() -> str:
 def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None:
     """Run a single query (optionally streaming)"""
     try:
-        if STREAM_OUTPUT_MODE:
-            reply = chat_client.ask_stream(query)
-        else:
-            reply = chat_client.ask(query)
-            Markdown = _get_markdown_class()
-            console.print(Markdown(reply))
+        chat_client.ask_stream(query)
     except Exception as e:
         console.print(connection_error(e))
 
@@ -156,12 +151,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         initial_user_prompt
         try:
             Markdown = _get_markdown_class()
-            if STREAM_OUTPUT_MODE:
-                reply = chat_client.ask_stream(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                console.print(Markdown(reply))
-            else:
-                reply = chat_client.ask(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                console.print(Markdown(reply))
+            reply = chat_client.ask_stream(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
             EDUCATIONAL_CONTENT = []  # clear educational content after first use
             last_code_blocks = _get_formatter_text()(reply)
         except Exception as e:
@@ -204,13 +194,9 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                     console.print(f"[dim]Code block #{user_prompt} not found.[/dim]")
                     continue
 
-            # Если введен текст, отправляем как запрос к AI
-            if STREAM_OUTPUT_MODE:
-                reply = chat_client.ask_stream(user_prompt, educational_content=EDUCATIONAL_CONTENT)
-            else:
-                Markdown = _get_markdown_class()
-                reply = chat_client.ask(user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                console.print(Markdown(reply))
+
+            Markdown = _get_markdown_class()
+            reply = chat_client.ask_stream(user_prompt, educational_content=EDUCATIONAL_CONTENT)
             EDUCATIONAL_CONTENT = []  # clear educational content after first use
             last_code_blocks = _get_formatter_text()(reply)
             console.print()  # new line after answer
