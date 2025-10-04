@@ -4,6 +4,7 @@ copilot-instructions.md
 .notes.md
 .test.py
 .gitignore
+.pypirc
 ai_ebash.egg-info/
 
 # secret kyeys and files
