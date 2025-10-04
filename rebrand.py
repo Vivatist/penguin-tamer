@@ -15,13 +15,13 @@ class ProjectRebranding:
     
     def __init__(self, old_name: str, new_name: str, old_cmd: str, new_cmd: str):
         self.old_name = old_name  # ai-ebash
-        self.new_name = new_name  # новое-название
+        self.new_name = new_name  # penguin-tamer
         self.old_package = old_name.replace('-', '_')  # ai_ebash
-        self.new_package = new_name.replace('-', '_')  # новое_название  
-        self.old_module = 'aiebash'  # старый модуль
-        self.new_module = new_name.replace('-', '').replace('_', '')  # новый модуль
+        self.new_package = new_name.replace('-', '_')  # penguin_tamer
+        self.old_module = 'penguin_tamer'  # старый модуль
+        self.new_module = 'penguin_tamer'  # новый модуль penguin_tamer
         self.old_cmd = old_cmd  # ai
-        self.new_cmd = new_cmd  # новая команда
+        self.new_cmd = new_cmd  # pt
         
     def get_files_to_update(self) -> List[Path]:
         """Получает список файлов для обновления"""
@@ -92,8 +92,8 @@ class ProjectRebranding:
     def _update_python_file(self, content: str) -> str:
         """Обновляет Python файлы"""
         # Импорты
-        content = re.sub(r'\bfrom aiebash\b', f'from {self.new_module}', content)
-        content = re.sub(r'\bimport aiebash\b', f'import {self.new_module}', content)
+        content = re.sub(r'\bfrom penguin_tamer\b', f'from {self.new_module}', content)
+        content = re.sub(r'\bimport penguin_tamer\b', f'import {self.new_module}', content)
         
         # Пути к пакетам
         content = re.sub(r'\baiebash\b', self.new_module, content)
@@ -103,7 +103,7 @@ class ProjectRebranding:
     def _update_pyproject(self, content: str) -> str:
         """Обновляет pyproject.toml"""
         content = re.sub(r'name = "ai-ebash"', f'name = "{self.new_name}"', content)
-        content = re.sub(r'ai = "aiebash.__main__:main"', f'{self.new_cmd} = "{self.new_module}.__main__:main"', content)
+        content = re.sub(r'ai = "penguin_tamer.__main__:main"', f'{self.new_cmd} = "{self.new_module}.__main__:main"', content)
         content = re.sub(r'\baiebash\b', self.new_module, content)
         
         return content
@@ -111,7 +111,7 @@ class ProjectRebranding:
     def _update_setup_cfg(self, content: str) -> str:
         """Обновляет setup.cfg"""
         content = re.sub(r'name = ai-ebash', f'name = {self.new_name}', content)
-        content = re.sub(r'ai = aiebash.__main__:main', f'{self.new_cmd} = {self.new_module}.__main__:main', content)
+        content = re.sub(r'ai = penguin_tamer.__main__:main', f'{self.new_cmd} = {self.new_module}.__main__:main', content)
         content = re.sub(r'\baiebash\b', self.new_module, content)
         
         return content
@@ -122,6 +122,11 @@ class ProjectRebranding:
         content = re.sub(r'\baiebash\b', self.new_module, content, flags=re.IGNORECASE)
         content = re.sub(r'`ai `', f'`{self.new_cmd} `', content)
         content = re.sub(r'`ai\b', f'`{self.new_cmd}', content)
+        
+        # Обновляем описания
+        content = re.sub(r'Console utility for integrating artificial intelligence into a Linux terminal', 
+                        'Penguin Tamer - AI-powered terminal assistant for Linux systems', content)
+        content = re.sub(r'AI-eBash', 'Penguin Tamer', content)
         
         return content
         
@@ -148,7 +153,7 @@ class ProjectRebranding:
     
     def rename_directories(self) -> bool:
         """Переименовывает директории"""
-        src_old = Path('src/aiebash')
+        src_old = Path('src/penguin_tamer')
         src_new = Path(f'src/{self.new_module}')
         
         if src_old.exists():
@@ -195,27 +200,22 @@ class ProjectRebranding:
 
 def main():
     """Основная функция для запуска ребрендинга"""
-    print("🔄 Скрипт ребрендинга проекта ai-ebash")
-    print("=" * 50)
+    print("� Скрипт ребрендинга проекта ai-ebash → Penguin Tamer")
+    print("=" * 60)
     
-    # Здесь задайте новые названия
+    # Заданные параметры для Penguin Tamer
     OLD_NAME = "ai-ebash"
-    NEW_NAME = input("Введите новое название проекта (например: ai-terminal): ").strip()
-    
+    NEW_NAME = "penguin-tamer"
     OLD_CMD = "ai"
-    NEW_CMD = input("Введите новую команду (например: ait): ").strip()
+    NEW_CMD = "pt"
     
-    if not NEW_NAME or not NEW_CMD:
-        print("❌ Название и команда не могут быть пустыми!")
-        return
+    print(f"🎯 Коммерческое название: Penguin Tamer")
+    print(f"📦 PyPI пакет: {NEW_NAME}")
+    print(f"🐍 Python модуль: penguin_tamer")
+    print(f"⚡ Команда: {NEW_CMD}")
+    print(f"🐙 GitHub repo: {NEW_NAME}")
     
-    print(f"\n🎯 Ребрендинг: {OLD_NAME} → {NEW_NAME}")
-    print(f"⚡ Команда: {OLD_CMD} → {NEW_CMD}")
-    
-    confirm = input("\nПродолжить? (y/N): ").strip().lower()
-    if confirm != 'y':
-        print("❌ Ребрендинг отменен")
-        return
+    print(f"\n🚀 Запускаем автоматический ребрендинг {OLD_NAME} → {NEW_NAME}...")
     
     # Создаем резервную копию
     backup_dir = f"backup_{OLD_NAME}"

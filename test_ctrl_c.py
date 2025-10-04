@@ -21,7 +21,7 @@ def test_ctrl_c_handling():
     console.print()
     
     try:
-        from aiebash.script_executor import execute_and_handle_result
+        from penguin_tamer.script_executor import execute_and_handle_result
         
         console.print("🔍 Тест команд, которые можно прервать:")
         console.print("- На Windows: ping будет пинговать бесконечно")

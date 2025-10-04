@@ -1,5 +1,5 @@
-include src/aiebash/default_config.yaml
-include src/aiebash/locales/*.json
+include src/penguin_tamer/default_config.yaml
+include src/penguin_tamer/locales/*.json
 
 # Exclude CI and packaging for other distros
 prune .github
@@ -7,7 +7,7 @@ prune debian
 prune docs
 
 # Exclude tests from source distribution
-prune src/aiebash/tests
+prune src/penguin_tamer/tests
 
 # Remove caches and compiled files
 global-exclude __pycache__/*

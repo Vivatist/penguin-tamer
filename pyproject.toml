@@ -2,6 +2,62 @@
 requires = ["setuptools>=61", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "penguin-tamer"
+authors = [
+    {name = "Andrey Bochkarev", email = "andrey.bch.1976@gmail.com"},
+]
+description = "Penguin Tamer - AI-powered terminal assistant for Linux systems"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+keywords = ["ai", "terminal", "console", "bash", "automation", "penguin", "tamer"]
+dependencies = [
+    "certifi==2025.8.3",
+    "charset-normalizer==3.4.3",
+    "idna==3.10", 
+    "markdown-it-py==3.0.0",
+    "mdurl==0.1.2",
+    "platformdirs==4.4.0",
+    "Pygments==2.19.2",
+    "requests==2.32.5",
+    "rich==14.1.0",
+    "urllib3==2.5.0",
+    "openai==1.108.0",
+    "PyYAML==6.0.2",
+    "inquirer==3.4.0",
+    "prompt-toolkit==3.0.52",
+]
+dynamic = ["version"]
+
+[project.urls]
+"Homepage" = "https://github.com/Vivatist/penguin-tamer"
+"Bug Reports" = "https://github.com/Vivatist/penguin-tamer/issues"
+"Source" = "https://github.com/Vivatist/penguin-tamer"
+
+[project.scripts]
+pt = "penguin_tamer.__main__:main"
+
 [tool.setuptools_scm]
 version_scheme = "release-branch-semver"
 local_scheme = "no-local-version"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["penguin_tamer.tests*"]
+
+[tool.setuptools.package-data]
+penguin_tamer = ["*.yaml", "locales/*.json"]

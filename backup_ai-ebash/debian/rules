@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3
+
+# Явно вызываем dh_virtualenv на этапе установки, без добавления аддона в '--with'
+override_dh_auto_install:
+	dh_virtualenv --python python3 \
+		--requirements requirements.txt
+
+# Не выполняем стандартные auto-* этапы (проект упаковывается через dh_virtualenv)
+override_dh_auto_configure:
+	:
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_clean:
+	:
+
+override_dh_auto_test:
+	:

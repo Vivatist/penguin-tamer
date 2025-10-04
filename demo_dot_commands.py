@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 def simulate_dialog_interaction():
     """Симуляция взаимодействия с диалоговым режимом"""
     
-    from aiebash.script_executor import execute_and_handle_result
+    from penguin_tamer.script_executor import execute_and_handle_result
     from rich.console import Console
     
     console = Console()

@@ -38,7 +38,7 @@ def check_pep8_compliance(file_path):
 
 def main():
     """Проверяет все Python файлы в проекте"""
-    src_dir = Path(__file__).parent / "src" / "aiebash"
+    src_dir = Path(__file__).parent / "src" / "penguin_tamer"
     python_files = list(src_dir.glob("*.py"))
     
     total_issues = 0

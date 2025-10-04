@@ -1,11 +1,11 @@
-# Ai-eBash!
+# 🐧 Penguin Tamer
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI Version](https://img.shields.io/pypi/v/ai-ebash.svg)](https://pypi.org/project/ai-ebash/)
-[![GitHub Stars](https://img.shields.io/github/stars/Vivatist/ai-ebash.svg)](https://github.com/Vivatist/ai-ebash/stargazers)
+[![PyPI Version](https://img.shields.io/pypi/v/penguin-tamer.svg)](https://pypi.org/project/penguin-tamer/)
+[![GitHub Stars](https://img.shields.io/github/stars/Vivatist/penguin-tamer.svg)](https://github.com/Vivatist/penguin-tamer/stargazers)
 
-> **Integrate artificial intelligence into your terminal.** Ask questions to ***ChatGPT***, ***Deep Seek***, ***Grok*** and many other large language models (LLM). Execute scripts and commands suggested by the neural network directly from the command line. Perfect for beginners in Linux and Windows administration.
+> **🐧 Tame your Linux terminal with AI power!** Ask questions to ***ChatGPT***, ***Deep Seek***, ***Grok*** and many other large language models (LLM). Execute scripts and commands suggested by the neural network directly from the command line. Perfect for beginners in Linux and Windows administration.
 
 🌍 **Available in:** [English](README.md) | [Русский](/docs/locales/README_ru.md)
 
@@ -13,7 +13,7 @@
 
 ## Table of Contents
 
-- [Ai-eBash!](#ai-ebash)
+- [penguin-tamer!](#penguin-tamer)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
     - [Features](#features)
@@ -62,9 +62,9 @@
 
 ### Quick Start
 
-Install AI-eBash using one of the convenient [methods](#installation).
+Install penguin-tamer using one of the convenient [methods](#installation).
 
-Try asking the assistant a question, for example `ai who are you?`. In a couple of seconds, the neural network will respond:
+Try asking the assistant a question, for example `pt who are you?`. In a couple of seconds, the neural network will respond:
 
 ![program response1](/docs/img/en_img1.gif)
 
@@ -73,17 +73,17 @@ On first launch, the program uses a Microsoft-hosted model — **DeepSeek-R1-Lit
 **For full operation, you need to [obtain](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model) a personal token and add it to the selected model in the program [settings](#installation).**
 
 > [!NOTE]
-> AI-eBash can work with any neural network that supports API access. Today this includes almost all large language models (LLMs) on the market. [How to add a new model](#adding-a-new-model).
+> penguin-tamer can work with any neural network that supports API access. Today this includes almost all large language models (LLMs) on the market. [How to add a new model](#adding-a-new-model).
 
 ## Connecting to Neural Networks
-AI-eBash ships with several popular models pre-configured, such as **DeepSeek**, **Grok 4 Fast**, **Qwen3 Coder**. However, provider policies don’t allow full operation without authorization. You must obtain a personal token (API_KEY) from the provider’s website.
+penguin-tamer ships with several popular models pre-configured, such as **DeepSeek**, **Grok 4 Fast**, **Qwen3 Coder**. However, provider policies don’t allow full operation without authorization. You must obtain a personal token (API_KEY) from the provider’s website.
 
 ### Getting a Token (API_KEY) and Connecting to a Pre-installed Model
 We recommend the provider [OpenRouter](https://openrouter.ai/models?max_price=0) — simple registration and dozens of popular models available for free with a single token.
 
 - Register on the [website](https://openrouter.ai/)
 - Get a token by clicking **[Create API key](https://openrouter.ai/settings/keys)**. Save it — OpenRouter will show it only once!
-- Add the token to AI-eBash in the [settings](#configuration) of the selected model
+- Add the token to penguin-tamer in the [settings](#configuration) of the selected model
 - Make this model the current one
 
 **Done! Now the selected model will answer you in the console. You can connect any other model from this website in the same way.**
@@ -94,7 +94,7 @@ We recommend the provider [OpenRouter](https://openrouter.ai/models?max_price=0)
 A similar procedure applies to other providers, although with **OpenRouter** available, you may not need it.
 
 ### Adding a New Model
-To add a **new** model to AI-eBash, including a local model or one from major providers, simply enter in AI-eBash [settings](#configuration):
+To add a **new** model to penguin-tamer, including a local model or one from major providers, simply enter in penguin-tamer [settings](#configuration):
  - API_KEY (your personal token)
  - API_URL (API base URL)
  - model (model name)
@@ -113,7 +113,7 @@ Among the connection examples, look for information similar to:
 
 How to get **API_KEY** is described [above](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model).
 
-Enter these values (***without quotes***) in AI-eBash settings and set this model as current. Now ***Meta: Llama 3.1*** will answer your questions.
+Enter these values (***without quotes***) in penguin-tamer settings and set this model as current. Now ***Meta: Llama 3.1*** will answer your questions.
 
 ## Examples
 
@@ -126,15 +126,15 @@ ai kernel update script
 
 ### Dialog Mode
 
-To start a dialog, use the `-d` key or simply type `ai` and press `Enter`.
-In dialog mode, AI-eBash preserves the conversation context throughout the session.
+To start a dialog, use the `-d` key or simply type `pt` and press `Enter`.
+In dialog mode, penguin-tamer preserves the conversation context throughout the session.
 
 ```bash
-ai -d what python version is installed?
+pt -d what python version is installed?
 ```
 
 ```bash
-ai  # Enter
+pt  # Enter
 ```
 
 ### Running Code from AI Response
@@ -178,27 +178,27 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
 
 2. **Restart the terminal**
 
-3. **Install AI-eBash**:
+3. **Install penguin-tamer**:
    ```bash
-   pipx install ai-ebash
+   pipx install penguin-tamer
    ```
 
 > **Note:** If pipx doesn’t work, you can install via pip:
 > ```bash
-> pip install ai-ebash
+> pip install penguin-tamer
 > ```
 
 ### Ubuntu/Debian (DEB Package)
 
-1. **Download the latest DEB package from [GitHub](https://github.com/Vivatist/ai-ebash/releases/latest)**:
+1. **Download the latest DEB package from [GitHub](https://github.com/Vivatist/penguin-tamer/releases/latest)**:
    ```bash
-   wget -qO ai-ebash.deb $(wget -qO- https://api.github.com/repos/Vivatist/ai-ebash/releases/latest \
+   wget -qO penguin-tamer.deb $(wget -qO- https://api.github.com/repos/Vivatist/penguin-tamer/releases/latest \
      | grep "browser_download_url.*\.deb" | cut -d '"' -f 4)
    ```
 
 2. **Install the package**:
    ```bash
-   sudo dpkg -i ./ai-ebash.deb
+   sudo dpkg -i ./penguin-tamer.deb
    sudo apt-get install -f -y
    ```
 
@@ -208,9 +208,9 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
 
 1. **Install Python 3.11+** (if not installed)
 
-2. **Install AI-eBash**:
+2. **Install penguin-tamer**:
    ```cmd
-   pip install ai-ebash
+   pip install penguin-tamer
    ```
 
 3. **Restart the terminal**
@@ -219,27 +219,27 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
 
 ### If installed with pipx
 ```bash
-pipx uninstall ai-ebash
+pipx uninstall penguin-tamer
 ```
 
 ### If installed as DEB package
 ```bash
-sudo apt remove ai-ebash
+sudo apt remove penguin-tamer
 # Or for complete deletion, including configuration files:
-sudo apt purge ai-ebash
+sudo apt purge penguin-tamer
 ```
 
 or you can also use dpkg:
 
 ```bash
-sudo dpkg -r ai-ebash
+sudo dpkg -r penguin-tamer
 # Or for complete deletion, including configuration files:
-sudo dpkg -P ai-ebash
+sudo dpkg -P penguin-tamer
 ```
 
 ### If installed on Windows
 ```bash
-pip uninstall ai-ebash
+pip uninstall penguin-tamer
 ```
 
 ## Configuration
@@ -249,7 +249,7 @@ pip uninstall ai-ebash
 Run the setup mode to configure your AI provider:
 
 ```bash
-ai -s
+pt -s
 ```
 
 ### Supported AI Providers
@@ -264,19 +264,19 @@ And many others that support API access.
 ### Configuration File
 
 Settings are stored in:
-- **Linux:** `~/.config/ai-ebash/config.yaml`
-- **Windows:** `%APPDATA%\ai-ebash\config.yaml`
+- **Linux:** `~/.config/penguin-tamer/config.yaml`
+- **Windows:** `%APPDATA%\penguin-tamer\config.yaml`
 
 ### Reset Settings
 
 To restore defaults, delete the configuration file manually or run:
 ```bash
 # For Linux
-rm ~/.config/ai-ebash/config.yaml
+rm ~/.config/penguin-tamer/config.yaml
 ```
 ```bash
 # For Windows
-rm %APPDATA%\ai-ebash\config.yaml
+rm %APPDATA%\penguin-tamer\config.yaml
 ```
 
 ## Contributing
@@ -285,11 +285,11 @@ I’ll be glad for any help!
 
 ### Areas for Contribution
  
-- 🌍 **Localization** — Adding support for new languages ([template](https://github.com/Vivatist/ai-ebash/blob/main/src/aiebash/locales/template_locale.json)), including [README.md](https://github.com/Vivatist/ai-ebash/blob/main/README.md)
+- 🌍 **Localization** — Adding support for new languages ([template](https://github.com/Vivatist/penguin-tamer/blob/main/src/penguin_tamer/locales/template_locale.json)), including [README.md](https://github.com/Vivatist/penguin-tamer/blob/main/README.md)
 - 🤖 **AI Providers** — Integrating new AI providers
 - 🎨 **UI/UX** — Improving the configuration manager interface (yes, it’s not perfect)
 - 🔧 **Tools** — Creating additional utilities
-- 💡 **Ideas** — I welcome any ideas to improve and develop AI-eBash. [Join the discussion](https://github.com/Vivatist/ai-ebash/discussions/10#discussion-8924293)
+- 💡 **Ideas** — I welcome any ideas to improve and develop penguin-tamer. [Join the discussion](https://github.com/Vivatist/penguin-tamer/discussions/10#discussion-8924293)
 
 Here’s how to get started:
 
@@ -298,8 +298,8 @@ Here’s how to get started:
 1. **Fork the repository**
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/your-username/ai-ebash.git
-   cd ai-ebash
+   git clone https://github.com/your-username/penguin-tamer.git
+   cd penguin-tamer
    ```
 
 3. **Set up the development environment**:
@@ -324,8 +324,8 @@ This project is licensed under the MIT License.
 ## Contacts
 
 - **Author**: Andrey Bochkarev
-- **GitHub Issues**: [🐛 Report issues](https://github.com/Vivatist/ai-ebash/issues)
-- **Discussions**: [💬 Join](https://github.com/Vivatist/ai-ebash/discussions)
+- **GitHub Issues**: [🐛 Report issues](https://github.com/Vivatist/penguin-tamer/issues)
+- **Discussions**: [💬 Join](https://github.com/Vivatist/penguin-tamer/discussions)
 
 ---
 
@@ -333,5 +333,5 @@ This project is licensed under the MIT License.
 
 **Created with ❤️ for the Linux community**
 
-[⭐ Star on GitHub](https://github.com/Vivatist/ai-ebash)
+[⭐ Star on GitHub](https://github.com/Vivatist/penguin-tamer)
 </div>

@@ -1,4 +1,4 @@
-Source: ai-ebash
+Source: penguin-tamer
 Section: python
 Priority: optional
 Maintainer: Andrey Bochkarev <andrey.bch.1976@gmail.com>
@@ -10,14 +10,14 @@ Build-Depends: debhelper-compat (= 13),
                dh-virtualenv,
                python3-venv
 Standards-Version: 4.6.2
-Homepage: https://github.com/Vivatist/ai-bash
+Homepage: https://github.com/Vivatist/penguin-tamer
 
-Package: ai-ebash
+Package: penguin-tamer
 Architecture: all
 Depends: ${python3:Depends},
          ${misc:Depends}
-Description: AI-powered Bash shell assistant
- AI-eBash is an intelligent command-line assistant that uses AI to help
+Description: Penguin Tamer - AI-powered terminal assistant
+ Penguin Tamer is an intelligent command-line assistant that uses AI to help
  with shell commands and system administration tasks. It provides
  contextual suggestions, command explanations, and automated script
  generation using OpenAI's GPT models.

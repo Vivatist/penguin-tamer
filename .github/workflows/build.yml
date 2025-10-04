@@ -74,7 +74,7 @@ jobs:
           # Обновляем debian/changelog (maintainer берётся из окружения или коммита)
           export DEBFULLNAME="${{ github.actor }}"
           export DEBEMAIL="${{ github.actor }}@users.noreply.github.com"
-          dch --create --distribution unstable --package ai-ebash --newversion "$VER-1" "Automated release from tag $TAG" || \
+          dch --create --distribution unstable --package penguin-tamer --newversion "$VER-1" "Automated release from tag $TAG" || \
           dch --newversion "$VER-1" "Automated release from tag $TAG"
           # Сделаем файл исполняемым на всякий случай
           chmod +x debian/rules
@@ -101,8 +101,8 @@ jobs:
           echo "Installing $DEB_FILE"
           # apt требует явного пути к локальному файлу (с префиксом ./)
           sudo apt-get install -y "./$DEB_FILE" || (sudo dpkg -i "$DEB_FILE" && sudo apt-get -f install -y)
-          which ai || (echo "ai not in PATH" && exit 1)
-          ai --help || (echo "ai failed to run" && exit 1)
+          which pt || (echo "pt not in PATH" && exit 1)
+          pt --help || (echo "pt failed to run" && exit 1)
 
       - name: Upload DEB to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
