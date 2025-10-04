@@ -88,13 +88,20 @@ fi
 
 # 4️⃣ Install Penguin Tamer via pipx
 echo "🚀 Installing Penguin Tamer from PyPI..."
+INSTALL_OUTPUT=""
 if command_exists pipx; then
-    pipx install penguin-tamer --force
+    INSTALL_OUTPUT=$(pipx install penguin-tamer --force 2>&1)
 elif $PYTHON_CMD -m pipx --version >/dev/null 2>&1; then
-    $PYTHON_CMD -m pipx install penguin-tamer --force
+    INSTALL_OUTPUT=$($PYTHON_CMD -m pipx install penguin-tamer --force 2>&1)
 else
     echo "❌ pipx not found after installation. Falling back to pip..."
     $PYTHON_CMD -m pip install --user penguin-tamer --upgrade
+fi
+
+# Extract version from pipx output
+INSTALLED_VERSION=""
+if echo "$INSTALL_OUTPUT" | grep -q "installed package penguin-tamer"; then
+    INSTALLED_VERSION=$(echo "$INSTALL_OUTPUT" | grep "installed package penguin-tamer" | sed -n 's/.*penguin-tamer \([0-9][^,]*\).*/\1/p')
 fi
 
 # 5️⃣ Add common pipx paths to current session
@@ -117,7 +124,25 @@ done
 echo "🔍 Verifying installation..."
 if command_exists pt; then
     echo "✅ Penguin Tamer installed successfully!"
-    PT_VERSION=$(pt --version 2>/dev/null | cut -d' ' -f2 || echo "unknown")
+    
+    # Try to get version from pt --version command first
+    PT_VERSION=$(pt --version 2>/dev/null | cut -d' ' -f2 2>/dev/null || echo "")
+    
+    # If that fails, use version from installation output
+    if [ -z "$PT_VERSION" ] && [ -n "$INSTALLED_VERSION" ]; then
+        PT_VERSION="$INSTALLED_VERSION"
+    fi
+    
+    # Try pipx list as another fallback
+    if [ -z "$PT_VERSION" ] && command_exists pipx; then
+        PT_VERSION=$(pipx list 2>/dev/null | grep "penguin-tamer" | sed -n 's/.*penguin-tamer \([0-9][^,)]*\).*/\1/p' || echo "")
+    fi
+    
+    # Final fallback
+    if [ -z "$PT_VERSION" ]; then
+        PT_VERSION="installed"
+    fi
+    
     echo "🎯 Version: $PT_VERSION"
     echo "📍 Location: $(which pt)"
 else
