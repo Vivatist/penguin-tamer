@@ -17,6 +17,7 @@
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
     - [Features](#features)
+    - [Install](#install)
     - [Quick Start](#quick-start)
   - [Connecting to Neural Networks](#connecting-to-neural-networks)
     - [Getting a Token (API\_KEY) and Connecting to a Pre-installed Model](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model)
@@ -28,13 +29,7 @@
     - [Running Code from AI Response](#running-code-from-ai-response)
   - [Security](#security)
     - [Best Practices](#best-practices)
-  - [Installation](#installation)
-    - [🚀 Quick Install (Recommended)](#-quick-install-recommended)
-    - [Manual Installation (pipx)](#manual-installation-pipx)
-    - [Windows (Experimental)](#windows-experimental)
-  - [Removal](#removal)
-    - [If installed with pipx](#if-installed-with-pipx)
-    - [If installed on Windows](#if-installed-on-windows)
+  - [Uninstall](#uninstall)
   - [Configuration](#configuration)
     - [Initial Setup](#initial-setup)
     - [Supported AI Providers](#supported-ai-providers)
@@ -59,9 +54,13 @@
 - **Multiple AI providers** — Support for OpenAI, OpenRouter, DeepSeek, Anthropic and other popular providers
 - **Multi-language support** — En and Ru are available now. You can [(help with translation)](#contributing) into other languages.
 
-### Quick Start
 
-Install penguin-tamer using one of the convenient [methods](#installation).
+### Install
+```bash
+curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/quick-install.sh | bash
+```
+
+### Quick Start
 
 Try asking the assistant a question, for example `pt who are you?`. In a couple of seconds, the neural network will respond:
 
@@ -162,66 +161,10 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
    ai Show running processes
    ```
 
-## Installation
+## Uninstall
 
-### Quick Install (Recommended)
-
-**One-line installation script for Linux/macOS (compatible with all terminals):**
-
-```bash
-curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/quick-install.sh | bash
-```
-
-This script will:
-- Check Python 3.11+ installation
-- Install pipx if needed  
-- Install Penguin Tamer from PyPI
-- Verify installation and show usage instructions
-
-### Manual Installation (pipx)
-
-**If you prefer manual control:**
-
-1. **Install pipx** (if not installed):
-   ```bash
-   sudo apt update
-   sudo apt install pipx python3-venv -y
-   pipx ensurepath
-   ```
-
-2. **Restart the terminal**
-
-3. **Install penguin-tamer**:
-   ```bash
-   pipx install penguin-tamer
-   ```
-
-> **Note:** If pipx doesn’t work, you can install via pip:
-> ```bash
-> pip install penguin-tamer
-> ```
-
-### Windows (Experimental)
-
-1. **Install Python 3.11+** (if not installed)
-
-2. **Install penguin-tamer**:
-   ```cmd
-   pip install penguin-tamer
-   ```
-
-3. **Restart the terminal**
-
-## Removal
-
-### If installed with pipx
 ```bash
 pipx uninstall penguin-tamer
-```
-
-### If installed on Windows
-```bash
-pip uninstall penguin-tamer
 ```
 
 ## Configuration
