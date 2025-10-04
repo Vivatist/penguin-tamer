@@ -2,6 +2,7 @@ import argparse
 
 from penguin_tamer.logger import logger, log_execution_time
 from penguin_tamer.i18n import t
+from penguin_tamer._version import __version__
 
 
 parser = argparse.ArgumentParser(
@@ -23,6 +24,12 @@ parser.add_argument(
     "--settings",
     action="store_true",
     help=t("Open interactive settings menu."),
+)
+
+parser.add_argument(
+    "--version",
+    action="version",
+    version=f"%(prog)s {__version__}",
 )
 
 parser.add_argument(

@@ -13,7 +13,7 @@
 
 ## Table of Contents
 
-- [penguin-tamer!](#penguin-tamer)
+- [🐧 Penguin Tamer](#-penguin-tamer)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
     - [Features](#features)
@@ -29,7 +29,7 @@
   - [Security](#security)
     - [Best Practices](#best-practices)
   - [Installation](#installation)
-    - [Linux/macOS (Quick Install)](#quick-install-recommended)
+    - [🚀 Quick Install (Recommended)](#-quick-install-recommended)
     - [Manual Installation (pipx)](#manual-installation-pipx)
     - [Windows (Experimental)](#windows-experimental)
   - [Removal](#removal)

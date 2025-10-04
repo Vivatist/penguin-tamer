@@ -117,7 +117,7 @@ done
 echo "🔍 Verifying installation..."
 if command_exists pt; then
     echo "✅ Penguin Tamer installed successfully!"
-    PT_VERSION=$(pt --version 2>/dev/null || echo "unknown")
+    PT_VERSION=$(pt --version 2>/dev/null | cut -d' ' -f2 || echo "unknown")
     echo "🎯 Version: $PT_VERSION"
     echo "📍 Location: $(which pt)"
 else
