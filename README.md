@@ -44,7 +44,7 @@
 
 ## Install
 ```bash
-curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/quick-install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/install.sh | bash
 ```
 
 ## Uninstall
