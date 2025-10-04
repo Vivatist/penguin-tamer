@@ -1,18 +1,33 @@
 #!/usr/bin/env python3
 """Модуль для оформления ввода в диалоговом режиме."""
 from pathlib import Path
+from prompt_toolkit.history import FileHistory
 
 
 def _ensure_prompt_toolkit():
     """Ленивый импорт prompt_toolkit"""
     global _prompt_toolkit_imported
     if '_prompt_toolkit_imported' not in globals() or not _prompt_toolkit_imported:
-        global HTML, prompt, FileHistory, Style, Processor, Transformation
+        global HTML, prompt, Style, Processor, Transformation
         from prompt_toolkit import HTML, prompt
-        from prompt_toolkit.history import FileHistory
         from prompt_toolkit.styles import Style
         from prompt_toolkit.layout.processors import Processor, Transformation
         globals()['_prompt_toolkit_imported'] = True
+
+
+class FilteredFileHistory(FileHistory):
+    """История команд с фильтрацией чисел (номеров блоков кода)"""
+    
+    def append_string(self, string: str) -> None:
+        """Добавляет строку в историю, игнорируя чистые числа"""
+        # Игнорируем строки, которые являются только числами
+        if string.strip().isdigit():
+            return
+        # Также игнорируем команды выхода
+        if string.strip().lower() in ['exit', 'quit', 'q']:
+            return
+        # Для всех остальных команд вызываем родительский метод
+        super().append_string(string)
 
 
 class DialogInputFormatter:
@@ -26,11 +41,11 @@ class DialogInputFormatter:
             history_file_path: Путь к файлу истории команд
         """
         _ensure_prompt_toolkit()
-        from prompt_toolkit.history import FileHistory
         from prompt_toolkit.styles import Style
         from prompt_toolkit.layout.processors import Processor, Transformation
         
-        self.history = FileHistory(str(history_file_path))
+        # Используем FilteredFileHistory вместо FileHistory
+        self.history = FilteredFileHistory(str(history_file_path))
         self.style = Style.from_dict({
             "prompt": "bold fg:green",
             "dot": "fg:gray",        # Серая точка

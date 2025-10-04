@@ -39,10 +39,10 @@ _execute_handler = None
 
 
 def _get_script_executor():
-    """Ленивый импорт script_executor"""
+    """Ленивый импорт command_executor"""
     global _script_executor
     if _script_executor is None:
-        from penguin_tamer.script_executor import run_code_block
+        from penguin_tamer.command_executor import run_code_block
         _script_executor = run_code_block
     return _script_executor
 
@@ -51,22 +51,22 @@ def _get_execute_handler():
     """Ленивый импорт execute_and_handle_result для выполнения команд"""
     global _execute_handler
     if '_execute_handler' not in globals() or _execute_handler is None:
-        from penguin_tamer.script_executor import execute_and_handle_result
+        from penguin_tamer.command_executor import execute_and_handle_result
         _execute_handler = execute_and_handle_result
     return _execute_handler
 
 def _get_formatter_text():
-    """Ленивый импорт formatter_text"""
+    """Ленивый импорт text_utils"""
     global _formatter_text
     if _formatter_text is None:
-        from penguin_tamer.formatter_text import extract_labeled_code_blocks
+        from penguin_tamer.text_utils import extract_labeled_code_blocks
         _formatter_text = extract_labeled_code_blocks
     return _formatter_text
 
 # Импортируем только самое необходимое для быстрого старта
 from penguin_tamer.llm_client import OpenRouterClient
 from penguin_tamer.arguments import parse_args
-from penguin_tamer.error_messages import connection_error
+from penguin_tamer.error_handlers import connection_error
 from penguin_tamer.dialog_input import DialogInputFormatter
 from rich.console import Console
 from rich.markdown import Markdown

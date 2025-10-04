@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import inquirer
 from penguin_tamer.config_manager import config
-from penguin_tamer.formatter_text import format_api_key_display
+from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.i18n import t, translator
 from penguin_tamer.settings_overview import print_settings_overview
 

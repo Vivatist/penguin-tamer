@@ -1,7 +1,7 @@
 import threading
 from typing import List, Dict
 import time
-from penguin_tamer.formatter_text import format_api_key_display
+from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
 
