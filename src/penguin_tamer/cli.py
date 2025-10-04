@@ -32,31 +32,10 @@ def t_lazy(text, **kwargs):
 # Используем t_lazy вместо t для отложенной инициализации
 t = t_lazy
 
-# Ленивые импорты для ускорения загрузки
-_prompt_toolkit_imported = False
-_rich_console = None
+# Ленивые импорты (только для действительно редких операций)
 _script_executor = None
 _formatter_text = None
-
-def _ensure_prompt_toolkit():
-    """Ленивый импорт prompt_toolkit"""
-    global _prompt_toolkit_imported
-    if not _prompt_toolkit_imported:
-        global HTML, prompt, FileHistory, Style, Lexer, PygmentsLexer
-        from prompt_toolkit import HTML, prompt
-        from prompt_toolkit.history import FileHistory
-        from prompt_toolkit.styles import Style
-        from prompt_toolkit.lexers import Lexer, PygmentsLexer
-        _prompt_toolkit_imported = True
-
-
-def _get_console():
-    """Ленивый импорт rich.console"""
-    global _rich_console
-    if _rich_console is None:
-        from rich.console import Console
-        _rich_console = Console
-    return _rich_console
+_execute_handler = None
 
 
 def _get_script_executor():
@@ -89,20 +68,10 @@ from penguin_tamer.llm_client import OpenRouterClient
 from penguin_tamer.arguments import parse_args
 from penguin_tamer.error_messages import connection_error
 from penguin_tamer.dialog_input import DialogInputFormatter
-
+from rich.console import Console
+from rich.markdown import Markdown
 
 STREAM_OUTPUT_MODE: bool = config.get("global", "stream_output_mode")
-
-# Ленивый импорт Markdown из rich (легкий модуль) для ускорения загрузки
-_markdown = None
-
-
-def _get_markdown():
-    global _markdown
-    if _markdown is None:
-        from rich.markdown import Markdown
-        _markdown = Markdown
-    return _markdown
 
 educational_text = (
     "ALWAYS number code blocks in your replies so the user can reference them. "
@@ -137,19 +106,19 @@ def get_system_content() -> str:
 
 
 # === Основная логика ===
-def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None:
+def run_single_query(chat_client: OpenRouterClient, query: str, console: Console) -> None:
     """Run a single query (optionally streaming)"""
     try:
         if STREAM_OUTPUT_MODE:
             reply = chat_client.ask_stream(query)
         else:
             reply = chat_client.ask(query)
-            console.print(_get_markdown()(reply))
+            console.print(Markdown(reply))
     except Exception as e:
         console.print(connection_error(e))
 
 
-def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
+def run_dialog_mode(chat_client: OpenRouterClient, console: Console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode"""
     
     # История команд хранится рядом с настройками в пользовательской папке
@@ -169,10 +138,10 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         try:
             if STREAM_OUTPUT_MODE:
                 reply = chat_client.ask_stream(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                console.print(_get_markdown()(reply))
+                console.print(Markdown(reply))
             else:
                 reply = chat_client.ask(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                console.print(_get_markdown()(reply))
+                console.print(Markdown(reply))
             EDUCATIONAL_CONTENT = []  # clear educational content after first use
             last_code_blocks = _get_formatter_text()(reply)
         except Exception as e:
@@ -220,7 +189,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                 reply = chat_client.ask_stream(user_prompt, educational_content=EDUCATIONAL_CONTENT)
             else:
                 reply = chat_client.ask(user_prompt, educational_content=EDUCATIONAL_CONTENT)
-                console.print(_get_markdown()(reply))
+                console.print(Markdown(reply))
             EDUCATIONAL_CONTENT = []  # clear educational content after first use
             last_code_blocks = _get_formatter_text()(reply)
             console.print()  # new line after answer
@@ -259,7 +228,7 @@ def main() -> None:
             return 0
 
         # Создаем консоль и клиент только если они нужны для AI операций
-        console = _get_console()()
+        console = Console()
         chat_client = _create_chat_client(console)
 
         # Determine execution mode
