@@ -1,7 +1,6 @@
 import threading
-from typing import List, Dict, Optional
+from typing import List, Dict
 import time
-import signal
 from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
@@ -57,9 +56,7 @@ class OpenRouterClient:
                 while not stop_spinner.is_set():
                     time.sleep(0.1)
         except KeyboardInterrupt:
-            # Тихо обрабатываем прерывание в потоке спиннера
             pass
-        # console.print("[green]Ai: [/green]")
 
     def __init__(self, console, api_key: str, api_url: str, model: str,
                  system_content: str,
@@ -119,7 +116,7 @@ class OpenRouterClient:
             
             # Останавливаем спиннер
             stop_spinner.set()
-            spinner_thread.join(timeout=0.5)
+            spinner_thread.join(timeout=0.1)
 
             # Проверяем результат
             if result["error"]:
