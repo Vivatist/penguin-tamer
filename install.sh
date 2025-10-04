@@ -34,7 +34,41 @@ fi
 
 echo "✅ Using $($PYTHON_CMD --version)"
 
-# 2️⃣ Install/upgrade pip first
+# 2️⃣ Check and install pip if needed
+if ! $PYTHON_CMD -m pip --version >/dev/null 2>&1; then
+    echo "📦 Installing pip..."
+    # Try different methods to install pip
+    if command_exists apt-get; then
+        sudo apt-get update >/dev/null 2>&1
+        sudo apt-get install -y python3-pip python3-venv >/dev/null 2>&1
+    elif command_exists yum; then
+        sudo yum install -y python3-pip >/dev/null 2>&1
+    elif command_exists dnf; then
+        sudo dnf install -y python3-pip >/dev/null 2>&1
+    elif command_exists pacman; then
+        sudo pacman -S --noconfirm python-pip >/dev/null 2>&1
+    elif command_exists brew; then
+        brew install python >/dev/null 2>&1
+    else
+        echo "❌ Could not install pip automatically."
+        echo "➡ Please install pip manually:"
+        echo "   • Ubuntu/Debian: sudo apt install python3-pip python3-venv"
+        echo "   • CentOS/RHEL: sudo yum install python3-pip"
+        echo "   • Fedora: sudo dnf install python3-pip"
+        echo "   • Arch: sudo pacman -S python-pip"
+        echo "   • macOS: brew install python"
+        exit 1
+    fi
+    
+    # Verify pip installation
+    if ! $PYTHON_CMD -m pip --version >/dev/null 2>&1; then
+        echo "❌ Failed to install pip."
+        exit 1
+    fi
+    echo "✅ pip installed successfully."
+fi
+
+# 3️⃣ Upgrade pip
 echo "📦 Ensuring pip is up to date..."
 $PYTHON_CMD -m pip install --upgrade pip --user >/dev/null 2>&1 || true
 
