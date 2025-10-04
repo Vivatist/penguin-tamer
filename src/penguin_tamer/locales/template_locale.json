@@ -82,5 +82,8 @@
   "[dim]>>> Running block #{idx}:[/dim]": "[dim]>>> Выполняем блок #{idx}:[/dim]",
   "[dim]>>> Exit code: {code}[/dim]": "[dim]>>> Код завершения: {code}[/dim]",
   "[yellow]>>> Error:[/yellow]": "[yellow]>>> Ошибка:[/yellow]",
-  "[dim]Script execution error: {error}[/dim]": "[dim]Ошибка выполнения скрипта: {error}[/dim]"
+  "[dim]Script execution error: {error}[/dim]": "[dim]Ошибка выполнения скрипта: {error}[/dim]",
+  "Paths": "Пути",
+  "Config file": "Файл конфигурации",
+  "Python executable": "Исполняемый файл Python"
 }

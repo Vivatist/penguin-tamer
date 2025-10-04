@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Новый менеджер конфигурации для приложения ai-ebash.
+Новый менеджер конфигурации для приложения penguin-tamer.
 
 ОСОБЕННОСТИ:
 - Автоматическое создание config.yaml из default_config.yaml при первом запуске
@@ -37,9 +37,15 @@ config.reset_to_defaults()
 import yaml
 import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from platformdirs import user_config_dir
+
+# Добавляем путь к модулю для прямого запуска
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from penguin_tamer.i18n import detect_system_language
 
 
@@ -51,7 +57,7 @@ class ConfigManager:
     если пользовательский config.yaml не существует.
     """
 
-    def __init__(self, app_name: str = "ai-ebash"):
+    def __init__(self, app_name: str = "penguin-tamer"):
         """
         Инициализация менеджера конфигурации.
 
@@ -91,13 +97,16 @@ class ConfigManager:
                             yaml.safe_dump(cfg, f, indent=2, allow_unicode=True, default_flow_style=False, sort_keys=False)
                     except Exception:
                         pass
-                    print(f"Создана конфигурация из шаблона: {self.user_config_path}")
                 except Exception as e:
                     raise RuntimeError(f"Не удалось создать файл конфигурации: {e}")
             else:
                 raise FileNotFoundError(f"Файл шаблона конфигурации не найден: {self._default_config_path}")
 
     def _load_config(self) -> Dict[str, Any]:
+
+
+
+        print(self.user_config_path)
         """
         Загружает конфигурацию из YAML файла.
 

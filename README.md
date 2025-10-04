@@ -15,9 +15,10 @@
 
 - [🐧 Penguin Tamer](#-penguin-tamer)
   - [Table of Contents](#table-of-contents)
+  - [Install](#install)
+  - [Uninstall](#uninstall)
   - [Description](#description)
     - [Features](#features)
-    - [Install](#install)
     - [Quick Start](#quick-start)
   - [Connecting to Neural Networks](#connecting-to-neural-networks)
     - [Getting a Token (API\_KEY) and Connecting to a Pre-installed Model](#getting-a-token-api_key-and-connecting-to-a-pre-installed-model)
@@ -29,7 +30,6 @@
     - [Running Code from AI Response](#running-code-from-ai-response)
   - [Security](#security)
     - [Best Practices](#best-practices)
-  - [Uninstall](#uninstall)
   - [Configuration](#configuration)
     - [Initial Setup](#initial-setup)
     - [Supported AI Providers](#supported-ai-providers)
@@ -41,6 +41,16 @@
     - [Contribution Guidelines](#contribution-guidelines)
   - [License](#license)
   - [Contacts](#contacts)
+
+## Install
+```bash
+curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/quick-install.sh | bash
+```
+
+## Uninstall
+```bash
+pipx uninstall penguin-tamer
+```
 
 ## Description
 
@@ -54,11 +64,6 @@
 - **Multiple AI providers** — Support for OpenAI, OpenRouter, DeepSeek, Anthropic and other popular providers
 - **Multi-language support** — En and Ru are available now. You can [(help with translation)](#contributing) into other languages.
 
-
-### Install
-```bash
-curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/quick-install.sh | bash
-```
 
 ### Quick Start
 
@@ -160,12 +165,6 @@ When **in dialog mode**, if the response contains code blocks — they are numbe
    ai Show disk usage
    ai Show running processes
    ```
-
-## Uninstall
-
-```bash
-pipx uninstall penguin-tamer
-```
 
 ## Configuration
 

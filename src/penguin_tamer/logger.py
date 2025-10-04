@@ -8,12 +8,12 @@ from logging.handlers import RotatingFileHandler
 from platformdirs import user_config_dir
 
 # Константы
-APP_NAME = "ai-ebash"
+APP_NAME = "penguin-tamer"
 log_dir = Path(user_config_dir(APP_NAME)) / "logs"
 log_dir.mkdir(parents=True, exist_ok=True)
 
 # Заглушка для логгера по умолчанию (будет заменен)
-logger = logging.getLogger('ai-ebash')
+logger = logging.getLogger('penguin-tamer')
 
 # Ленивые импорты Rich для ускорения загрузки
 _rich_handler = None
@@ -82,7 +82,7 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
         file_enabled = config_data.get('file_enabled', False)
     
     # Создаем новый логгер
-    logger = logging.getLogger('ai-ebash')
+    logger = logging.getLogger('penguin-tamer')
     logger.setLevel(log_level)
     
     # Очистка существующих обработчиков
@@ -110,7 +110,7 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
             '%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
         )
         file_handler = RotatingFileHandler(
-            log_dir / "ai-ebash.log", 
+            log_dir / "penguin-tamer.log", 
             maxBytes=5*1024*1024,
             backupCount=3,
             encoding='utf-8'
@@ -120,7 +120,7 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
         logger.addHandler(file_handler)
     
     # Логируем системную информацию при запуске
-    logger.info(f"Starting ai-ebash on {platform.system()} {platform.release()}")
+    logger.info(f"Starting penguin-tamer on {platform.system()} {platform.release()}")
     logger.debug(f"Python {platform.python_version()}, interpreter: {sys.executable}")
     logger.debug(f"Log level: console={console_level}, file={file_level if file_enabled else 'disabled'}")
     

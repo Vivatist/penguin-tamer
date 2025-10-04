@@ -73,6 +73,13 @@ def _plain_overview_print():
     else:
         print(f"  {t('File logging')}: Off")
     
+    # Пути
+    print("\n" + t("Paths") + ":")
+    print(f"  {t('Config file')}: {config.config_path}")
+    
+    import sys
+    print(f"  {t('Python executable')}: {sys.executable}")
+    
     print("=" * 60)
 
 
@@ -166,5 +173,15 @@ def print_settings_overview(console: Optional[object] = None) -> None:
         logging_info.append(f"{t('File logging')}: [dim]Off[/dim]")
     
     console.print(Panel.fit("\n".join(logging_info), title=t("Logging")))
+
+    # Пути
+    import sys
+    paths_info = []
+    paths_info.append(f"{t('Config file')}:")
+    paths_info.append(f"  [cyan]{config.config_path}[/cyan]")
+    paths_info.append(f"{t('Python executable')}:")
+    paths_info.append(f"  [cyan]{sys.executable}[/cyan]")
+    
+    console.print(Panel.fit("\n".join(paths_info), title=t("Paths")))
 
     console.rule()

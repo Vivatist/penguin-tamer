@@ -109,5 +109,8 @@
   "Enter a value between 1 and 60.": "Введите значение от 1 до 60.",
   "Please enter a valid number": "Пожалуйста, введите корректное число",
   "Please enter a valid integer": "Пожалуйста, введите корректное целое число",
-  "[dim]>>> Command interrupted by user (Ctrl+C)[/dim]": "[dim]>>> Команда прервана пользователем (Ctrl+C)[/dim]"
+  "[dim]>>> Command interrupted by user (Ctrl+C)[/dim]": "[dim]>>> Команда прервана пользователем (Ctrl+C)[/dim]",
+  "Paths": "Пути",
+  "Config file": "Файл конфигурации",
+  "Python executable": "Исполняемый файл Python"
 }

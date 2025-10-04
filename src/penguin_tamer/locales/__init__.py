@@ -1,1 +1,1 @@
-# Locales package for ai-ebash internationalization
+# Locales package for penguin-tamer internationalization
