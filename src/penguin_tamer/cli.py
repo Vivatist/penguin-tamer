@@ -101,14 +101,6 @@ EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text}]
 def get_system_content() -> str:
     """Construct system prompt content with lazy system info loading"""
     user_content = config.get("global", "user_content", "")
-    json_mode = config.get("global", "json_mode", False)
-
-    if json_mode:
-        additional_content_json = (
-            "You must always respond with a single JSON object containing fields 'cmd' and 'info'. "
-        )
-    else:
-        additional_content_json = ""
 
     # Базовая информация без вызова медленной системной информации
     additional_content_main = (
@@ -117,7 +109,7 @@ def get_system_content() -> str:
         "Respond based on the user's environment and commands. "
     )
     
-    system_content = f"{user_content} {additional_content_json} {additional_content_main}".strip()
+    system_content = f"{user_content} {additional_content_main}".strip()
     return system_content
 
 

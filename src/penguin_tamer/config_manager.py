@@ -230,16 +230,6 @@ class ConfigManager:
         """Устанавливает температуру генерации."""
         self.set("global", "temperature", value)
 
-    @property
-    def json_mode(self) -> bool:
-        """JSON режим."""
-        return self.get("global", "json_mode", False)
-
-    @json_mode.setter
-    def json_mode(self, value: bool) -> None:
-        """Устанавливает JSON режим."""
-        self.set("global", "json_mode", value)
-
     def get_available_llms(self) -> List[str]:
         """
         Возвращает список доступных LLM.
@@ -398,8 +388,6 @@ if __name__ == "__main__":
     # Показываем текущие настройки
     print(f"Текущая LLM: {config.current_llm}")
     print(f"Температура: {config.temperature}")
-    print(f"Потоковый режим: {config.stream_mode}")
-    print(f"JSON режим: {config.json_mode}")
     print(f"Язык: {config.language}")
     print(f"Доступные LLM: {config.get_available_llms()}")
 
