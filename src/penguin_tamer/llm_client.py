@@ -1,6 +1,7 @@
 import threading
-from typing import List, Dict
+from typing import List, Dict, Optional
 import time
+import signal
 from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
@@ -51,9 +52,13 @@ class OpenRouterClient:
         Пока stop_event не установлен, показывает "Аи печатает...".
         """
         console = _get_console()
-        with console.status("[dim]" + t('Ai thinking...') + "[/dim]", spinner="dots", spinner_style="dim"):
-            while not stop_spinner.is_set():
-                time.sleep(0.1)
+        try:
+            with console.status("[dim]" + t('Ai thinking...') + "[/dim]", spinner="dots", spinner_style="dim"):
+                while not stop_spinner.is_set():
+                    time.sleep(0.1)
+        except KeyboardInterrupt:
+            # Тихо обрабатываем прерывание в потоке спиннера
+            pass
         # console.print("[green]Ai: [/green]")
 
     def __init__(self, console, api_key: str, api_url: str, model: str,
@@ -85,31 +90,59 @@ class OpenRouterClient:
 
         # Показ спиннера в отдельном потоке
         stop_spinner = threading.Event()
-        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,))
+        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,), daemon=True)
         spinner_thread.start()
 
+        # Результат API вызова
+        result = {"response": None, "error": None}
+        
+        def api_call():
+            """API вызов в отдельном потоке"""
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=self.messages,
+                    temperature=self.temperature
+                )
+                result["response"] = response
+            except Exception as e:
+                result["error"] = e
+
+        # Запускаем API вызов в отдельном потоке
+        api_thread = threading.Thread(target=api_call, daemon=True)
+        api_thread.start()
+
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.messages,
-                temperature=self.temperature
-            )
-
-            reply = response.choices[0].message.content
-
+            # Ждем завершения с возможностью прерывания
+            while api_thread.is_alive():
+                api_thread.join(timeout=0.1)
+            
             # Останавливаем спиннер
             stop_spinner.set()
-            spinner_thread.join()
+            spinner_thread.join(timeout=0.5)
 
+            # Проверяем результат
+            if result["error"]:
+                raise result["error"]
+            
+            if result["response"] is None:
+                raise RuntimeError("API call did not complete")
 
+            reply = result["response"].choices[0].message.content
             self.messages.append({"role": "assistant", "content": reply})
 
             return reply
 
-        except Exception as e:
-            # Останавливаем спиннер
+        except KeyboardInterrupt:
+            # Прерывание по Ctrl+C
             stop_spinner.set()
-            spinner_thread.join()
+            spinner_thread.join(timeout=0.3)
+            # API поток daemon, он завершится автоматически
+            raise
+        except Exception as e:
+            # Останавливаем спиннер при ошибках
+            stop_spinner.set()
+            spinner_thread.join(timeout=0.3)
             raise
 
 
@@ -122,8 +155,11 @@ class OpenRouterClient:
         reply_parts = []
         # Показ спиннера в отдельном потоке
         stop_spinner = threading.Event()
-        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,))
+        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner,), daemon=True)
         spinner_thread.start()
+        
+        # Флаг прерывания для потока
+        interrupted = threading.Event()
         
         try:
             stream = self.client.chat.completions.create(
@@ -136,6 +172,8 @@ class OpenRouterClient:
             # Ждем первый чанк с контентом перед запуском Live
             first_content_chunk = None
             for chunk in stream:
+                if interrupted.is_set():
+                    raise KeyboardInterrupt("Stream interrupted")
                 if chunk.choices[0].delta.content:
                     first_content_chunk = chunk.choices[0].delta.content
                     reply_parts.append(first_content_chunk)
@@ -144,7 +182,7 @@ class OpenRouterClient:
             # Останавливаем спиннер после получения первого чанка
             stop_spinner.set()
             if spinner_thread.is_alive():
-                spinner_thread.join()
+                spinner_thread.join(timeout=0.5)
 
             sleep_time = config.get("global", "sleep_time", 0.01)
             refresh_per_second = config.get("global", "refresh_per_second", 10)
@@ -157,6 +195,8 @@ class OpenRouterClient:
                 
                 # Продолжаем обрабатывать остальные чанки
                 for chunk in stream:
+                    if interrupted.is_set():
+                        raise KeyboardInterrupt("Stream interrupted")
                     if chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
                         reply_parts.append(text)
@@ -169,11 +209,19 @@ class OpenRouterClient:
             self.messages.append({"role": "assistant", "content": reply})
             return reply
 
+        except KeyboardInterrupt:
+            # Устанавливаем флаг прерывания
+            interrupted.set()
+            # Останавливаем спиннер
+            stop_spinner.set()
+            if spinner_thread.is_alive():
+                spinner_thread.join(timeout=0.3)
+            raise
         except Exception as e:
             # Останавливаем спиннер в случае ошибки
             stop_spinner.set()
             if spinner_thread.is_alive():
-                spinner_thread.join()
+                spinner_thread.join(timeout=0.3)
             raise
   
 
