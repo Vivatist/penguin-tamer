@@ -1,6 +1,5 @@
 import argparse
 
-from penguin_tamer.logger import logger, log_execution_time
 from penguin_tamer.i18n import t
 from penguin_tamer._version import __version__
 
@@ -39,11 +38,7 @@ parser.add_argument(
 )
 
 
-@log_execution_time
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     args = parser.parse_args()
-    logger.info("Parsing command line arguments...")
-    logger.debug(f"Args received: dialog={args.dialog}, settings={args.settings}, "
-                 f"prompt={args.prompt or '(empty)'}")
     return args

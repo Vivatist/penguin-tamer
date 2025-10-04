@@ -1,6 +1,5 @@
 import re
 import platform
-from penguin_tamer.logger import log_execution_time
 from penguin_tamer.i18n import t
 
 

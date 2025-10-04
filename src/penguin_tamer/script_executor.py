@@ -7,8 +7,6 @@ from abc import ABC, abstractmethod
 from rich.console import Console
 from penguin_tamer.i18n import t
 
-from penguin_tamer.logger import logger, log_execution_time
-
 
 # Абстрактный базовый класс для исполнителей команд
 class CommandExecutor(ABC):
@@ -32,10 +30,8 @@ class CommandExecutor(ABC):
 class LinuxCommandExecutor(CommandExecutor):
     """Исполнитель команд для Linux/Unix систем"""
     
-    @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bash-команды в Linux с выводом в реальном времени"""
-        logger.debug(f"Executing bash command: {code_block[:80]}...")
         
         # Используем Popen для вывода в реальном времени
         process = subprocess.Popen(
@@ -99,12 +95,10 @@ class LinuxCommandExecutor(CommandExecutor):
             process.wait()
         except KeyboardInterrupt:
             # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
-            logger.info("Terminating process due to KeyboardInterrupt")
             try:
                 process.terminate()
                 process.wait(timeout=5)  # Ждем 5 секунд на корректное завершение
             except subprocess.TimeoutExpired:
-                logger.warning("Process didn't terminate gracefully, killing it")
                 process.kill()
                 process.wait()
             # Пробрасываем KeyboardInterrupt дальше для обработки в execute_and_handle_result
@@ -118,13 +112,6 @@ class LinuxCommandExecutor(CommandExecutor):
             stderr='\n'.join(stderr_lines) if stderr_lines else ''
         )
         
-        logger.debug(
-            t("Execution result: return code {code}, stdout: {stdout} bytes, stderr: {stderr} bytes").format(
-                code=result.returncode,
-                stdout=(len(result.stdout) if result.stdout else 0),
-                stderr=(len(result.stderr) if result.stderr else 0),
-            )
-        )
         return result
 
 
@@ -150,25 +137,21 @@ class WindowsCommandExecutor(CommandExecutor):
         except:
             return line_bytes.decode('latin1', errors='replace').strip()
 
-    @log_execution_time
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bat-команды в Windows через временный файл с выводом в реальном времени"""
         # Предобработка кода для Windows
         code = code_block.replace('@echo off', '')
         code = code.replace('pause', 'rem pause')
         
-        logger.debug(f"Preparing Windows command: {code[:80]}...")
         
         # Создаем временный .bat файл с правильной кодировкой
         fd, temp_path = tempfile.mkstemp(suffix='.bat')
-        logger.debug(f"Created temporary file: {temp_path}")
         
         try:
             with os.fdopen(fd, 'w', encoding='cp1251', errors='replace') as f:
                 f.write(code)
             
             # Запускаем с кодировкой консоли Windows и выводом в реальном времени
-            logger.info(f"Executing command from file {temp_path}")
             
             process = subprocess.Popen(
                 [temp_path],
@@ -205,12 +188,10 @@ class WindowsCommandExecutor(CommandExecutor):
                 process.wait()
             except KeyboardInterrupt:
                 # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
-                logger.info("Terminating Windows process due to KeyboardInterrupt")
                 try:
                     process.terminate()
                     process.wait(timeout=5)  # Ждем 5 секунд на корректное завершение
                 except subprocess.TimeoutExpired:
-                    logger.warning("Windows process didn't terminate gracefully, killing it")
                     process.kill()
                     process.wait()
                 # Пробрасываем KeyboardInterrupt дальше для обработки в execute_and_handle_result
@@ -224,24 +205,15 @@ class WindowsCommandExecutor(CommandExecutor):
                 stderr='\n'.join(stderr_lines) if stderr_lines else ''
             )
             
-            logger.debug(
-                t("Execution result: return code {code}, stdout: {stdout} bytes, stderr: {stderr} bytes").format(
-                    code=result.returncode,
-                    stdout=(len(result.stdout) if result.stdout else 0),
-                    stderr=(len(result.stderr) if result.stderr else 0),
-                )
-            )
             return result
         except Exception as e:
-            logger.error(f"Error executing Windows command: {e}", exc_info=True)
             raise
         finally:
             # Всегда удаляем временный файл
             try:
                 os.unlink(temp_path)
-                logger.debug(f"Temporary file {temp_path} deleted")
             except Exception as e:
-                logger.warning(f"Failed to delete temporary file {temp_path}: {e}")
+                pass
 
 
 # Фабрика для создания исполнителей команд
@@ -249,7 +221,6 @@ class CommandExecutorFactory:
     """Фабрика для создания исполнителей команд в зависимости от ОС"""
     
     @staticmethod
-    @log_execution_time
     def create_executor() -> CommandExecutor:
         """
         Создает исполнитель команд в зависимости от текущей ОС
@@ -259,14 +230,11 @@ class CommandExecutorFactory:
         """
         system = platform.system().lower()
         if system == "windows":
-            logger.info("Creating command executor for Windows")
             return WindowsCommandExecutor()
         else:
-            logger.info(f"Creating command executor for {system} (using LinuxCommandExecutor)")
             return LinuxCommandExecutor()
 
 
-@log_execution_time
 def execute_and_handle_result(console: Console, code: str) -> None:
     """
     Выполняет блок кода и обрабатывает результаты выполнения.
@@ -280,7 +248,6 @@ def execute_and_handle_result(console: Console, code: str) -> None:
         executor = CommandExecutorFactory.create_executor()
         
         # Выполняем код через соответствующий исполнитель
-        logger.debug("Starting code block execution...")
         console.print(t("[dim]>>> Result:[/dim]"))
         
         try:
@@ -288,21 +255,17 @@ def execute_and_handle_result(console: Console, code: str) -> None:
             
             # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
             exit_code = process.returncode
-            logger.info(f"Code execution finished with exit code {exit_code}")
             console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
             
             # Показываем итоговую сводку только если есть stderr или особые случаи
             if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
-                logger.debug(f"Additional stderr ({len(process.stderr)} chars)")
                 console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
                 
         except KeyboardInterrupt:
             # Перехватываем Ctrl+C во время выполнения команды
-            logger.info("Command execution interrupted by user (Ctrl+C)")
             console.print(t("[dim]>>> Command interrupted by user (Ctrl+C)[/dim]"))
             
     except Exception as e:
-        logger.error(f"Code execution error: {e}", exc_info=True)
         console.print(t("[dim]Script execution error: {error}[/dim]").format(error=e))
 
 
@@ -315,16 +278,13 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         code_blocks (list): Список блоков кода
         idx (int): Индекс выполняемого блока
     """
-    logger.info(f"Starting code block #{idx}")
     
     # Проверяем корректность индекса
     if not (1 <= idx <= len(code_blocks)):
-        logger.warning(f"Invalid block index: {idx}. Total blocks: {len(code_blocks)}")
         console.print(t("[yellow]Block #{idx} does not exist. Available blocks: 1 to {total}.[/yellow]").format(idx=idx, total=len(code_blocks)))
         return
     
     code = code_blocks[idx - 1]
-    logger.debug(f"Block #{idx} content: {code[:100]}...")
 
     console.print(t("[dim]>>> Running block #{idx}:[/dim]").format(idx=idx))
     console.print(code)

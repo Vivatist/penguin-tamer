@@ -9,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 try:
     from penguin_tamer.llm_client import OpenRouterClient
-    from penguin_tamer.logger import log_execution_time
 except ImportError:
     # Если не можем импортировать, создаем заглушки
     class OpenRouterClient:
@@ -31,7 +30,6 @@ def test_send_chat_raises_connection_error():
     assert "Max retries exceeded" in str(exc_info.value)
 
 
-@log_execution_time
 def test_send_chat_raises_http_error_and_message_hidden():
     client = OpenRouterClient(model="gpt-3.5-turbo", api_url="https://fake-url", api_key="fake-key")
     error_msg = "403 Client Error: Forbidden for url: https://any-url"
