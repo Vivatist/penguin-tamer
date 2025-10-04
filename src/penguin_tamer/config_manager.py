@@ -103,10 +103,6 @@ class ConfigManager:
                 raise FileNotFoundError(f"Файл шаблона конфигурации не найден: {self._default_config_path}")
 
     def _load_config(self) -> Dict[str, Any]:
-
-
-
-        print(self.user_config_path)
         """
         Загружает конфигурацию из YAML файла.
 
