@@ -35,7 +35,6 @@ config.reset_to_defaults()
 """
 
 import yaml
-import os
 import shutil
 import sys
 from pathlib import Path

@@ -11,8 +11,6 @@ from penguin_tamer.config_manager import config
 
 # Ленивый импорт i18n
 _i18n_initialized = False
-
-
 def _ensure_i18n():
     global _i18n_initialized, t, translator
     if not _i18n_initialized:
@@ -78,8 +76,6 @@ def _get_execute_handler():
         _execute_handler = execute_and_handle_result
     return _execute_handler
 
-
-
 def _get_formatter_text():
     """Ленивый импорт formatter_text"""
     global _formatter_text
@@ -92,6 +88,7 @@ def _get_formatter_text():
 from penguin_tamer.llm_client import OpenRouterClient
 from penguin_tamer.arguments import parse_args
 from penguin_tamer.error_messages import connection_error
+from penguin_tamer.dialog_input import DialogInputFormatter
 
 
 STREAM_OUTPUT_MODE: bool = config.get("global", "stream_output_mode")
@@ -155,19 +152,11 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None
 def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode"""
     
-    # Загружаем prompt_toolkit только когда нужен диалоговый режим
-    _ensure_prompt_toolkit()
-    
-    # Импортируем необходимые модули для подсветки
-    from prompt_toolkit import HTML, prompt
-    from prompt_toolkit.history import FileHistory
-    from prompt_toolkit.styles import Style
-    from prompt_toolkit.layout.processors import Processor, Transformation
-
     # История команд хранится рядом с настройками в пользовательской папке
     history_file_path = config.user_config_dir / "cmd_history"
-    history = FileHistory(str(history_file_path))
-
+    
+    # Создаем форматтер ввода
+    input_formatter = DialogInputFormatter(history_file_path)
 
     # Use module global EDUCATIONAL_CONTENT inside the function
     global EDUCATIONAL_CONTENT
@@ -193,71 +182,8 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     # Main dialog loop
     while True:
         try:
-
-            # Define prompt styles с поддержкой подсветки команд
-            style = Style.from_dict({
-                "prompt": "bold fg:green",
-                "dot": "fg:gray",        # Серая точка
-                "command": "fg:cyan",       # Светло-синий текст команды
-                "text": "",                 # Стандартный цвет консоли
-            })
-            
-            # Создаем процессор для real-time подсветки
-            class DotCommandProcessor(Processor):
-                """Процессор для real-time подсветки команд с точкой"""
-                
-                def apply_transformation(self, transformation_input):
-                    """Применяет трансформацию к вводу"""
-                    text = transformation_input.document.text
-                    
-                    if text.startswith('.') and len(text) > 0:
-                        # Создаем форматированный текст для команд с точкой
-                        formatted_fragments = [
-                            ('class:dot', '.'),
-                            ('class:command', text[1:])
-                        ]
-                    else:
-                        # Обычный текст
-                        formatted_fragments = [('class:text', text)]
-                    
-                    return Transformation(
-                        formatted_fragments,
-                        source_to_display=lambda i: i,
-                        display_to_source=lambda i: i
-                    )
-            
-            # Создаем экземпляр процессора
-            dot_processor = DotCommandProcessor()
-            
-            if last_code_blocks:
-                placeholder = HTML(t("<i><gray>Number of the code block to execute or the next question... Ctrl+C - exit</gray></i>"))
-            else:
-                placeholder = HTML(t("<i><gray>Your question... Ctrl+C - exit</gray></i>"))
-
-            # Создаем кастомную функцию для динамической подсветки
-            def get_prompt_tokens():
-                """Возвращает токены промпта с подсветкой в зависимости от введенного текста"""
-                return [("class:prompt", ">>> ")]
-            
-            # Пытаемся использовать prompt_toolkit, если не получается - fallback на input()
-            try:
-                # Настраиваем параметры prompt с процессором для подсветки
-                prompt_kwargs = {
-                    'placeholder': placeholder,
-                    'history': history,
-                    'style': style,
-                    'multiline': False,
-                    'wrap_lines': True,
-                    'enable_history_search': True,
-                    'input_processors': [dot_processor]  # Добавляем процессор для real-time подсветки
-                }
-
-                user_prompt = prompt(get_prompt_tokens, **prompt_kwargs)
-                    
-            except Exception as e:
-                # Fallback на стандартный input() если prompt_toolkit не работает
-                console.print("[dim]>>> [/dim]", end="")
-                user_prompt = input().strip()
+            # Получаем ввод пользователя через форматтер
+            user_prompt = input_formatter.get_input(console, has_code_blocks=bool(last_code_blocks), t=t)
             # Disallow empty input
             if not user_prompt:
                 continue
