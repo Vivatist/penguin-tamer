@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "*** Penguin Tamer One-Line Installer ***"
-echo "========================================"
-echo "--------------------------------"
+echo "=== Penguin Tamer One-Line Installer ==="
+echo "========================================="
+echo
 
 # Helper function to check if command exists
 command_exists() {
@@ -28,12 +28,12 @@ done
 if [ -z "$PYTHON_CMD" ]; then
     echo "[!] Python 3.11+ not found."
     echo ">>> Please install Python 3.11 or newer first:"
-    echo "   - Ubuntu/Debian: sudo apt update && sudo apt install python3.11 python3.11-venv -y"
-    echo "   - CentOS/RHEL: sudo yum install python3.11 -y"
-    echo "   - Fedora: sudo dnf install python3.11 -y"
-    echo "   - Arch: sudo pacman -S python -y"
-    echo "   - macOS: brew install python@3.11"
-    echo "   - Windows: Download from https://python.org/downloads/"
+    echo "    - Ubuntu/Debian:  sudo apt update && sudo apt install python3.11 python3.11-venv -y"
+    echo "    - CentOS/RHEL:    sudo yum install python3.11 -y"
+    echo "    - Fedora:         sudo dnf install python3.11 -y"
+    echo "    - Arch Linux:     sudo pacman -S python -y"
+    echo "    - macOS:          brew install python@3.11"
+    echo "    - Windows:        Download from https://python.org/downloads/"
     exit 1
 fi
 
@@ -150,12 +150,12 @@ else
     echo "[!] Installation completed, but 'pt' command not found in current PATH."
     echo ""
     echo "[*] Please restart your terminal or run:"
-    echo "   source ~/.bashrc"
-    echo "   # or"
-    echo "   source ~/.zshrc"
+    echo "    source ~/.bashrc"
+    echo "    # or"
+    echo "    source ~/.zshrc"
     echo ""
     echo "[*] If the issue persists, manually add pipx bin to your PATH:"
-    echo "   echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.bashrc"
+    echo "    echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.bashrc"
 fi
 
 # 7. Final instructions
@@ -164,17 +164,17 @@ echo "[+] Installation process complete!"
 echo "======================================"
 echo ""
 echo ">>> Run Penguin Tamer with:"
-echo "   pt --help              # Show help"
-echo "   pt -s                  # Open settings to configure AI provider"
-echo "   pt -d                  # Interactive dialog mode"
-echo "   pt \"your question\"     # Quick AI query"
+echo "    pt --help                    # Show help"
+echo "    pt -s                        # Open settings to configure AI provider"
+echo "    pt -d                        # Interactive dialog mode"
+echo "    pt \"your question\"           # Quick AI query"
 echo ""
 echo "[*] Next steps:"
-echo "   1. Configure your AI provider: pt -s"
-echo "   2. Test the installation: pt \"hello world\""
+echo "    1. Configure your AI provider:    pt -s"
+echo "    2. Test the installation:         pt \"hello world\""
 echo ""
-echo "[*] Documentation: https://github.com/Vivatist/penguin-tamer"
-echo "[*] Issues: https://github.com/Vivatist/penguin-tamer/issues"
+echo "[*] Documentation:    https://github.com/Vivatist/penguin-tamer"
+echo "[*] Issues:           https://github.com/Vivatist/penguin-tamer/issues"
 echo ""
 echo "[!] If 'pt' command is not found after restarting terminal:"
 echo "   pipx ensurepath"
