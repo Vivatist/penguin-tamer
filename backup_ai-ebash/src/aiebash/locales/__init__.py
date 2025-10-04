@@ -1,1 +1,0 @@
-# Locales package for ai-ebash internationalization
