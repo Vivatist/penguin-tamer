@@ -101,24 +101,30 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None
 
 
 def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
-    """Interactive dialog mode"""
+    """Interactive dialog mode with educational prompt for code block numbering.
     
+    Args:
+        chat_client: Initialized LLM client
+        console: Rich console for output
+        initial_user_prompt: Optional initial prompt to process before entering dialog loop
+    """
     # История команд хранится рядом с настройками в пользовательской папке
     history_file_path = config.user_config_dir / "cmd_history"
     
     # Создаем форматтер ввода
     input_formatter = DialogInputFormatter(history_file_path)
 
-    # Get educational prompt for first message
+    # Initialize dialog mode with educational prompt (teaches model to number code blocks)
     educational_prompt = get_educational_prompt()
+    chat_client.init_dialog_mode(educational_prompt)
+    
     last_code_blocks = []  # code blocks from the last AI answer
 
     # If there is an initial prompt, process it
     if initial_user_prompt:
         try:
-            Markdown = _get_markdown_class()
-            reply = chat_client.ask_stream(initial_user_prompt, educational_prompt=educational_prompt)
-            educational_prompt = []  # clear educational prompt after first use
+            
+            reply = chat_client.ask_stream(initial_user_prompt)
             last_code_blocks = _get_formatter_text()(reply)
         except Exception as e:
             console.print(connection_error(e))
@@ -162,8 +168,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
 
             Markdown = _get_markdown_class()
-            reply = chat_client.ask_stream(user_prompt, educational_prompt=educational_prompt)
-            educational_prompt = []  # clear educational prompt after first use
+            reply = chat_client.ask_stream(user_prompt)
             last_code_blocks = _get_formatter_text()(reply)
             console.print()  # new line after answer
 

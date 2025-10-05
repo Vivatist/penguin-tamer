@@ -74,6 +74,17 @@ class OpenRouterClient:
         """Initialize internal state after dataclass construction."""
         self.messages = self.system_message.copy()
     
+    def init_dialog_mode(self, educational_prompt: List[Dict[str, str]]) -> None:
+        """Initialize dialog mode by adding educational prompt to messages.
+        
+        Should be called once at the start of dialog mode to teach the model
+        to number code blocks automatically.
+        
+        Args:
+            educational_prompt: Educational messages to add
+        """
+        self.messages.extend(educational_prompt)
+    
     @classmethod
     def create(cls, console, api_key: str, api_url: str, model: str,
                system_message: List[Dict[str, str]], **llm_params):
@@ -153,15 +164,21 @@ class OpenRouterClient:
         return self._client
 
 
-    def ask_stream(self, user_input: str, educational_prompt: list = []) -> str:
-        """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
+    def ask_stream(self, user_input: str) -> str:
+        """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени.
+        
+        Args:
+            user_input: User's message text
+            
+        Returns:
+            Complete AI response text
+        """
         # Показ спиннера в отдельном потоке с динамическим статусом
         stop_spinner = threading.Event()
         status_message = {'text': t('Sending request...')}
         spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner, status_message), daemon=True)
         spinner_thread.start()
 
-        self.messages.extend(educational_prompt)
         self.messages.append({"role": "user", "content": user_input})
         reply_parts = []
 
