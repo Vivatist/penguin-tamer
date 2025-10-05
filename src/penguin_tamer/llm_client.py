@@ -322,10 +322,23 @@ class OpenRouterClient:
 
         items = {}
         for k, v in self.__dict__.items():
-            if k == 'api_key':
-                items[k] = format_api_key_display(v)
-            elif k == 'messages' or k == 'console' or k == '_client':
+            if k == 'messages' or k == 'console' or k == '_client':
                 continue
+            elif k == 'llm_config':
+                # Создаем копию LLMConfig с замаскированным api_key
+                config_dict = {
+                    'api_key': format_api_key_display(v.api_key),
+                    'api_url': v.api_url,
+                    'model': v.model,
+                    'temperature': v.temperature,
+                    'max_tokens': v.max_tokens,
+                    'top_p': v.top_p,
+                    'frequency_penalty': v.frequency_penalty,
+                    'presence_penalty': v.presence_penalty,
+                    'stop': v.stop,
+                    'seed': v.seed
+                }
+                items[k] = f"LLMConfig({', '.join(f'{key}={val!r}' for key, val in config_dict.items())})"
             else:
                 try:
                     items[k] = v
