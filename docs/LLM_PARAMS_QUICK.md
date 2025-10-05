@@ -14,11 +14,12 @@
 
 ## 🎯 Готовые конфигурации
 
-### Точные команды
+#### Точные технические команды
 ```yaml
 temperature: 0.2
 max_tokens: 500
 frequency_penalty: 0.1
+presence_penalty: 0.0
 ```
 
 ### Обычное использование
@@ -28,9 +29,9 @@ max_tokens: null
 frequency_penalty: 0.0
 ```
 
-### Креативные решения
+#### Креативный brainstorming
 ```yaml
-temperature: 1.0
+temperature: 1.2
 max_tokens: null
 frequency_penalty: 0.5
 presence_penalty: 0.6
@@ -41,6 +42,13 @@ presence_penalty: 0.6
 temperature: 0.5
 max_tokens: 300
 stop: ["\n\n\n"]
+```
+
+#### Воспроизводимые тесты
+```yaml
+temperature: 0.7
+max_tokens: 1000
+seed: 42
 ```
 
 ## 🔧 Редактирование
