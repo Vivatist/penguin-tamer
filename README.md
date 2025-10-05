@@ -47,44 +47,6 @@
 curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/install.sh | bash
 ```
 
-> **Note:** The installer automatically selects the command name (default: `pt`). If you run the installer interactively (by downloading and running it directly), you can choose a custom name like `ai`, `chat`, or any other.
-
-**To choose a custom command name:**
-```bash
-# Download and run interactively
-curl -sSL -o install.sh https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/install.sh
-bash install.sh
-```
-
-<details>
-<summary><b>If you already installed and want to add an alternative command name</b></summary>
-
-Create a symlink manually (for example, for name `ai`):
-```bash
-# Find the path to pt
-PT_PATH=$(which pt)
-
-# Create symlink
-ln -sf "$PT_PATH" "$(dirname "$PT_PATH")/ai"
-
-# Verify
-which ai
-ai --version
-```
-
-Or add an alias to your shell:
-```bash
-# For bash
-echo "alias ai='pt'" >> ~/.bashrc
-source ~/.bashrc
-
-# For zsh
-echo "alias ai='pt'" >> ~/.zshrc
-source ~/.zshrc
-```
-
-</details>
-
 ## Uninstall
 ```bash
 pipx uninstall penguin-tamer

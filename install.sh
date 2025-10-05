@@ -10,82 +10,6 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Helper function to ask for command name
-ask_command_name() {
-    local default_name="pt"
-    local suggestions=("pt" "ai" "chat" "llm" "ask")
-    
-    # Check if running in interactive mode (not piped from curl)
-    if [ -t 0 ]; then
-        # Interactive mode - show menu
-        echo "[*] Choose command name for Penguin Tamer:"
-        echo "    Available suggestions: ${suggestions[*]}"
-        echo "    Or enter your own custom name"
-        echo
-        
-        # Check which suggestions are already taken
-        local available=()
-        local taken=()
-        for cmd in "${suggestions[@]}"; do
-            if command_exists "$cmd"; then
-                taken+=("$cmd")
-            else
-                available+=("$cmd")
-            fi
-        done
-        
-        if [ ${#taken[@]} -gt 0 ]; then
-            echo "[!] Already taken: ${taken[*]}"
-        fi
-        if [ ${#available[@]} -gt 0 ]; then
-            echo "[+] Available: ${available[*]}"
-        fi
-        echo
-        
-        # Interactive prompt
-        while true; do
-            read -p ">>> Enter command name [default: $default_name]: " cmd_name
-            cmd_name="${cmd_name:-$default_name}"
-            
-            # Validate command name
-            if [[ ! "$cmd_name" =~ ^[a-z][a-z0-9_-]*$ ]]; then
-                echo "[!] Invalid name. Use lowercase letters, numbers, hyphens, and underscores only."
-                continue
-            fi
-            
-            # Check if already exists
-            if command_exists "$cmd_name"; then
-                echo "[!] Command '$cmd_name' is already taken. Try another name."
-                continue
-            fi
-            
-            # Confirm choice
-            read -p ">>> Use '$cmd_name' as command name? [Y/n]: " confirm
-            confirm="${confirm:-Y}"
-            if [[ "$confirm" =~ ^[Yy] ]]; then
-                echo "$cmd_name"
-                return 0
-            fi
-        done
-    else
-        # Non-interactive mode (piped) - use default or first available
-        local chosen_name="$default_name"
-        
-        # If default is taken, try to find first available from suggestions
-        if command_exists "$chosen_name"; then
-            for cmd in "${suggestions[@]}"; do
-                if ! command_exists "$cmd"; then
-                    chosen_name="$cmd"
-                    break
-                fi
-            done
-        fi
-        
-        echo "$chosen_name"
-        return 0
-    fi
-}
-
 # 1. Check Python (>=3.11)
 echo "[*] Checking Python installation..."
 PYTHON_CMD=""
@@ -163,13 +87,7 @@ elif $PYTHON_CMD -m pipx --version >/dev/null 2>&1; then
     $PYTHON_CMD -m pipx ensurepath >/dev/null 2>&1 || true
 fi
 
-# 4. Ask for command name
-echo
-CMD_NAME=$(ask_command_name)
-echo "[+] Installing with command name: $CMD_NAME"
-echo
-
-# 5. Install Penguin Tamer via pipx
+# 4. Install Penguin Tamer via pipx
 echo "[+] Installing Penguin Tamer from PyPI..."
 INSTALL_OUTPUT=""
 if command_exists pipx; then
@@ -187,62 +105,7 @@ if echo "$INSTALL_OUTPUT" | grep -q "installed package penguin-tamer"; then
     INSTALLED_VERSION=$(echo "$INSTALL_OUTPUT" | grep "installed package penguin-tamer" | sed -n 's/.*penguin-tamer \([0-9][^,]*\).*/\1/p')
 fi
 
-# 6. Create alias/symlink if custom name requested
-if [ "$CMD_NAME" != "pt" ]; then
-    echo "[*] Creating command alias: $CMD_NAME -> pt"
-    
-    # Determine pipx bin directory
-    PIPX_BIN_DIR=""
-    if command_exists pipx; then
-        PIPX_BIN_DIR=$(pipx environment --value PIPX_BIN_DIR 2>/dev/null)
-    fi
-    
-    # Fallback to common locations if environment command fails
-    if [ -z "$PIPX_BIN_DIR" ]; then
-        if [ -d "$HOME/.local/bin" ]; then
-            PIPX_BIN_DIR="$HOME/.local/bin"
-        elif [ -d "/usr/local/bin" ]; then
-            PIPX_BIN_DIR="/usr/local/bin"
-        else
-            PIPX_BIN_DIR="$HOME/.local/bin"
-        fi
-    fi
-    
-    # Wait a moment for pipx to finish creating the binary
-    sleep 1
-    
-    # Try to find pt in common locations
-    PT_PATH=""
-    for search_path in "$PIPX_BIN_DIR" "$HOME/.local/bin" "/usr/local/bin"; do
-        if [ -f "$search_path/pt" ]; then
-            PT_PATH="$search_path/pt"
-            PIPX_BIN_DIR="$search_path"
-            break
-        fi
-    done
-    
-    # Create symlink
-    if [ -n "$PT_PATH" ] && [ -f "$PT_PATH" ]; then
-        if ln -sf "$PT_PATH" "$PIPX_BIN_DIR/$CMD_NAME" 2>/dev/null; then
-            echo "[+] Command '$CMD_NAME' is now available (symlink to pt)"
-            echo ">>> Location: $PIPX_BIN_DIR/$CMD_NAME -> $PT_PATH"
-        else
-            echo "[!] Could not create symlink. You can manually create it:"
-            echo "    ln -sf $PT_PATH $PIPX_BIN_DIR/$CMD_NAME"
-            echo "    Or add alias to your shell config:"
-            echo "    alias $CMD_NAME='pt'"
-        fi
-    else
-        echo "[!] 'pt' not found in expected locations"
-        echo "    Searched: $PIPX_BIN_DIR, $HOME/.local/bin, /usr/local/bin"
-        echo "    You can manually create alias after restart:"
-        echo "    alias $CMD_NAME='pt'"
-        echo "    Or create symlink when 'pt' appears:"
-        echo "    ln -sf \$(which pt) \$(dirname \$(which pt))/$CMD_NAME"
-    fi
-fi
-
-# 7. Add common pipx paths to current session
+# 5. Add common pipx paths to current session
 PIPX_PATHS=(
     "$HOME/.local/bin"
     "$HOME/Library/Python/3.*/bin"
@@ -258,33 +121,33 @@ for path_pattern in "${PIPX_PATHS[@]}"; do
     done 2>/dev/null || true
 done
 
-# 8. Verify installation
+# 6. Verify installation
 echo "[*] Verifying installation..."
-if command_exists "$CMD_NAME"; then
+if command_exists pt; then
     echo "[+] Penguin Tamer installed successfully!"
     
-    # Try to get version from command --version first
-    CMD_VERSION=$($CMD_NAME --version 2>/dev/null | cut -d' ' -f2 2>/dev/null || echo "")
+    # Try to get version from pt --version command first
+    PT_VERSION=$(pt --version 2>/dev/null | cut -d' ' -f2 2>/dev/null || echo "")
     
     # If that fails, use version from installation output
-    if [ -z "$CMD_VERSION" ] && [ -n "$INSTALLED_VERSION" ]; then
-        CMD_VERSION="$INSTALLED_VERSION"
+    if [ -z "$PT_VERSION" ] && [ -n "$INSTALLED_VERSION" ]; then
+        PT_VERSION="$INSTALLED_VERSION"
     fi
     
     # Try pipx list as another fallback
-    if [ -z "$CMD_VERSION" ] && command_exists pipx; then
-        CMD_VERSION=$(pipx list 2>/dev/null | grep "penguin-tamer" | sed -n 's/.*penguin-tamer \([0-9][^,)]*\).*/\1/p' || echo "")
+    if [ -z "$PT_VERSION" ] && command_exists pipx; then
+        PT_VERSION=$(pipx list 2>/dev/null | grep "penguin-tamer" | sed -n 's/.*penguin-tamer \([0-9][^,)]*\).*/\1/p' || echo "")
     fi
     
     # Final fallback
-    if [ -z "$CMD_VERSION" ]; then
-        CMD_VERSION="installed"
+    if [ -z "$PT_VERSION" ]; then
+        PT_VERSION="installed"
     fi
     
-    echo ">>> Version: $CMD_VERSION"
-    echo ">>> Location: $(which $CMD_NAME)"
+    echo ">>> Version: $PT_VERSION"
+    echo ">>> Location: $(which pt)"
 else
-    echo "[!] Installation completed, but '$CMD_NAME' command not found in current PATH."
+    echo "[!] Installation completed, but 'pt' command not found in current PATH."
     echo ""
     echo "[*] Please restart your terminal or run:"
     echo "    source ~/.bashrc"
@@ -295,23 +158,23 @@ else
     echo "    echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.bashrc"
 fi
 
-# 9. Final instructions
+# 7. Final instructions
 echo ""
 echo "[+] Installation process complete!"
 echo "======================================"
 echo ""
 echo ">>> Run Penguin Tamer with:"
-echo "    $CMD_NAME --help                    # Show help"
-echo "    $CMD_NAME -s                        # Open settings to configure AI provider"
-echo "    $CMD_NAME -d                        # Interactive dialog mode"
-echo "    $CMD_NAME \"your question\"           # Quick AI query"
+echo "    pt --help                    # Show help"
+echo "    pt -s                        # Open settings to configure AI provider"
+echo "    pt -d                        # Interactive dialog mode"
+echo "    pt \"your question\"           # Quick AI query"
 echo ""
 echo "[*] Next steps:"
-echo "    1. Configure your AI provider:    $CMD_NAME -s"
-echo "    2. Test the installation:         $CMD_NAME \"hello world\""
+echo "    1. Configure your AI provider:    pt -s"
+echo "    2. Test the installation:         pt \"hello world\""
 echo ""
 echo "[*] Documentation:    https://github.com/Vivatist/penguin-tamer"
 echo "[*] Issues:           https://github.com/Vivatist/penguin-tamer/issues"
 echo ""
-echo "[!] If '$CMD_NAME' command is not found after restarting terminal:"
+echo "[!] If 'pt' command is not found after restarting terminal:"
 echo "    pipx ensurepath"
