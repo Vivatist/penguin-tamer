@@ -194,5 +194,11 @@
   "Changes cancelled - empty input": "Изменения отменены - пустой ввод",
   "Content updated": "Контент обновлён",
   "Changes cancelled": "Изменения отменены",
-  "Input error": "Ошибка ввода"
+  "Input error": "Ошибка ввода",
+  "Execute code block #{number}:": "Выполнить блок кода #{number}:",
+  "Execute command: {command}": "Выполнить команду: {command}",
+  "Command execution was interrupted by user (Ctrl+C).": "Выполнение команды было прервано пользователем (Ctrl+C).",
+  "Command executed successfully (exit code: 0).": "Команда выполнена успешно (код возврата: 0).",
+  "Command executed successfully (exit code: 0). No output.": "Команда выполнена успешно (код возврата: 0). Нет вывода.",
+  "Command failed with exit code: {code}": "Команда завершилась с ошибкой (код возврата: {code})"
 }

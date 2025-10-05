@@ -116,5 +116,13 @@
   "Changes cancelled - empty input": "Changes cancelled - empty input",
   "Content updated": "Content updated",
   "Changes cancelled": "Changes cancelled",
-  "Input error": "Input error"
+  "Input error": "Input error",
+  "Execute code block #{number}:": "Execute code block #{number}:",
+  "Execute command: {command}": "Execute command: {command}",
+  "Command execution was interrupted by user (Ctrl+C).": "Command execution was interrupted by user (Ctrl+C).",
+  "Command executed successfully (exit code: 0).": "Command executed successfully (exit code: 0).",
+  "Command executed successfully (exit code: 0). No output.": "Command executed successfully (exit code: 0). No output.",
+  "Command failed with exit code: {code}": "Command failed with exit code: {code}",
+  "Output:": "Output:",
+  "Errors:": "Errors:"
 }

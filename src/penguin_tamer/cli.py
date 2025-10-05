@@ -126,30 +126,30 @@ def _add_command_to_context(chat_client: OpenRouterClient, command: str, result:
     """
     # Формируем сообщение пользователя о выполнении команды
     if block_number is not None:
-        user_message = f"Execute code block #{block_number}:\n```\n{command}\n```"
+        user_message = t("Execute code block #{number}:").format(number=block_number) + f"\n```\n{command}\n```"
     else:
-        user_message = f"Execute command: {command}"
+        user_message = t("Execute command: {command}").format(command=command)
     
     # Формируем системное сообщение с результатом
     if result['interrupted']:
-        system_message = "Command execution was interrupted by user (Ctrl+C)."
+        system_message = t("Command execution was interrupted by user (Ctrl+C).")
     elif result['success']:
         output_parts = []
         if result['stdout']:
-            output_parts.append(f"Output:\n{result['stdout']}")
+            output_parts.append(t("Output:") + f"\n{result['stdout']}")
         if result['stderr']:
-            output_parts.append(f"Errors:\n{result['stderr']}")
+            output_parts.append(t("Errors:") + f"\n{result['stderr']}")
         
         if output_parts:
-            system_message = f"Command executed successfully (exit code: 0).\n" + "\n".join(output_parts)
+            system_message = t("Command executed successfully (exit code: 0).") + "\n" + "\n".join(output_parts)
         else:
-            system_message = "Command executed successfully (exit code: 0). No output."
+            system_message = t("Command executed successfully (exit code: 0). No output.")
     else:
-        output_parts = [f"Command failed with exit code: {result['exit_code']}"]
+        output_parts = [t("Command failed with exit code: {code}").format(code=result['exit_code'])]
         if result['stdout']:
-            output_parts.append(f"Output:\n{result['stdout']}")
+            output_parts.append(t("Output:") + f"\n{result['stdout']}")
         if result['stderr']:
-            output_parts.append(f"Errors:\n{result['stderr']}")
+            output_parts.append(t("Errors:") + f"\n{result['stderr']}")
         system_message = "\n".join(output_parts)
     
     # Добавляем в контекст диалога
