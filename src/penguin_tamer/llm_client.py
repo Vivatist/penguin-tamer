@@ -2,23 +2,26 @@ import threading
 from typing import List, Dict, Optional
 import time
 from dataclasses import dataclass, field
+
+from rich.markdown import Markdown
+from rich.live import Live
+
 from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
 from penguin_tamer.themes import get_code_theme
 from penguin_tamer.debug import debug_print_messages
 
-# Ленивый импорт Rich
-_markdown = None
-_live = None
+# Ленивый импорт только для OpenAI (самый тяжелый модуль - 531ms)
+_openai_client = None
 
-
-def _get_markdown():
-    global _markdown
-    if _markdown is None:
-        from rich.markdown import Markdown
-        _markdown = Markdown
-    return _markdown
+def _get_openai_client():
+    """Ленивый импорт OpenAI клиента для быстрого запуска --version, --help"""
+    global _openai_client
+    if _openai_client is None:
+        from openai import OpenAI
+        _openai_client = OpenAI
+    return _openai_client
 
 
 def _create_markdown(text: str, theme_name: str = "default"):
@@ -32,28 +35,8 @@ def _create_markdown(text: str, theme_name: str = "default"):
     Returns:
         Markdown объект с применённой темой
     """
-    Markdown = _get_markdown()
     code_theme = get_code_theme(theme_name)
     return Markdown(text, code_theme=code_theme)
-
-def _get_live():
-    global _live
-    if _live is None:
-        from rich.live import Live
-        _live = Live
-    return _live
-
-# Ленивый импорт OpenAI (самый тяжелый модуль)
-_openai_client = None
-
-
-def _get_openai_client():
-    """Ленивый импорт OpenAI клиента"""
-    global _openai_client
-    if _openai_client is None:
-        from openai import OpenAI
-        _openai_client = OpenAI
-    return _openai_client
 
 
 @dataclass
@@ -250,7 +233,7 @@ class OpenRouterClient:
             theme_name = config.get("global", "markdown_theme", "default")
             
             # Используем Live для динамического обновления отображения с Markdown
-            with _get_live()(console=self.console, refresh_per_second=refresh_per_second, auto_refresh=True) as live:
+            with Live(console=self.console, refresh_per_second=refresh_per_second, auto_refresh=True) as live:
                 # Показываем первый чанк
                 if first_content_chunk:
                     markdown = _create_markdown(first_content_chunk, theme_name)
