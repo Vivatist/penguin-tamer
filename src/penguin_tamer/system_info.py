@@ -2,6 +2,8 @@
 import os
 import platform
 import socket
+import sys
+import locale
 from datetime import datetime
 import getpass
 
@@ -34,6 +36,30 @@ def get_system_info_text() -> str:
         elif 'zsh' in shell_exec.lower():
             shell_version = 'Z shell'
         # Для остальных случаев оставляем 'unknown' чтобы не тратить время на subprocess
+    
+    # Дополнительная полезная информация (быстрое извлечение)
+    system_encoding = sys.getdefaultencoding()
+    filesystem_encoding = sys.getfilesystemencoding()
+    
+    # Локаль системы (безопасно с fallback)
+    try:
+        system_locale = locale.getdefaultlocale()
+        locale_str = f"{system_locale[0] or 'unknown'}, {system_locale[1] or 'unknown'}"
+    except Exception:
+        locale_str = 'unknown'
+    
+    temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or os.environ.get('TMPDIR') or '/tmp'
+    
+    # Определяем виртуальное окружение Python
+    in_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+    venv_status = 'Yes (active)' if in_venv else 'No'
+    if in_venv:
+        venv_path = sys.prefix
+    else:
+        venv_path = 'N/A'
+    
+    cpu_count = os.cpu_count() or 'unknown'
+    python_executable = sys.executable
 
     info_text = f"""
 {t("System Information")}:
@@ -45,6 +71,14 @@ def get_system_info_text() -> str:
 - {t("Hostname")}: {hostname}
 - {t("Local IP Address")}: {local_ip}
 - {t("Python Version")}: {platform.python_version()}
+- {t("Python Executable")}: {python_executable}
+- {t("Virtual Environment")}: {venv_status}
+- {t("Virtual Environment Path")}: {venv_path}
+- {t("System Encoding")}: {system_encoding}
+- {t("Filesystem Encoding")}: {filesystem_encoding}
+- {t("System Locale")}: {locale_str}
+- {t("Temporary Directory")}: {temp_dir}
+- {t("CPU Count")}: {cpu_count}
 - {t("Current Time")}: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 - {t("Shell")}: {shell_name}
 - {t("Shell Executable")}: {shell_exec}

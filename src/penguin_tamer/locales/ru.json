@@ -163,5 +163,17 @@
   "Current Time": "Текущее время",
   "Shell": "Shell",
   "Shell Executable": "Shell executable",
-  "Shell Version": "Shell version"
+  "Shell Version": "Shell version",
+  "Your name is Penguin Tamer, a sysadmin assistant. You and the user always work in a terminal. Respond based on the user's environment and commands.": "Вас зовут Penguin Tamer, вы - помощник системного администратора. Вы и пользователь всегда работаете в терминале. Отвечайте исходя из окружения и команд пользователя.",
+  "The current system information is as follows:": "Текущая информация о системе следующая:",
+  "Python Executable": "Исполняемый файл Python",
+  "Virtual Environment": "Виртуальное окружение",
+  "Virtual Environment Path": "Путь к виртуальному окружению",
+  "System Encoding": "Системная кодировка",
+  "Filesystem Encoding": "Кодировка файловой системы",
+  "System Locale": "Системная локаль",
+  "Temporary Directory": "Временная директория",
+  "CPU Count": "Количество CPU",
+  "IF your response contains code blocks, ALWAYS number the code blocks so that the user can link to them. Numbering format: \n[Code #1]\n```bash\necho \"Hello, World!\"\n```\n[Code #2]\n```bash\necho \"Hello, World!\"\n```\netc. Insert the numbering BEFORE the block. If there are multiple code blocks, number them sequentially. In each new reply, start numbering from 1 again. Don't discuss the numbering, don't report it, and don't talk about it; just number it.": "ЕСЛИ ваш ответ содержит блоки кода, ВСЕГДА нумеруйте блоки кода, чтобы пользователь мог на них ссылаться. Формат нумерации: \n[Code #1]\n```bash\necho \"Hello, World!\"\n```\n[Code #2]\n```bash\necho \"Hello, World!\"\n```\nи т.д. Вставляйте нумерацию ПЕРЕД блоком. Если блоков кода несколько, нумеруйте их последовательно. В каждом новом ответе начинайте нумерацию заново с 1. Не обсуждайте нумерацию, не сообщайте о ней и не говорите о ней; просто нумеруйте.",
+  "Understood. All subsequent responses will contain numbered code blocks in the specified format.\n\n[Code #1]\n```bash\necho \"Ready to work. Please provide a task to execute.\"\n```": "Понятно. Все последующие ответы будут содержать пронумерованные блоки кода в указанном формате.\n\n[Code #1]\n```bash\necho \"Готов к работе. Предоставьте задачу для выполнения.\"\n```"
 }

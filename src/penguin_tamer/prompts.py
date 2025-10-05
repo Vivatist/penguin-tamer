@@ -4,6 +4,7 @@ from typing import List
 
 from penguin_tamer.config_manager import config
 from penguin_tamer.system_info import get_system_info_text
+from penguin_tamer.i18n import t
 
 
 def get_system_prompt() -> List[dict[str, str]]:
@@ -15,7 +16,7 @@ def get_system_prompt() -> List[dict[str, str]]:
     """
     user_prompt = config.get("global", "user_content", "")
     
-    base_prompt = (
+    base_prompt = t(
         "Your name is Penguin Tamer, a sysadmin assistant. "
         "You and the user always work in a terminal. "
         "Respond based on the user's environment and commands."
@@ -23,7 +24,7 @@ def get_system_prompt() -> List[dict[str, str]]:
     
     # Получаем актуальную информацию о системе
     system_info = get_system_info_text()
-    system_info_prompt = f"The current system information is as follows:\n{system_info}\n"
+    system_info_prompt = t("The current system information is as follows:") + f"\n{system_info}\n"
 
     if user_prompt:
         system_prompt = f"{user_prompt} {base_prompt} {system_info_prompt}".strip()
@@ -43,8 +44,8 @@ def get_educational_prompt() -> List[dict[str, str]]:
     Returns:
         List[dict]: List containing educational messages in OpenAI format
     """
-    educational_user_prompt = (
-        "ALWAYS number code blocks in your replies so the user can reference them. "
+    educational_user_prompt = t(
+        "IF your response contains code blocks, ALWAYS number the code blocks so that the user can link to them. "
         "Numbering format: \n"
         "[Code #1]\n"
         "```bash\n"
@@ -57,10 +58,10 @@ def get_educational_prompt() -> List[dict[str, str]]:
         "etc. Insert the numbering BEFORE the block. "
         "If there are multiple code blocks, number them sequentially. "
         "In each new reply, start numbering from 1 again. "
-        "Do not discuss numbering; just do it automatically."
+        "Don't discuss the numbering, don't report it, and don't talk about it; just number it."
     )
 
-    educational_assistant_prompt = (
+    educational_assistant_prompt = t(
         "Understood. All subsequent responses will contain numbered code blocks in the specified format.\n"
         "\n"
         "[Code #1]\n"
