@@ -8,6 +8,7 @@ global:
   temperature: 0.8 # Температура для генерации ответов. Чем выше значение, тем более креативные ответы.
   sleep_time: 0.01 # Задержка между обновлениями в потоковом режиме (секунды)
   refresh_per_second: 10 # Частота обновления интерфейса в потоковом режиме (обновлений в секунду)
+  markdown_theme: "default" # Тема для Markdown: default, monokai, dracula, nord, solarized_dark, github, matrix, minimal
 
 supported_LLMs:
   "PUBLIC Microsoft: MAI DS R1":

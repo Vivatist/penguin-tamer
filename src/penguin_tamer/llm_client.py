@@ -4,10 +4,12 @@ import time
 from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
+from penguin_tamer.themes import get_code_theme
 
 # Ленивый импорт Rich
 _markdown = None
 _live = None
+
 
 def _get_markdown():
     global _markdown
@@ -15,6 +17,22 @@ def _get_markdown():
         from rich.markdown import Markdown
         _markdown = Markdown
     return _markdown
+
+
+def _create_markdown(text: str, theme_name: str = "default"):
+    """
+    Создаёт Markdown объект с правильной темой для блоков кода.
+    
+    Args:
+        text: Текст в формате Markdown
+        theme_name: Название темы
+    
+    Returns:
+        Markdown объект с применённой темой
+    """
+    Markdown = _get_markdown()
+    code_theme = get_code_theme(theme_name)
+    return Markdown(text, code_theme=code_theme)
 
 def _get_live():
     global _live
@@ -120,11 +138,13 @@ class OpenRouterClient:
 
             sleep_time = config.get("global", "sleep_time", 0.01)
             refresh_per_second = config.get("global", "refresh_per_second", 10)
+            theme_name = config.get("global", "markdown_theme", "default")
+            
             # Используем Live для динамического обновления отображения с Markdown
             with _get_live()(console=self.console, refresh_per_second=refresh_per_second, auto_refresh=True) as live:
                 # Показываем первый чанк
                 if first_content_chunk:
-                    markdown = _get_markdown()(first_content_chunk)
+                    markdown = _create_markdown(first_content_chunk, theme_name)
                     live.update(markdown)
                 
                 # Продолжаем обрабатывать остальные чанки
@@ -136,7 +156,7 @@ class OpenRouterClient:
                         reply_parts.append(text)
                         # Объединяем все части и обрабатываем как Markdown
                         full_text = "".join(reply_parts)
-                        markdown = _get_markdown()(full_text)
+                        markdown = _create_markdown(full_text, theme_name)
                         live.update(markdown)
                         time.sleep(sleep_time)  # Небольшая задержка для плавности обновления
             reply = "".join(reply_parts)

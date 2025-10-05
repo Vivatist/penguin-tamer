@@ -229,7 +229,13 @@ def main() -> None:
 
         # Создаем консоль и клиент только если они нужны для AI операций
         Console = _get_console_class()
-        console = Console()
+        
+        # Применяем кастомную тему для Markdown из конфига
+        from penguin_tamer.themes import get_theme
+        theme_name = config.get("global", "markdown_theme", "default")
+        markdown_theme = get_theme(theme_name)
+        console = Console(theme=markdown_theme)
+        
         chat_client = _create_chat_client(console)
 
         # Determine execution mode
