@@ -139,8 +139,8 @@ class WindowsCommandExecutor(CommandExecutor):
 
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bat-команды в Windows через временный файл с выводом в реальном времени"""
-        # Предобработка кода для Windows
-        code = code_block.replace('@echo off', '')
+        # Предобработка кода для Windows - отключаем echo для предотвращения дублирования команд
+        code = '@echo off\n' + code_block.replace('@echo off', '')
         code = code.replace('pause', 'rem pause')
         
         
