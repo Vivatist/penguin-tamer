@@ -2,6 +2,7 @@ import threading
 from typing import List, Dict, Optional
 import time
 from dataclasses import dataclass, field
+from contextlib import contextmanager
 
 from rich.markdown import Markdown
 from rich.live import Live
@@ -156,6 +157,144 @@ class OpenRouterClient:
         except KeyboardInterrupt:
             pass
 
+    @contextmanager
+    def _managed_spinner(self, initial_message: str):
+        """Context manager для управления спиннером с автоматической очисткой.
+        
+        Args:
+            initial_message: Начальное сообщение для спиннера
+            
+        Yields:
+            dict: Словарь с ключом 'text' для обновления сообщения спиннера
+        """
+        stop_spinner = threading.Event()
+        status_message = {'text': initial_message}
+        spinner_thread = threading.Thread(
+            target=self._spinner, 
+            args=(stop_spinner, status_message), 
+            daemon=True
+        )
+        spinner_thread.start()
+        
+        try:
+            yield status_message
+        finally:
+            stop_spinner.set()
+            if spinner_thread.is_alive():
+                spinner_thread.join(timeout=0.3)
+
+    def _prepare_api_params(self) -> dict:
+        """Подготовка параметров для API запроса.
+        
+        Returns:
+            dict: Параметры для chat.completions.create()
+        """
+        api_params = {
+            "model": self.model,
+            "messages": self.messages,
+            "temperature": self.temperature,
+            "stream": True
+        }
+        
+        # Добавляем опциональные параметры только если они заданы
+        if self.max_tokens is not None:
+            api_params["max_tokens"] = self.max_tokens
+        if self.top_p is not None and self.top_p != 1.0:
+            api_params["top_p"] = self.top_p
+        if self.frequency_penalty != 0.0:
+            api_params["frequency_penalty"] = self.frequency_penalty
+        if self.presence_penalty != 0.0:
+            api_params["presence_penalty"] = self.presence_penalty
+        if self.stop is not None:
+            api_params["stop"] = self.stop
+        if self.seed is not None:
+            api_params["seed"] = self.seed
+            
+        return api_params
+
+    def _debug_print_if_enabled(self, phase: str) -> None:
+        """Печать debug информации если режим отладки включён.
+        
+        Args:
+            phase: 'request' или 'response'
+        """
+        if config.get("global", "debug_mode", False):
+            debug_print_messages(
+                self.messages,
+                client=self,
+                phase=phase
+            )
+
+    def _wait_first_chunk(self, stream, interrupted: threading.Event) -> Optional[str]:
+        """Ожидание первого чанка с контентом.
+        
+        Args:
+            stream: Поток ответов от API
+            interrupted: Флаг прерывания
+            
+        Returns:
+            str или None: Первый чанк контента или None если не найден
+            
+        Raises:
+            KeyboardInterrupt: Если установлен флаг прерывания
+        """
+        for chunk in stream:
+            if interrupted.is_set():
+                raise KeyboardInterrupt("Stream interrupted")
+            if chunk.choices[0].delta.content:
+                return chunk.choices[0].delta.content
+        return None
+
+    def _process_stream_with_live(
+        self, 
+        stream, 
+        interrupted: threading.Event,
+        first_chunk: str,
+        reply_parts: List[str]
+    ) -> str:
+        """Обработка потока с Live отображением Markdown.
+        
+        Args:
+            stream: Поток ответов от API
+            interrupted: Флаг прерывания
+            first_chunk: Первый чанк контента
+            reply_parts: Список для накопления частей ответа
+            
+        Returns:
+            str: Полный ответ
+            
+        Raises:
+            KeyboardInterrupt: Если установлен флаг прерывания
+        """
+        sleep_time = config.get("global", "sleep_time", 0.01)
+        refresh_per_second = config.get("global", "refresh_per_second", 10)
+        theme_name = config.get("global", "markdown_theme", "default")
+        
+        with Live(
+            console=self.console, 
+            refresh_per_second=refresh_per_second, 
+            auto_refresh=True
+        ) as live:
+            # Показываем первый чанк
+            if first_chunk:
+                markdown = _create_markdown(first_chunk, theme_name)
+                live.update(markdown)
+            
+            # Продолжаем обрабатывать остальные чанки
+            for chunk in stream:
+                if interrupted.is_set():
+                    raise KeyboardInterrupt("Stream interrupted")
+                if chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    reply_parts.append(text)
+                    # Объединяем все части и обрабатываем как Markdown
+                    full_text = "".join(reply_parts)
+                    markdown = _create_markdown(full_text, theme_name)
+                    live.update(markdown)
+                    time.sleep(sleep_time)
+        
+        return "".join(reply_parts)
+
     @property
     def client(self):
         """Ленивая инициализация OpenAI клиента"""
@@ -172,128 +311,54 @@ class OpenRouterClient:
             
         Returns:
             Complete AI response text
+            
+        Raises:
+            KeyboardInterrupt: При прерывании пользователем
+            Exception: При ошибках API
         """
-        # Показ спиннера в отдельном потоке с динамическим статусом
-        stop_spinner = threading.Event()
-        status_message = {'text': t('Sending request...')}
-        spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner, status_message), daemon=True)
-        spinner_thread.start()
-
         self.messages.append({"role": "user", "content": user_input})
         reply_parts = []
-
-        # Debug mode: показываем структуру запроса
-
-        if config.get("global", "debug_mode", False):
-            stop_spinner.set()  # Останавливаем спиннер для чистого вывода
-            if spinner_thread.is_alive():
-                spinner_thread.join(timeout=0.1)
-            debug_print_messages(
-                self.messages,
-                client=self,
-                phase="request"
-            )
-            # Перезапускаем спиннер
-            stop_spinner.clear()
-            spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner, status_message), daemon=True)
-            spinner_thread.start()
-        
-        # Флаг прерывания для потока
         interrupted = threading.Event()
         
-        try:
-            # Фаза 1: Отправка запроса
-            # Подготавливаем параметры API
-            api_params = {
-                "model": self.model,
-                "messages": self.messages,
-                "temperature": self.temperature,
-                "stream": True
-            }
-            
-            # Добавляем опциональные параметры только если они заданы
-            if self.max_tokens is not None:
-                api_params["max_tokens"] = self.max_tokens
-            if self.top_p is not None and self.top_p != 1.0:
-                api_params["top_p"] = self.top_p
-            if self.frequency_penalty != 0.0:
-                api_params["frequency_penalty"] = self.frequency_penalty
-            if self.presence_penalty != 0.0:
-                api_params["presence_penalty"] = self.presence_penalty
-            if self.stop is not None:
-                api_params["stop"] = self.stop
-            if self.seed is not None:
-                api_params["seed"] = self.seed
-            
-            stream = self.client.chat.completions.create(**api_params)
-
-            # Фаза 2: Ожидание ответа от модели
-            status_message['text'] = t('Ai thinking...')
-            
-            # Ждем первый чанк с контентом перед запуском Live
-            first_content_chunk = None
-            for chunk in stream:
-                if interrupted.is_set():
-                    raise KeyboardInterrupt("Stream interrupted")
-                if chunk.choices[0].delta.content:
-                    first_content_chunk = chunk.choices[0].delta.content
-                    reply_parts.append(first_content_chunk)
-                    break
-            
-            # Останавливаем спиннер после получения первого чанка
-            stop_spinner.set()
-            if spinner_thread.is_alive():
-                spinner_thread.join(timeout=0.1)
-
-            sleep_time = config.get("global", "sleep_time", 0.01)
-            refresh_per_second = config.get("global", "refresh_per_second", 10)
-            theme_name = config.get("global", "markdown_theme", "default")
-            
-            # Используем Live для динамического обновления отображения с Markdown
-            with Live(console=self.console, refresh_per_second=refresh_per_second, auto_refresh=True) as live:
-                # Показываем первый чанк
-                if first_content_chunk:
-                    markdown = _create_markdown(first_content_chunk, theme_name)
-                    live.update(markdown)
+        with self._managed_spinner(t('Sending request...')) as status_message:
+            try:
+                # Debug: показываем структуру запроса
+                self._debug_print_if_enabled("request")
                 
-                # Продолжаем обрабатывать остальные чанки
-                for chunk in stream:
-                    if interrupted.is_set():
-                        raise KeyboardInterrupt("Stream interrupted")
-                    if chunk.choices[0].delta.content:
-                        text = chunk.choices[0].delta.content
-                        reply_parts.append(text)
-                        # Объединяем все части и обрабатываем как Markdown
-                        full_text = "".join(reply_parts)
-                        markdown = _create_markdown(full_text, theme_name)
-                        live.update(markdown)
-                        time.sleep(sleep_time)  # Небольшая задержка для плавности обновления
-            reply = "".join(reply_parts)
+                # Отправка запроса
+                api_params = self._prepare_api_params()
+                stream = self.client.chat.completions.create(**api_params)
+                
+                # Ожидание ответа от модели
+                status_message['text'] = t('Ai thinking...')
+                
+                # Ждем первый чанк с контентом
+                first_chunk = self._wait_first_chunk(stream, interrupted)
+                if first_chunk:
+                    reply_parts.append(first_chunk)
+            
+            except (KeyboardInterrupt, Exception):
+                interrupted.set()
+                raise
+        
+        # Спиннер остановлен, начинаем Live отображение
+        try:
+            reply = self._process_stream_with_live(
+                stream, 
+                interrupted,
+                first_chunk,
+                reply_parts
+            )
+            
             self.messages.append({"role": "assistant", "content": reply})
             
-            # Debug mode: показываем структуру ответа
-            if config.get("global", "debug_mode", False):
-                debug_print_messages(
-                    self.messages,  # Показываем все сообщения включая новый ответ
-                    client=self,
-                    phase="response"
-                )
+            # Debug: показываем структуру ответа
+            self._debug_print_if_enabled("response")
             
             return reply
-
+            
         except KeyboardInterrupt:
-            # Устанавливаем флаг прерывания
             interrupted.set()
-            # Останавливаем спиннер
-            stop_spinner.set()
-            if spinner_thread.is_alive():
-                spinner_thread.join(timeout=0.3)
-            raise
-        except Exception as e:
-            # Останавливаем спиннер в случае ошибки
-            stop_spinner.set()
-            if spinner_thread.is_alive():
-                spinner_thread.join(timeout=0.3)
             raise
   
 

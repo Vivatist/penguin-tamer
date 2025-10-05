@@ -38,6 +38,16 @@ _formatter_text = None
 _execute_handler = None
 _console_class = None
 _markdown_class = None
+_get_theme_func = None
+
+
+def _get_theme():
+    """Ленивый импорт get_theme"""
+    global _get_theme_func
+    if _get_theme_func is None:
+        from penguin_tamer.themes import get_theme
+        _get_theme_func = get_theme
+    return _get_theme_func
 
 
 def _get_console_class():
@@ -100,6 +110,79 @@ def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None
         console.print(connection_error(e))
 
 
+def _is_exit_command(prompt: str) -> bool:
+    """Check if user wants to exit."""
+    return prompt.lower() in ['exit', 'quit', 'q']
+
+
+def _handle_direct_command(console, prompt: str) -> bool:
+    """Execute direct shell command (starts with dot).
+    
+    Returns:
+        True if command was handled, False otherwise
+    """
+    if not prompt.startswith('.'):
+        return False
+    
+    command = prompt[1:].strip()
+    if not command:
+        console.print(t("[dim]Empty command after '.' - skipping.[/dim]"))
+        return True
+    
+    console.print(t("[dim]>>> Executing command:[/dim] {command}").format(command=command))
+    _get_execute_handler()(console, command)
+    console.print()
+    return True
+
+
+def _handle_code_block_execution(console, prompt: str, code_blocks: list) -> bool:
+    """Execute code block by number.
+    
+    Returns:
+        True if code block was executed, False otherwise
+    """
+    if not prompt.isdigit():
+        return False
+    
+    block_index = int(prompt)
+    if 1 <= block_index <= len(code_blocks):
+        _get_script_executor()(console, code_blocks, block_index)
+        console.print()
+        return True
+    
+    console.print(t("[dim]Code block #{number} not found.[/dim]").format(number=prompt))
+    return True
+
+
+def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> list:
+    """Send query to AI and extract code blocks from response.
+    
+    Returns:
+        List of code blocks from AI response
+    """
+    reply = chat_client.ask_stream(prompt)
+    code_blocks = _get_formatter_text()(reply)
+    console.print()
+    return code_blocks
+
+
+def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str) -> list:
+    """Process initial user prompt if provided.
+    
+    Returns:
+        List of code blocks from response
+    """
+    if not prompt:
+        return []
+    
+    try:
+        return _process_ai_query(chat_client, console, prompt)
+    except Exception as e:
+        console.print(connection_error(e))
+        console.print()
+        return []
+
+
 def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode with educational prompt for code block numbering.
     
@@ -108,69 +191,44 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         console: Rich console for output
         initial_user_prompt: Optional initial prompt to process before entering dialog loop
     """
-    # История команд хранится рядом с настройками в пользовательской папке
+    # Setup
     history_file_path = config.user_config_dir / "cmd_history"
-    
-    # Создаем форматтер ввода
     input_formatter = DialogInputFormatter(history_file_path)
-
-    # Initialize dialog mode with educational prompt (teaches model to number code blocks)
+    
+    # Initialize dialog mode with educational prompt
     educational_prompt = get_educational_prompt()
     chat_client.init_dialog_mode(educational_prompt)
     
-    last_code_blocks = []  # code blocks from the last AI answer
-
-    # If there is an initial prompt, process it
-    if initial_user_prompt:
-        try:
-            
-            reply = chat_client.ask_stream(initial_user_prompt)
-            last_code_blocks = _get_formatter_text()(reply)
-        except Exception as e:
-            console.print(connection_error(e))
-        console.print()
+    # Process initial prompt if provided
+    last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
 
     # Main dialog loop
     while True:
         try:
-            # Получаем ввод пользователя через форматтер
-            user_prompt = input_formatter.get_input(console, has_code_blocks=bool(last_code_blocks), t=t)
-            # Disallow empty input
+            # Get user input
+            user_prompt = input_formatter.get_input(
+                console, 
+                has_code_blocks=bool(last_code_blocks), 
+                t=t
+            )
+            
             if not user_prompt:
                 continue
-
-            # Exit commands
-            if user_prompt.lower() in ['exit', 'quit', 'q']:
+            
+            # Check for exit
+            if _is_exit_command(user_prompt):
                 break
-
-            # Command execution: if input starts with dot ".", execute as direct command
-            if user_prompt.startswith('.'):
-                command_to_execute = user_prompt[1:].strip()  # Remove the dot and strip spaces
-                if command_to_execute:  # Only execute if there's something after the dot
-                    console.print(f"[dim]>>> Executing command:[/dim] {command_to_execute}")
-                    _get_execute_handler()(console, command_to_execute)
-                    console.print()
-                    continue
-                else:
-                    console.print("[dim]Empty command after '.' - skipping.[/dim]")
-                    continue
-
-            # If a number is entered
-            if user_prompt.isdigit():
-                block_index = int(user_prompt)
-                if 1 <= block_index <= len(last_code_blocks):
-                    _get_script_executor()(console, last_code_blocks, block_index)
-                    console.print()
-                    continue
-                else:
-                    console.print(t("[dim]Code block #{number} not found.[/dim]").format(number=user_prompt))
-                    continue
-
-
-            Markdown = _get_markdown_class()
-            reply = chat_client.ask_stream(user_prompt)
-            last_code_blocks = _get_formatter_text()(reply)
-            console.print()  # new line after answer
+            
+            # Handle direct command execution
+            if _handle_direct_command(console, user_prompt):
+                continue
+            
+            # Handle code block execution
+            if _handle_code_block_execution(console, user_prompt, last_code_blocks):
+                continue
+            
+            # Process as AI query
+            last_code_blocks = _process_ai_query(chat_client, console, user_prompt)
 
         except KeyboardInterrupt:
             break
@@ -211,6 +269,14 @@ def _create_chat_client(console):
     return chat_client
 
 
+def _create_console():
+    """Создание Rich Console с темой из конфига."""
+    Console = _get_console_class()
+    theme_name = config.get("global", "markdown_theme", "default")
+    markdown_theme = _get_theme()(theme_name)
+    return Console(theme=markdown_theme)
+
+
 def main() -> None:
     """Main entry point for Penguin Tamer CLI."""
     try:
@@ -223,14 +289,7 @@ def main() -> None:
             return 0
 
         # Создаем консоль и клиент только если они нужны для AI операций
-        Console = _get_console_class()
-        
-        # Применяем кастомную тему для Markdown из конфига
-        from penguin_tamer.themes import get_theme
-        theme_name = config.get("global", "markdown_theme", "default")
-        markdown_theme = get_theme(theme_name)
-        console = Console(theme=markdown_theme)
-        
+        console = _create_console()
         chat_client = _create_chat_client(console)
 
         # Determine execution mode
