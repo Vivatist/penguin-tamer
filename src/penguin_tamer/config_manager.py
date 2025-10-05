@@ -223,7 +223,7 @@ class ConfigManager:
     @property
     def temperature(self) -> float:
         """Температура генерации ответов."""
-        return self.get("global", "temperature", 0.2)
+        return self.get("global", "temperature", 0.8)
 
     @temperature.setter
     def temperature(self, value: float) -> None:
@@ -287,7 +287,7 @@ class ConfigManager:
             "api_key": api_key
         }
 
-        self.set("supported_LLMs", name, supported_llms[name])
+        self.update_section("supported_LLMs", supported_llms)
 
     def update_llm(self, name: str, model: str = None, api_url: str = None, api_key: str = None) -> None:
         """
