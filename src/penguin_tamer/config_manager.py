@@ -426,6 +426,28 @@ class ConfigManager:
         except Exception:
             pass
 
+    # === Debug Mode ===
+    @property
+    def debug(self) -> bool:
+        """Debug mode enabled/disabled."""
+        return self.get("global", "debug", False)
+
+    @debug.setter
+    def debug(self, value: bool) -> None:
+        """Set debug mode."""
+        self.set("global", "debug", value)
+
+    # === Theme ===
+    @property
+    def theme(self) -> str:
+        """Current markdown/code theme."""
+        return self.get("global", "theme", "default")
+
+    @theme.setter
+    def theme(self, value: str) -> None:
+        """Set theme."""
+        self.set("global", "theme", value)
+
 
 # Глобальный экземпляр для удобства использования
 config = ConfigManager()

@@ -76,6 +76,7 @@ def main_menu():
                             (t('System'), 'system'),
                             (t('Show current settings'), 'overview'),
                             (t('Language'), 'language'),
+                            (t('Theme'), 'theme'),
                             (t('Exit'), 'exit')
                          ],
                          carousel=True)
@@ -101,6 +102,8 @@ def main_menu():
             print_settings_overview()
         elif choice == 'language':
             set_language()
+        elif choice == 'theme':
+            set_theme()
         elif choice == 'exit':
             break
 
@@ -281,23 +284,23 @@ def edit_user_content():
     """Edit user content."""
     current_content = config.user_content
 
-    print(f"\nCurrent content:")
+    print(f"\n{t('Current content')}:")
     print("-" * 60)
     print(current_content)
     print("-" * 60)
 
-    print("\nInstruction: Enter new content.")
-    print("For multiline text use \\n to insert new lines.")
-    print("Example: First line\\nSecond line\\nThird line")
-    print("Leave empty and press Enter to cancel.")
+    print(f"\n{t('Instruction: Enter new content.')}")
+    print(t('For multiline text use \\n to insert new lines.'))
+    print(t('Example: First line\\nSecond line\\nThird line'))
+    print(t('Leave empty and press Enter to cancel.'))
     print()
 
     try:
         # Use plain input to avoid echoing each char
-        user_input = input("New content: ").strip()
+        user_input = input(f"{t('New content')}: ").strip()
 
         if not user_input:
-            print("Changes cancelled - empty input")
+            print(t('Changes cancelled - empty input'))
             return
 
     # Replace \n with real new lines
@@ -305,13 +308,13 @@ def edit_user_content():
 
         # Сохраняем новый контент
         config.user_content = new_content
-        print("Content updated")
+        print(t('Content updated'))
 
     except KeyboardInterrupt:
-        print("\nChanges cancelled")
+        print(f"\n{t('Changes cancelled')}")
     except Exception as e:
-        print(f"Input error: {e}")
-        print("Changes cancelled")
+        print(f"{t('Input error')}: {e}")
+        print(t('Changes cancelled'))
 
 
 def system_settings_menu():
@@ -323,6 +326,7 @@ def system_settings_menu():
                          choices=[
                              (t('Stream delay'), 'sleep_time'),
                              (t('Stream refresh rate'), 'refresh_rate'),
+                             (t('Debug mode'), 'debug'),
                              (t('Back'), 'back')
                          ],
                          carousel=True)
@@ -338,6 +342,8 @@ def system_settings_menu():
             set_sleep_time()
         elif choice == 'refresh_rate':
             set_refresh_rate()
+        elif choice == 'debug':
+            toggle_debug_mode()
         elif choice == 'back':
             break
 
@@ -779,6 +785,83 @@ def set_language():
             pass
     translator.set_language(lang)
     print(t('Updated'))
+
+
+def set_theme():
+    """Theme selection setting."""
+    try:
+        from penguin_tamer.themes import get_available_themes
+        available_themes = get_available_themes()
+    except Exception:
+        print("Error loading themes")
+        return
+    
+    current = getattr(config, 'theme', 'default')
+    
+    # Создаём читабельные названия для тем
+    theme_labels = {
+        'default': 'Default (Classic)',
+        'monokai': 'Monokai (Dark)',
+        'dracula': 'Dracula (Dark Purple)',
+        'nord': 'Nord (Cold Blue)',
+        'solarized_dark': 'Solarized Dark',
+        'github': 'GitHub (Light)',
+        'matrix': 'Matrix (Green)',
+        'minimal': 'Minimal (B&W)'
+    }
+    
+    choices = [(theme_labels.get(theme, theme), theme) for theme in available_themes]
+    
+    questions = [
+        inquirer.List(
+            'theme',
+            message=t('Select theme'),
+            choices=choices,
+            default=current,
+            carousel=True
+        )
+    ]
+    
+    answers = prompt_clean(questions)
+    if not answers:
+        return
+    
+    selected_theme = answers['theme']
+    try:
+        config.theme = selected_theme
+        print(f"{t('Updated')}: {theme_labels.get(selected_theme, selected_theme)}")
+        print(t('Theme will be applied on next launch'))
+    except Exception as e:
+        print(f"Error updating theme: {e}")
+
+
+def toggle_debug_mode():
+    """Toggle debug mode on/off."""
+    current = getattr(config, 'debug', False)
+    status = t('enabled') if current else t('disabled')
+    print(f"\n{t('Debug mode')}: {status}")
+    print(t('Debug mode shows detailed LLM request/response information'))
+    
+    questions = [
+        inquirer.Confirm(
+            'enable',
+            message=t('Enable debug mode?'),
+            default=current
+        )
+    ]
+    
+    answers = prompt_clean(questions)
+    if answers is None:
+        return
+    
+    new_value = answers['enable']
+    try:
+        config.debug = new_value
+        new_status = t('enabled') if new_value else t('disabled')
+        print(f"{t('Debug mode')}: {new_status}")
+        print(t('Updated'))
+    except Exception as e:
+        print(f"Error updating debug mode: {e}")
 
 
 if __name__ == "__main__":
