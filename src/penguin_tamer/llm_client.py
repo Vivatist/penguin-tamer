@@ -91,16 +91,14 @@ class OpenRouterClient:
         return self._client
 
 
-    def ask_stream(self, user_input: str, educational_content: list = None) -> str:
+    def ask_stream(self, user_input: str, educational_content: list = []) -> str:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
         # Показ спиннера в отдельном потоке с динамическим статусом
         stop_spinner = threading.Event()
         status_message = {'text': t('Sending request...')}
         spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner, status_message), daemon=True)
         spinner_thread.start()
-        
-        if educational_content is None:
-            educational_content = []
+
         self.messages.extend(educational_content)
         self.messages.append({"role": "user", "content": user_input})
         reply_parts = []
@@ -134,7 +132,7 @@ class OpenRouterClient:
             # Останавливаем спиннер после получения первого чанка
             stop_spinner.set()
             if spinner_thread.is_alive():
-                spinner_thread.join(timeout=0.5)
+                spinner_thread.join(timeout=0.1)
 
             sleep_time = config.get("global", "sleep_time", 0.01)
             refresh_per_second = config.get("global", "refresh_per_second", 10)
