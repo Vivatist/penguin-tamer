@@ -75,16 +75,18 @@ class OpenRouterClient:
 
     def ask_stream(self, user_input: str, educational_content: list = None) -> str:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени"""
-        if educational_content is None:
-            educational_content = []
-        self.messages.extend(educational_content)
-        self.messages.append({"role": "user", "content": user_input})
-        reply_parts = []
         # Показ спиннера в отдельном потоке с динамическим статусом
         stop_spinner = threading.Event()
         status_message = {'text': t('Sending request...')}
         spinner_thread = threading.Thread(target=self._spinner, args=(stop_spinner, status_message), daemon=True)
         spinner_thread.start()
+        
+        if educational_content is None:
+            educational_content = []
+        self.messages.extend(educational_content)
+        self.messages.append({"role": "user", "content": user_input})
+        reply_parts = []
+
         
         # Флаг прерывания для потока
         interrupted = threading.Event()
