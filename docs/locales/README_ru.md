@@ -48,6 +48,45 @@
 ```bash
 curl -sSL https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/install.sh | bash
 ```
+
+> **Примечание:** Установщик автоматически выбирает имя команды (по умолчанию: `pt`). Если вы запустите установщик интерактивно (скачав и запустив его напрямую), вы сможете выбрать пользовательское имя, например `ai`, `chat` или любое другое.
+
+**Чтобы выбрать пользовательское имя команды:**
+```bash
+# Скачайте и запустите интерактивно
+curl -sSL -o install.sh https://raw.githubusercontent.com/Vivatist/penguin-tamer/main/install.sh
+bash install.sh
+```
+
+<details>
+<summary><b>Если вы уже установили и хотите добавить альтернативное имя команды</b></summary>
+
+Создайте симлинк вручную (например, для имени `ai`):
+```bash
+# Найдите путь к pt
+PT_PATH=$(which pt)
+
+# Создайте симлинк
+ln -sf "$PT_PATH" "$(dirname "$PT_PATH")/ai"
+
+# Проверьте
+which ai
+ai --version
+```
+
+Или добавьте alias в ваш shell:
+```bash
+# Для bash
+echo "alias ai='pt'" >> ~/.bashrc
+source ~/.bashrc
+
+# Для zsh
+echo "alias ai='pt'" >> ~/.zshrc
+source ~/.zshrc
+```
+
+</details>
+
 ## Удаление
 ```bash
 pipx uninstall penguin-tamer

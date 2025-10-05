@@ -15,55 +15,75 @@ ask_command_name() {
     local default_name="pt"
     local suggestions=("pt" "ai" "chat" "llm" "ask")
     
-    echo "[*] Choose command name for Penguin Tamer:"
-    echo "    Available suggestions: ${suggestions[*]}"
-    echo "    Or enter your own custom name"
-    echo
-    
-    # Check which suggestions are already taken
-    local available=()
-    local taken=()
-    for cmd in "${suggestions[@]}"; do
-        if command_exists "$cmd"; then
-            taken+=("$cmd")
-        else
-            available+=("$cmd")
+    # Check if running in interactive mode (not piped from curl)
+    if [ -t 0 ]; then
+        # Interactive mode - show menu
+        echo "[*] Choose command name for Penguin Tamer:"
+        echo "    Available suggestions: ${suggestions[*]}"
+        echo "    Or enter your own custom name"
+        echo
+        
+        # Check which suggestions are already taken
+        local available=()
+        local taken=()
+        for cmd in "${suggestions[@]}"; do
+            if command_exists "$cmd"; then
+                taken+=("$cmd")
+            else
+                available+=("$cmd")
+            fi
+        done
+        
+        if [ ${#taken[@]} -gt 0 ]; then
+            echo "[!] Already taken: ${taken[*]}"
         fi
-    done
-    
-    if [ ${#taken[@]} -gt 0 ]; then
-        echo "[!] Already taken: ${taken[*]}"
+        if [ ${#available[@]} -gt 0 ]; then
+            echo "[+] Available: ${available[*]}"
+        fi
+        echo
+        
+        # Interactive prompt
+        while true; do
+            read -p ">>> Enter command name [default: $default_name]: " cmd_name
+            cmd_name="${cmd_name:-$default_name}"
+            
+            # Validate command name
+            if [[ ! "$cmd_name" =~ ^[a-z][a-z0-9_-]*$ ]]; then
+                echo "[!] Invalid name. Use lowercase letters, numbers, hyphens, and underscores only."
+                continue
+            fi
+            
+            # Check if already exists
+            if command_exists "$cmd_name"; then
+                echo "[!] Command '$cmd_name' is already taken. Try another name."
+                continue
+            fi
+            
+            # Confirm choice
+            read -p ">>> Use '$cmd_name' as command name? [Y/n]: " confirm
+            confirm="${confirm:-Y}"
+            if [[ "$confirm" =~ ^[Yy] ]]; then
+                echo "$cmd_name"
+                return 0
+            fi
+        done
+    else
+        # Non-interactive mode (piped) - use default or first available
+        local chosen_name="$default_name"
+        
+        # If default is taken, try to find first available from suggestions
+        if command_exists "$chosen_name"; then
+            for cmd in "${suggestions[@]}"; do
+                if ! command_exists "$cmd"; then
+                    chosen_name="$cmd"
+                    break
+                fi
+            done
+        fi
+        
+        echo "$chosen_name"
+        return 0
     fi
-    if [ ${#available[@]} -gt 0 ]; then
-        echo "[+] Available: ${available[*]}"
-    fi
-    echo
-    
-    # Interactive prompt
-    while true; do
-        read -p ">>> Enter command name [default: $default_name]: " cmd_name
-        cmd_name="${cmd_name:-$default_name}"
-        
-        # Validate command name
-        if [[ ! "$cmd_name" =~ ^[a-z][a-z0-9_-]*$ ]]; then
-            echo "[!] Invalid name. Use lowercase letters, numbers, hyphens, and underscores only."
-            continue
-        fi
-        
-        # Check if already exists
-        if command_exists "$cmd_name"; then
-            echo "[!] Command '$cmd_name' is already taken. Try another name."
-            continue
-        fi
-        
-        # Confirm choice
-        read -p ">>> Use '$cmd_name' as command name? [Y/n]: " confirm
-        confirm="${confirm:-Y}"
-        if [[ "$confirm" =~ ^[Yy] ]]; then
-            echo "$cmd_name"
-            return 0
-        fi
-    done
 }
 
 # 1. Check Python (>=3.11)
@@ -174,21 +194,51 @@ if [ "$CMD_NAME" != "pt" ]; then
     # Determine pipx bin directory
     PIPX_BIN_DIR=""
     if command_exists pipx; then
-        PIPX_BIN_DIR=$(pipx environment --value PIPX_BIN_DIR 2>/dev/null || echo "$HOME/.local/bin")
-    else
-        PIPX_BIN_DIR="$HOME/.local/bin"
+        PIPX_BIN_DIR=$(pipx environment --value PIPX_BIN_DIR 2>/dev/null)
     fi
     
+    # Fallback to common locations if environment command fails
+    if [ -z "$PIPX_BIN_DIR" ]; then
+        if [ -d "$HOME/.local/bin" ]; then
+            PIPX_BIN_DIR="$HOME/.local/bin"
+        elif [ -d "/usr/local/bin" ]; then
+            PIPX_BIN_DIR="/usr/local/bin"
+        else
+            PIPX_BIN_DIR="$HOME/.local/bin"
+        fi
+    fi
+    
+    # Wait a moment for pipx to finish creating the binary
+    sleep 1
+    
+    # Try to find pt in common locations
+    PT_PATH=""
+    for search_path in "$PIPX_BIN_DIR" "$HOME/.local/bin" "/usr/local/bin"; do
+        if [ -f "$search_path/pt" ]; then
+            PT_PATH="$search_path/pt"
+            PIPX_BIN_DIR="$search_path"
+            break
+        fi
+    done
+    
     # Create symlink
-    if [ -f "$PIPX_BIN_DIR/pt" ]; then
-        ln -sf "$PIPX_BIN_DIR/pt" "$PIPX_BIN_DIR/$CMD_NAME" 2>/dev/null || {
-            echo "[!] Could not create symlink. You can manually create alias:"
+    if [ -n "$PT_PATH" ] && [ -f "$PT_PATH" ]; then
+        if ln -sf "$PT_PATH" "$PIPX_BIN_DIR/$CMD_NAME" 2>/dev/null; then
+            echo "[+] Command '$CMD_NAME' is now available (symlink to pt)"
+            echo ">>> Location: $PIPX_BIN_DIR/$CMD_NAME -> $PT_PATH"
+        else
+            echo "[!] Could not create symlink. You can manually create it:"
+            echo "    ln -sf $PT_PATH $PIPX_BIN_DIR/$CMD_NAME"
+            echo "    Or add alias to your shell config:"
             echo "    alias $CMD_NAME='pt'"
-        }
-        echo "[+] Command '$CMD_NAME' is now available (symlink to pt)"
+        fi
     else
-        echo "[!] 'pt' not found in $PIPX_BIN_DIR"
-        echo "    You can manually create alias: alias $CMD_NAME='pt'"
+        echo "[!] 'pt' not found in expected locations"
+        echo "    Searched: $PIPX_BIN_DIR, $HOME/.local/bin, /usr/local/bin"
+        echo "    You can manually create alias after restart:"
+        echo "    alias $CMD_NAME='pt'"
+        echo "    Or create symlink when 'pt' appears:"
+        echo "    ln -sf \$(which pt) \$(dirname \$(which pt))/$CMD_NAME"
     fi
 fi
 
