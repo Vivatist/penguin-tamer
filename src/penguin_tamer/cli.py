@@ -115,8 +115,55 @@ def _is_exit_command(prompt: str) -> bool:
     return prompt.lower() in ['exit', 'quit', 'q']
 
 
-def _handle_direct_command(console, prompt: str) -> bool:
-    """Execute direct shell command (starts with dot).
+def _add_command_to_context(chat_client: OpenRouterClient, command: str, result: dict, block_number: int = None) -> None:
+    """Add executed command and its result to chat context.
+    
+    Args:
+        chat_client: LLM client to add context to
+        command: Executed command
+        result: Execution result dictionary
+        block_number: Optional code block number
+    """
+    # Формируем сообщение пользователя о выполнении команды
+    if block_number is not None:
+        user_message = f"Execute code block #{block_number}:\n```\n{command}\n```"
+    else:
+        user_message = f"Execute command: {command}"
+    
+    # Формируем системное сообщение с результатом
+    if result['interrupted']:
+        system_message = "Command execution was interrupted by user (Ctrl+C)."
+    elif result['success']:
+        output_parts = []
+        if result['stdout']:
+            output_parts.append(f"Output:\n{result['stdout']}")
+        if result['stderr']:
+            output_parts.append(f"Errors:\n{result['stderr']}")
+        
+        if output_parts:
+            system_message = f"Command executed successfully (exit code: 0).\n" + "\n".join(output_parts)
+        else:
+            system_message = "Command executed successfully (exit code: 0). No output."
+    else:
+        output_parts = [f"Command failed with exit code: {result['exit_code']}"]
+        if result['stdout']:
+            output_parts.append(f"Output:\n{result['stdout']}")
+        if result['stderr']:
+            output_parts.append(f"Errors:\n{result['stderr']}")
+        system_message = "\n".join(output_parts)
+    
+    # Добавляем в контекст диалога
+    chat_client.messages.append({"role": "user", "content": user_message})
+    chat_client.messages.append({"role": "system", "content": system_message})
+
+
+def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) -> bool:
+    """Execute direct shell command (starts with dot) and add to context.
+    
+    Args:
+        console: Rich console for output
+        chat_client: LLM client to add command context
+        prompt: User input
     
     Returns:
         True if command was handled, False otherwise
@@ -130,13 +177,25 @@ def _handle_direct_command(console, prompt: str) -> bool:
         return True
     
     console.print(t("[dim]>>> Executing command:[/dim] {command}").format(command=command))
-    _get_execute_handler()(console, command)
+    
+    # Выполняем команду и получаем результат
+    result = _get_execute_handler()(console, command)
     console.print()
+    
+    # Добавляем команду и результат в контекст
+    _add_command_to_context(chat_client, command, result)
+    
     return True
 
 
-def _handle_code_block_execution(console, prompt: str, code_blocks: list) -> bool:
-    """Execute code block by number.
+def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt: str, code_blocks: list) -> bool:
+    """Execute code block by number and add to context.
+    
+    Args:
+        console: Rich console for output
+        chat_client: LLM client to add command context
+        prompt: User input
+        code_blocks: List of available code blocks
     
     Returns:
         True if code block was executed, False otherwise
@@ -146,8 +205,15 @@ def _handle_code_block_execution(console, prompt: str, code_blocks: list) -> boo
     
     block_index = int(prompt)
     if 1 <= block_index <= len(code_blocks):
-        _get_script_executor()(console, code_blocks, block_index)
+        code = code_blocks[block_index - 1]
+        
+        # Выполняем блок кода и получаем результат
+        result = _get_script_executor()(console, code_blocks, block_index)
         console.print()
+        
+        # Добавляем команду и результат в контекст
+        _add_command_to_context(chat_client, code, result, block_number=block_index)
+        
         return True
     
     console.print(t("[dim]Code block #{number} not found.[/dim]").format(number=prompt))
@@ -219,12 +285,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             if _is_exit_command(user_prompt):
                 break
             
-            # Handle direct command execution
-            if _handle_direct_command(console, user_prompt):
+            # Handle direct command execution (with context)
+            if _handle_direct_command(console, chat_client, user_prompt):
                 continue
             
-            # Handle code block execution
-            if _handle_code_block_execution(console, user_prompt, last_code_blocks):
+            # Handle code block execution (with context)
+            if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks):
                 continue
             
             # Process as AI query

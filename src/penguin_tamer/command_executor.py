@@ -235,14 +235,30 @@ class CommandExecutorFactory:
             return LinuxCommandExecutor()
 
 
-def execute_and_handle_result(console: Console, code: str) -> None:
+def execute_and_handle_result(console: Console, code: str) -> dict:
     """
     Выполняет блок кода и обрабатывает результаты выполнения.
     
     Args:
         console (Console): Консоль для вывода
         code (str): Код для выполнения
+        
+    Returns:
+        dict: Результат выполнения с ключами:
+            - 'success': bool - успешность выполнения
+            - 'exit_code': int - код возврата
+            - 'stdout': str - стандартный вывод
+            - 'stderr': str - вывод ошибок
+            - 'interrupted': bool - прервано ли выполнение
     """
+    result = {
+        'success': False,
+        'exit_code': -1,
+        'stdout': '',
+        'stderr': '',
+        'interrupted': False
+    }
+    
     # Получаем исполнитель для текущей ОС
     try:
         executor = CommandExecutorFactory.create_executor()
@@ -253,10 +269,15 @@ def execute_and_handle_result(console: Console, code: str) -> None:
         try:
             process = executor.execute(code)
             
+            # Сохраняем результаты
+            result['exit_code'] = process.returncode
+            result['stdout'] = process.stdout
+            result['stderr'] = process.stderr
+            result['success'] = process.returncode == 0
+            
             # Выводим код завершения только при ошибке (не равен 0)
-            exit_code = process.returncode
-            if exit_code != 0:
-                console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
+            if process.returncode != 0:
+                console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=process.returncode))
             
             # Показываем итоговую сводку только если есть stderr или особые случаи
             if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
@@ -264,13 +285,17 @@ def execute_and_handle_result(console: Console, code: str) -> None:
                 
         except KeyboardInterrupt:
             # Перехватываем Ctrl+C во время выполнения команды
+            result['interrupted'] = True
             console.print(t("[dim]>>> Command interrupted by user (Ctrl+C)[/dim]"))
             
     except Exception as e:
+        result['stderr'] = str(e)
         console.print(t("[dim]Script execution error: {error}[/dim]").format(error=e))
+    
+    return result
 
 
-def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
+def run_code_block(console: Console, code_blocks: list, idx: int) -> dict:
     """
     Печатает номер и содержимое блока, выполняет его и выводит результат.
     
@@ -278,12 +303,21 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
         console (Console): Консоль для вывода
         code_blocks (list): Список блоков кода
         idx (int): Индекс выполняемого блока
+        
+    Returns:
+        dict: Результат выполнения (см. execute_and_handle_result)
     """
     
     # Проверяем корректность индекса
     if not (1 <= idx <= len(code_blocks)):
         console.print(t("[yellow]Block #{idx} does not exist. Available blocks: 1 to {total}.[/yellow]").format(idx=idx, total=len(code_blocks)))
-        return
+        return {
+            'success': False,
+            'exit_code': -1,
+            'stdout': '',
+            'stderr': 'Block index out of range',
+            'interrupted': False
+        }
     
     code = code_blocks[idx - 1]
 
@@ -291,4 +325,4 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> None:
     console.print(code)
     
     # Выполняем код и обрабатываем результат
-    execute_and_handle_result(console, code)
+    return execute_and_handle_result(console, code)
