@@ -110,7 +110,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     input_formatter = DialogInputFormatter(history_file_path)
 
     # Get educational prompt for first message
-    educational_prompt = [get_educational_prompt()]
+    educational_prompt = get_educational_prompt()
     last_code_blocks = []  # code blocks from the last AI answer
 
     # If there is an initial prompt, process it
