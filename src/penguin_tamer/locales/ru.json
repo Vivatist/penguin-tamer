@@ -149,5 +149,19 @@
   "Python executable": "Исполняемый файл Python",
   "[dim]>>> Executing command:[/dim] {command}": "[dim]>>> Выполняем команду:[/dim] {command}",
   "[dim]Empty command after '.' - skipping.[/dim]": "[dim]Пустая команда после '.' - пропускаем.[/dim]",
-  "[dim]Code block #{number} not found.[/dim]": "[dim]Блок кода #{number} не найден.[/dim]"
+  "[dim]Code block #{number} not found.[/dim]": "[dim]Блок кода #{number} не найден.[/dim]",
+  "failed to retrieve": "не удалось получить",
+  "System Information": "Сведения о системе",
+  "Operating System": "Операционная система",
+  "Architecture": "Архитектура",
+  "User": "Пользователь",
+  "Home Directory": "Домашняя папка",
+  "Current Directory": "Текущий каталог",
+  "Hostname": "Имя хоста",
+  "Local IP Address": "Локальный IP-адрес",
+  "Python Version": "Версия Python",
+  "Current Time": "Текущее время",
+  "Shell": "Shell",
+  "Shell Executable": "Shell executable",
+  "Shell Version": "Shell version"
 }

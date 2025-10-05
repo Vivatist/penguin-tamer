@@ -3,6 +3,7 @@
 from typing import List
 
 from penguin_tamer.config_manager import config
+from penguin_tamer.system_info import get_system_info_text
 
 
 def get_system_prompt() -> List[dict[str, str]]:
@@ -20,10 +21,14 @@ def get_system_prompt() -> List[dict[str, str]]:
         "Respond based on the user's environment and commands."
     )
     
+    # Получаем актуальную информацию о системе
+    system_info = get_system_info_text()
+    system_info_prompt = f"The current system information is as follows:\n{system_info}\n"
+
     if user_prompt:
-        system_prompt = f"{user_prompt} {base_prompt}".strip()
+        system_prompt = f"{user_prompt} {base_prompt} {system_info_prompt}".strip()
     else:
-        system_prompt = base_prompt
+        system_prompt = f"{base_prompt} {system_info_prompt}".strip()
     
     return [{"role": "system", "content": system_prompt}]
 

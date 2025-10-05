@@ -5,13 +5,15 @@ import socket
 from datetime import datetime
 import getpass
 
+from penguin_tamer.i18n import t
+
 def get_system_info_text() -> str:
-    """Возвращает информацию о рабочем окружении в виде читаемого текста"""
+    """Returns system environment information as readable text / Возвращает информацию о рабочем окружении в виде читаемого текста"""
     try:
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
     except Exception as e:
-        local_ip = f"не удалось получить ({e})"
+        local_ip = t("failed to retrieve") + f" ({e})"
 
     # Определяем shell без медленных вызовов subprocess
     shell_exec = os.environ.get('SHELL') or os.environ.get('COMSPEC') or os.environ.get('TERMINAL') or ''
@@ -34,19 +36,19 @@ def get_system_info_text() -> str:
         # Для остальных случаев оставляем 'unknown' чтобы не тратить время на subprocess
 
     info_text = f"""
-Сведения о системе:
-- Операционная система: {platform.system()} {platform.release()} ({platform.version()})
-- Архитектура: {platform.machine()}
-- Пользователь: {getpass.getuser()}
-- Домашняя папка: {os.path.expanduser("~")}
-- Текущий каталог: {os.getcwd()}
-- Имя хоста: {hostname}
-- Локальный IP-адрес: {local_ip}
-- Версия Python: {platform.python_version()}
-- Текущее время: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-- Shell: {shell_name}
-- Shell executable: {shell_exec}
-- Shell version: {shell_version}
+{t("System Information")}:
+- {t("Operating System")}: {platform.system()} {platform.release()} ({platform.version()})
+- {t("Architecture")}: {platform.machine()}
+- {t("User")}: {getpass.getuser()}
+- {t("Home Directory")}: {os.path.expanduser("~")}
+- {t("Current Directory")}: {os.getcwd()}
+- {t("Hostname")}: {hostname}
+- {t("Local IP Address")}: {local_ip}
+- {t("Python Version")}: {platform.python_version()}
+- {t("Current Time")}: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+- {t("Shell")}: {shell_name}
+- {t("Shell Executable")}: {shell_exec}
+- {t("Shell Version")}: {shell_version}
 """
     return info_text.strip()
 

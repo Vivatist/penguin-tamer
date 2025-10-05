@@ -109,21 +109,14 @@ def debug_print_messages(messages: List[Dict[str, str]],
         "stream": True  # Всегда используется в penguin-tamer
     }
     
-    # Добавляем параметры генерации если они заданы
-    if temperature is not None:
-        api_request["temperature"] = temperature
-    if max_tokens is not None:
-        api_request["max_tokens"] = max_tokens
-    if top_p is not None and top_p != 1.0:
-        api_request["top_p"] = top_p
-    if frequency_penalty is not None and frequency_penalty != 0.0:
-        api_request["frequency_penalty"] = frequency_penalty
-    if presence_penalty is not None and presence_penalty != 0.0:
-        api_request["presence_penalty"] = presence_penalty
-    if stop is not None:
-        api_request["stop"] = stop
-    if seed is not None:
-        api_request["seed"] = seed
+    # Добавляем ВСЕ параметры генерации для полноты картины debug режима
+    api_request["temperature"] = temperature
+    api_request["max_tokens"] = max_tokens  
+    api_request["top_p"] = top_p
+    api_request["frequency_penalty"] = frequency_penalty
+    api_request["presence_penalty"] = presence_penalty
+    api_request["stop"] = stop
+    api_request["seed"] = seed
     
     # Панель с полным API запросом/ответом
     full_request_json = json.dumps(api_request, ensure_ascii=False, indent=2)
@@ -149,7 +142,7 @@ def debug_print_messages(messages: List[Dict[str, str]],
     console.print(api_panel)
     console.print()
     
-    # Роли с цветами и иконками
+    # Роли с цветами и префиксами
     role_colors = {
         "system": "magenta",
         "user": "green", 
@@ -157,9 +150,9 @@ def debug_print_messages(messages: List[Dict[str, str]],
     }
     
     role_icons = {
-        "system": "⚙️",
-        "user": "👤",
-        "assistant": "🤖"
+        "system": "[SYS]",
+        "user": "[USER]",
+        "assistant": "[AI]"
     }
     
     # Выводим каждое сообщение как отдельный JSON
@@ -171,35 +164,38 @@ def debug_print_messages(messages: List[Dict[str, str]],
         role_color = role_colors.get(role, "white")
         role_icon = role_icons.get(role, "[?]")
         
-        # Создаём JSON для конкретного сообщения
-        message_json = json.dumps(msg, ensure_ascii=False, indent=2)
+        # Создаём структуру сообщения с форматированным содержимым
+        content = msg.get("content", "")
+        content_length = len(content)
         
-        # Подсветка синтаксиса для JSON
-        message_syntax = Syntax(
-            message_json,
-            "json",
-            theme="monokai",
-            line_numbers=True,
-            word_wrap=True,
-            background_color="default"
-        )
+        # Создаем красиво отформатированное представление сообщения
+        formatted_message = f"[bold {role_color}]Role:[/bold {role_color}] {role}\n"
+        formatted_message += f"[bold {role_color}]Content:[/bold {role_color}]\n"
+        
+        # Добавляем содержимое с отступом, сохраняя форматирование
+        if content:
+            # Разбиваем на строки и добавляем отступ
+            content_lines = content.split('\n')
+            for line in content_lines:
+                formatted_message += f"  {line}\n"
+        else:
+            formatted_message += "  [dim](empty)[/dim]\n"
         
         # Заголовок с иконкой и ролью
         title = f"[bold]{role_icon} Message #{idx}: {role.upper()}[/bold]"
         
         # Статистика сообщения
-        content_length = len(msg.get("content", ""))
         stats = f"[dim]Length: {content_length} chars[/dim]"
         
-        # Создаём панель с JSON структурой
+        # Создаём панель с форматированным содержимым
         panel = Panel(
-            message_syntax,
+            formatted_message.rstrip(),
             title=title,
             subtitle=stats,
             title_align="left",
             subtitle_align="right", 
             border_style=role_color,
-            padding=(0, 1)
+            padding=(1, 1)
         )
         
         console.print(panel)
@@ -209,6 +205,5 @@ def debug_print_messages(messages: List[Dict[str, str]],
     total_chars = sum(len(msg.get("content", "")) for msg in messages)
     total_tokens_estimate = total_chars // 4  # Примерная оценка токенов (1 токен ≈ 4 символа)
     
-    stats_text = f"[dim]📊 Total: {len(messages)} messages | {total_chars} chars | ~{total_tokens_estimate} tokens[/dim]"
-    console.print(stats_text)
+    console.print(f"\n> Total: {len(messages)} messages | {total_chars} chars | ~{total_tokens_estimate} tokens")
     console.print("=" * 90 + "\n")
