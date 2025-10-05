@@ -84,7 +84,7 @@ def _get_formatter_text():
     return _formatter_text
 
 # Импортируем только самое необходимое для быстрого старта
-from penguin_tamer.llm_client import OpenRouterClient
+from penguin_tamer.llm_client import OpenRouterClient, LLMConfig
 from penguin_tamer.arguments import parse_args
 from penguin_tamer.error_handlers import connection_error
 from penguin_tamer.dialog_input import DialogInputFormatter
@@ -181,13 +181,13 @@ def _create_chat_client(console):
 
     llm_config = config.get_current_llm_config()
     
-    # Получаем все параметры генерации из конфига
-    chat_client = OpenRouterClient(
-        console=console,
+    # Создаём полную конфигурацию LLM (подключение + генерация)
+    full_llm_config = LLMConfig(
+        # Connection parameters
         api_key=llm_config["api_key"],
         api_url=llm_config["api_url"],
         model=llm_config["model"],
-        system_message=get_system_prompt(),
+        # Generation parameters
         temperature=config.get("global", "temperature", 0.7),
         max_tokens=config.get("global", "max_tokens", None),
         top_p=config.get("global", "top_p", 0.95),
@@ -195,6 +195,13 @@ def _create_chat_client(console):
         presence_penalty=config.get("global", "presence_penalty", 0.0),
         stop=config.get("global", "stop", None),
         seed=config.get("global", "seed", None)
+    )
+    
+    # Создаём клиент с единой конфигурацией
+    chat_client = OpenRouterClient(
+        console=console,
+        system_message=get_system_prompt(),
+        llm_config=full_llm_config
     )
     return chat_client
 

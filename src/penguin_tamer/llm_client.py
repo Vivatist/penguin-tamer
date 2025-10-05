@@ -1,6 +1,7 @@
 import threading
-from typing import List, Dict
+from typing import List, Dict, Optional
 import time
+from dataclasses import dataclass, field
 from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
@@ -55,7 +56,97 @@ def _get_openai_client():
     return _openai_client
 
 
+@dataclass
+class LLMConfig:
+    """Complete LLM configuration including connection and generation parameters."""
+    # Connection parameters
+    api_key: str
+    api_url: str
+    model: str
+    
+    # Generation parameters
+    temperature: float = 0.7
+    max_tokens: Optional[int] = None
+    top_p: float = 0.95
+    frequency_penalty: float = 0.0
+    presence_penalty: float = 0.0
+    stop: Optional[List[str]] = None
+    seed: Optional[int] = None
+
+
+@dataclass
 class OpenRouterClient:
+    """OpenAI-compatible streaming LLM client with Rich UI integration."""
+    
+    # Core parameters
+    console: object
+    system_message: List[Dict[str, str]]
+    llm_config: LLMConfig
+    
+    # Internal state (not part of constructor)
+    messages: List[Dict[str, str]] = field(init=False)
+    _client: Optional[object] = field(default=None, init=False)
+    
+    def __post_init__(self):
+        """Initialize internal state after dataclass construction."""
+        self.messages = self.system_message.copy()
+    
+    @classmethod
+    def create(cls, console, api_key: str, api_url: str, model: str,
+               system_message: List[Dict[str, str]], **llm_params):
+        """Factory method for backward compatibility with old constructor signature."""
+        llm_config = LLMConfig(
+            api_key=api_key,
+            api_url=api_url,
+            model=model,
+            **llm_params
+        )
+        return cls(
+            console=console,
+            system_message=system_message,
+            llm_config=llm_config
+        )
+    
+    # Properties for easy access to all LLM parameters
+    @property
+    def api_key(self) -> str:
+        return self.llm_config.api_key
+    
+    @property
+    def api_url(self) -> str:
+        return self.llm_config.api_url
+    
+    @property
+    def model(self) -> str:
+        return self.llm_config.model
+    
+    @property
+    def temperature(self) -> float:
+        return self.llm_config.temperature
+    
+    @property
+    def max_tokens(self) -> Optional[int]:
+        return self.llm_config.max_tokens
+    
+    @property
+    def top_p(self) -> float:
+        return self.llm_config.top_p
+    
+    @property
+    def frequency_penalty(self) -> float:
+        return self.llm_config.frequency_penalty
+    
+    @property
+    def presence_penalty(self) -> float:
+        return self.llm_config.presence_penalty
+    
+    @property
+    def stop(self) -> Optional[List[str]]:
+        return self.llm_config.stop
+    
+    @property
+    def seed(self) -> Optional[int]:
+        return self.llm_config.seed
 
     def _spinner(self, stop_spinner: threading.Event, status_message: dict) -> None:
         """Визуальный индикатор работы ИИ с динамическим статусом.
@@ -70,29 +161,6 @@ class OpenRouterClient:
                     time.sleep(0.1)
         except KeyboardInterrupt:
             pass
-
-    def __init__(self, console, api_key: str, api_url: str, model: str,
-                 system_message: List[dict[str, str]],
-                 temperature: float = 0.7,
-                 max_tokens: int = None,
-                 top_p: float = 0.95,
-                 frequency_penalty: float = 0.0,
-                 presence_penalty: float = 0.0,
-                 stop: list = None,
-                 seed: int = None):
-        self.console = console
-        self.api_key = api_key
-        self.api_url = api_url
-        self.model = model
-        self.temperature = temperature
-        self.max_tokens = max_tokens
-        self.top_p = top_p
-        self.frequency_penalty = frequency_penalty
-        self.presence_penalty = presence_penalty
-        self.stop = stop
-        self.seed = seed
-        self.messages: List[Dict[str, str]] = system_message.copy()
-        self._client = None  # Ленивая инициализация
 
     @property
     def client(self):
