@@ -37,14 +37,7 @@ def _get_syntax():
 
 
 def debug_print_messages(messages: List[Dict[str, str]], 
-                        model: str = None, 
-                        temperature: float = None,
-                        max_tokens: int = None,
-                        top_p: float = None,
-                        frequency_penalty: float = None,
-                        presence_penalty: float = None,
-                        stop: list = None,
-                        seed: int = None,
+                        client = None,
                         phase: str = "request") -> None:
     """
     Выводит полную JSON структуру сообщений для LLM в удобном читаемом формате.
@@ -54,23 +47,14 @@ def debug_print_messages(messages: List[Dict[str, str]],
     
     Args:
         messages: Список сообщений в формате OpenAI (role, content)
-        model: Название модели
-        temperature: Значение temperature (0.0-2.0)
-        max_tokens: Максимум токенов в ответе
-        top_p: Nucleus sampling (0.0-1.0)
-        frequency_penalty: Штраф за повторы (-2.0 до 2.0)
-        presence_penalty: Штраф за упоминание (-2.0 до 2.0)
-        stop: Стоп-последовательности
-        seed: Seed для детерминизма
+        client: Объект OpenRouterClient с конфигурацией LLM
         phase: Фаза отладки ("request" или "response")
     
     Example:
         >>> debug_print_messages(
         ...     [{"role": "system", "content": "You are a helper"},
         ...      {"role": "user", "content": "Hello!"}],
-        ...     model="gpt-4",
-        ...     temperature=0.7,
-        ...     max_tokens=2000,
+        ...     client=openrouter_client,
         ...     phase="request"
         ... )
     """
@@ -80,10 +64,31 @@ def debug_print_messages(messages: List[Dict[str, str]],
     
     console = Console()
     
+    # Извлекаем параметры из клиента
+    if client:
+        model = client.model
+        temperature = client.temperature
+        max_tokens = client.max_tokens
+        top_p = client.top_p
+        frequency_penalty = client.frequency_penalty
+        presence_penalty = client.presence_penalty
+        stop = client.stop
+        seed = client.seed
+    else:
+        # Fallback значения если клиент не передан
+        model = None
+        temperature = None
+        max_tokens = None
+        top_p = None
+        frequency_penalty = None
+        presence_penalty = None
+        stop = None
+        seed = None
+    
     # Заголовок с основными параметрами
     phase_info = {
-        "request": ("🔍 Raw LLM Request Data", "🚀 Complete API Request"),
-        "response": ("📥 LLM Response Data", "📋 Full Conversation State")
+        "request": (">>> Raw LLM Request Data", ">>> Complete API Request"),
+        "response": ("<<< LLM Response Data", "<<< Full Conversation State")
     }
     
     main_title, api_title = phase_info.get(phase, phase_info["request"])
@@ -158,13 +163,13 @@ def debug_print_messages(messages: List[Dict[str, str]],
     }
     
     # Выводим каждое сообщение как отдельный JSON
-    console.print(f"[bold white]📋 Messages Breakdown ({len(messages)} total):[/bold white]")
+    console.print(f"[bold white]>>> Messages Breakdown ({len(messages)} total):[/bold white]")
     console.print()
     
     for idx, msg in enumerate(messages, 1):
         role = msg.get("role", "unknown")
         role_color = role_colors.get(role, "white")
-        role_icon = role_icons.get(role, "❓")
+        role_icon = role_icons.get(role, "[?]")
         
         # Создаём JSON для конкретного сообщения
         message_json = json.dumps(msg, ensure_ascii=False, indent=2)

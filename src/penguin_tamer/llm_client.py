@@ -183,21 +183,14 @@ class OpenRouterClient:
         reply_parts = []
 
         # Debug mode: показываем структуру запроса
-        import os
-        if os.getenv("PT_DEBUG") == "1" or config.get("global", "debug_mode", False):
+
+        if config.get("global", "debug_mode", False):
             stop_spinner.set()  # Останавливаем спиннер для чистого вывода
             if spinner_thread.is_alive():
                 spinner_thread.join(timeout=0.1)
             debug_print_messages(
-                self.messages, 
-                model=self.model, 
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                top_p=self.top_p,
-                frequency_penalty=self.frequency_penalty,
-                presence_penalty=self.presence_penalty,
-                stop=self.stop,
-                seed=self.seed,
+                self.messages,
+                client=self,
                 phase="request"
             )
             # Перезапускаем спиннер
@@ -279,18 +272,10 @@ class OpenRouterClient:
             self.messages.append({"role": "assistant", "content": reply})
             
             # Debug mode: показываем структуру ответа
-            import os
-            if os.getenv("PT_DEBUG") == "1" or config.get("global", "debug_mode", False):
+            if config.get("global", "debug_mode", False):
                 debug_print_messages(
                     self.messages,  # Показываем все сообщения включая новый ответ
-                    model=self.model,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    top_p=self.top_p,
-                    frequency_penalty=self.frequency_penalty,
-                    presence_penalty=self.presence_penalty,
-                    stop=self.stop,
-                    seed=self.seed,
+                    client=self,
                     phase="response"
                 )
             
