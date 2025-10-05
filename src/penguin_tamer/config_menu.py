@@ -71,7 +71,7 @@ def main_menu():
                          choices=[
                             (t('Select current LLM'), 'select'),
                             (t('Model management'), 'llm'),
-                            (t('Generation temperature'), 'temp'),
+                            (t('Generation parameters'), 'params'),
                             (t('User content'), 'content'),
                             (t('System'), 'system'),
                             (t('Show current settings'), 'overview'),
@@ -89,12 +89,12 @@ def main_menu():
 
         if choice == 'llm':
             llm_management_menu()
+        elif choice == 'params':
+            generation_parameters_menu()
         elif choice == 'system':
             system_settings_menu()
         elif choice == 'content':
             edit_user_content()
-        elif choice == 'temp':
-            set_temperature()
         elif choice == 'select':
             select_current_llm()
         elif choice == 'overview':
@@ -404,8 +404,306 @@ def set_refresh_rate():
             print(t('Please enter a valid integer'))
 
 
+def generation_parameters_menu():
+    """Menu for generation parameters."""
+    while True:
+        questions = [
+            inquirer.List('choice',
+                         message=t("Generation Parameters"),
+                         choices=[
+                            (t('Temperature'), 'temp'),
+                            (t('Max tokens'), 'max_tokens'),
+                            (t('Top P'), 'top_p'),
+                            (t('Frequency penalty'), 'freq_penalty'),
+                            (t('Presence penalty'), 'pres_penalty'),
+                            (t('Seed'), 'seed'),
+                            (t('Back'), 'back')
+                         ],
+                         carousel=True)
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            break
+
+        choice = answers['choice']
+
+        if choice == 'temp':
+            set_temperature()
+        elif choice == 'max_tokens':
+            set_max_tokens()
+        elif choice == 'top_p':
+            set_top_p()
+        elif choice == 'freq_penalty':
+            set_frequency_penalty()
+        elif choice == 'pres_penalty':
+            set_presence_penalty()
+        elif choice == 'seed':
+            set_seed()
+        elif choice == 'back':
+            break
+
+
 def set_temperature():
-    """Set generation temperature (0.0–1.0)."""
+    """Set generation temperature (0.0–2.0)."""
+    current = config.temperature
+    print(f"\n{t('Current temperature')}: {current}")
+    print(t('Temperature hint'))
+    print(t('Enter a value between 0.0 and 2.0 (dot or comma).'))
+
+    while True:
+        questions = [
+            inquirer.Text(
+                'value',
+                message=t('Temperature (0.0–2.0)'),
+                default=str(current)
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            print(t("Temperature change cancelled"))
+            return
+
+        raw = str(answers.get('value', '')).strip()
+        if raw == "":
+            print(t("Temperature change cancelled"))
+            return
+
+        raw = raw.replace(',', '.')
+        try:
+            value = float(raw)
+        except ValueError:
+            print(t('Invalid number format.'))
+            continue
+
+        if not (0.0 <= value <= 2.0):
+            print(t('Temperature must be between 0.0 and 2.0.'))
+            continue
+
+        config.temperature = value
+        print(f"{t('Temperature updated')}: {value}")
+        return
+
+
+def set_max_tokens():
+    """Set max tokens (null for unlimited)."""
+    current = config.max_tokens
+    current_str = str(current) if current is not None else "null"
+    print(f"\n{t('Current max tokens')}: {current_str}")
+    print(t('Max tokens hint'))
+    print(t('Enter a number or null for unlimited.'))
+
+    while True:
+        questions = [
+            inquirer.Text(
+                'value',
+                message=t('Max tokens (e.g., 2000 or null)'),
+                default=current_str
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            print(t("Max tokens change cancelled"))
+            return
+
+        raw = str(answers.get('value', '')).strip()
+        if raw == "":
+            print(t("Max tokens change cancelled"))
+            return
+
+        if raw.lower() in ['null', 'none', '']:
+            config.max_tokens = None
+            print(t('Max tokens set to unlimited'))
+            return
+
+        try:
+            value = int(raw)
+        except ValueError:
+            print(t('Invalid number format.'))
+            continue
+
+        if value < 1:
+            print(t('Max tokens must be positive.'))
+            continue
+
+        config.max_tokens = value
+        print(f"{t('Max tokens updated')}: {value}")
+        return
+
+
+def set_top_p():
+    """Set top_p (0.0–1.0)."""
+    current = config.top_p
+    print(f"\n{t('Current top P')}: {current}")
+    print(t('Top P hint'))
+    print(t('Enter a value between 0.0 and 1.0 (dot or comma).'))
+
+    while True:
+        questions = [
+            inquirer.Text(
+                'value',
+                message=t('Top P (0.0–1.0)'),
+                default=str(current)
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            print(t("Top P change cancelled"))
+            return
+
+        raw = str(answers.get('value', '')).strip()
+        if raw == "":
+            print(t("Top P change cancelled"))
+            return
+
+        raw = raw.replace(',', '.')
+        try:
+            value = float(raw)
+        except ValueError:
+            print(t('Invalid number format.'))
+            continue
+
+        if not (0.0 <= value <= 1.0):
+            print(t('Top P must be between 0.0 and 1.0.'))
+            continue
+
+        config.top_p = value
+        print(f"{t('Top P updated')}: {value}")
+        return
+
+
+def set_frequency_penalty():
+    """Set frequency penalty (-2.0 to 2.0)."""
+    current = config.frequency_penalty
+    print(f"\n{t('Current frequency penalty')}: {current}")
+    print(t('Frequency penalty hint'))
+    print(t('Enter a value between -2.0 and 2.0 (dot or comma).'))
+
+    while True:
+        questions = [
+            inquirer.Text(
+                'value',
+                message=t('Frequency penalty (-2.0–2.0)'),
+                default=str(current)
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            print(t("Frequency penalty change cancelled"))
+            return
+
+        raw = str(answers.get('value', '')).strip()
+        if raw == "":
+            print(t("Frequency penalty change cancelled"))
+            return
+
+        raw = raw.replace(',', '.')
+        try:
+            value = float(raw)
+        except ValueError:
+            print(t('Invalid number format.'))
+            continue
+
+        if not (-2.0 <= value <= 2.0):
+            print(t('Frequency penalty must be between -2.0 and 2.0.'))
+            continue
+
+        config.frequency_penalty = value
+        print(f"{t('Frequency penalty updated')}: {value}")
+        return
+
+
+def set_presence_penalty():
+    """Set presence penalty (-2.0 to 2.0)."""
+    current = config.presence_penalty
+    print(f"\n{t('Current presence penalty')}: {current}")
+    print(t('Presence penalty hint'))
+    print(t('Enter a value between -2.0 and 2.0 (dot or comma).'))
+
+    while True:
+        questions = [
+            inquirer.Text(
+                'value',
+                message=t('Presence penalty (-2.0–2.0)'),
+                default=str(current)
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            print(t("Presence penalty change cancelled"))
+            return
+
+        raw = str(answers.get('value', '')).strip()
+        if raw == "":
+            print(t("Presence penalty change cancelled"))
+            return
+
+        raw = raw.replace(',', '.')
+        try:
+            value = float(raw)
+        except ValueError:
+            print(t('Invalid number format.'))
+            continue
+
+        if not (-2.0 <= value <= 2.0):
+            print(t('Presence penalty must be between -2.0 and 2.0.'))
+            continue
+
+        config.presence_penalty = value
+        print(f"{t('Presence penalty updated')}: {value}")
+        return
+
+
+def set_seed():
+    """Set seed for determinism (null for random)."""
+    current = config.seed
+    current_str = str(current) if current is not None else "null"
+    print(f"\n{t('Current seed')}: {current_str}")
+    print(t('Seed hint'))
+    print(t('Enter an integer or null for random.'))
+
+    while True:
+        questions = [
+            inquirer.Text(
+                'value',
+                message=t('Seed (e.g., 42 or null)'),
+                default=current_str
+            )
+        ]
+
+        answers = prompt_clean(questions)
+        if not answers:
+            print(t("Seed change cancelled"))
+            return
+
+        raw = str(answers.get('value', '')).strip()
+        if raw == "":
+            print(t("Seed change cancelled"))
+            return
+
+        if raw.lower() in ['null', 'none', '']:
+            config.seed = None
+            print(t('Seed set to random'))
+            return
+
+        try:
+            value = int(raw)
+        except ValueError:
+            print(t('Invalid number format.'))
+            continue
+
+        config.seed = value
+        print(f"{t('Seed updated')}: {value}")
+        return
+
+
+def set_temperature_old():
+    """Set generation temperature (0.0–1.0). DEPRECATED - use generation_parameters_menu."""
     current = config.temperature
     print(f"\nCurrent temperature: {current}")
     print("Hint: Temperature controls randomness/creativity of responses.")

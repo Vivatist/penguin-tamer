@@ -230,6 +230,56 @@ class ConfigManager:
         """Устанавливает температуру генерации."""
         self.set("global", "temperature", value)
 
+    @property
+    def max_tokens(self) -> int:
+        """Максимум токенов в ответе."""
+        return self.get("global", "max_tokens", None)
+
+    @max_tokens.setter
+    def max_tokens(self, value: int) -> None:
+        """Устанавливает максимум токенов."""
+        self.set("global", "max_tokens", value)
+
+    @property
+    def top_p(self) -> float:
+        """Nucleus sampling (top_p)."""
+        return self.get("global", "top_p", 0.95)
+
+    @top_p.setter
+    def top_p(self, value: float) -> None:
+        """Устанавливает top_p."""
+        self.set("global", "top_p", value)
+
+    @property
+    def frequency_penalty(self) -> float:
+        """Штраф за повторы."""
+        return self.get("global", "frequency_penalty", 0.0)
+
+    @frequency_penalty.setter
+    def frequency_penalty(self, value: float) -> None:
+        """Устанавливает штраф за повторы."""
+        self.set("global", "frequency_penalty", value)
+
+    @property
+    def presence_penalty(self) -> float:
+        """Штраф за упоминание."""
+        return self.get("global", "presence_penalty", 0.0)
+
+    @presence_penalty.setter
+    def presence_penalty(self, value: float) -> None:
+        """Устанавливает штраф за упоминание."""
+        self.set("global", "presence_penalty", value)
+
+    @property
+    def seed(self) -> int:
+        """Seed для детерминизма."""
+        return self.get("global", "seed", None)
+
+    @seed.setter
+    def seed(self, value: int) -> None:
+        """Устанавливает seed."""
+        self.set("global", "seed", value)
+
     def get_available_llms(self) -> List[str]:
         """
         Возвращает список доступных LLM.

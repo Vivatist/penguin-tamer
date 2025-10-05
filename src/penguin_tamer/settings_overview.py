@@ -33,13 +33,18 @@ def _plain_overview_print():
     else:
         print("  " + t("No settings found"))
 
-    # Контент и температура
-    print("\n" + t("Content and temperature") + ":")
+    # Контент и параметры генерации
+    print("\n" + t("Content and generation parameters") + ":")
     content = config.user_content or t("(empty)")
     print("  " + t("Content") + ":")
     for line in str(content).splitlines() or [content]:
         print(f"    {line}")
-    print(f"  {t('Temperature')}: {config.temperature}")
+    print(f"\n  {t('Temperature')}: {config.temperature}")
+    print(f"  {t('Max tokens')}: {config.max_tokens if config.max_tokens is not None else t('unlimited')}")
+    print(f"  Top P: {config.top_p}")
+    print(f"  {t('Frequency penalty')}: {config.frequency_penalty}")
+    print(f"  {t('Presence penalty')}: {config.presence_penalty}")
+    print(f"  Seed: {config.seed if config.seed is not None else t('random')}")
 
     # Все LLM
     print("\n" + t("Available LLMs") + ":")
@@ -106,14 +111,23 @@ def print_settings_overview(console: Optional[object] = None) -> None:
 
     console.print(Panel.fit("\n".join(current_lines), title=t("Current LLM")))
 
-    # Контент и температура
+    # Контент и параметры генерации
     content = config.user_content or t("(empty)")
     content_lines = [t("Content") + ":"]
     if content:
         for line in str(content).splitlines() or [content]:
             content_lines.append(f"  {line}")
-    content_lines.append(f"\n{t('Temperature')}: [bold]{config.temperature}[/bold]")
-    console.print(Panel.fit("\n".join(content_lines), title=t("Content & Temperature")))
+    
+    # Параметры генерации
+    content_lines.append(f"\n[bold]{t('Generation parameters')}:[/bold]")
+    content_lines.append(f"{t('Temperature')}: [cyan]{config.temperature}[/cyan]")
+    content_lines.append(f"{t('Max tokens')}: [cyan]{config.max_tokens if config.max_tokens is not None else t('unlimited')}[/cyan]")
+    content_lines.append(f"Top P: [cyan]{config.top_p}[/cyan]")
+    content_lines.append(f"{t('Frequency penalty')}: [cyan]{config.frequency_penalty}[/cyan]")
+    content_lines.append(f"{t('Presence penalty')}: [cyan]{config.presence_penalty}[/cyan]")
+    content_lines.append(f"Seed: [cyan]{config.seed if config.seed is not None else t('random')}[/cyan]")
+    
+    console.print(Panel.fit("\n".join(content_lines), title=t("Content & Generation")))
 
     # Все LLM в таблице
     llms = config.get_available_llms() or []

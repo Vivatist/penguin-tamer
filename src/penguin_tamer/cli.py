@@ -88,29 +88,7 @@ from penguin_tamer.llm_client import OpenRouterClient
 from penguin_tamer.arguments import parse_args
 from penguin_tamer.error_handlers import connection_error
 from penguin_tamer.dialog_input import DialogInputFormatter
-
-educational_text = (
-    "ALWAYS number code blocks in your replies so the user can reference them. "
-    "Numbering format: [Code #1]\n```bash ... ```, [Code #2]\n```bash ... ```, "
-    "etc. Insert the numbering BEFORE the block "
-    "If there are multiple code blocks, number them sequentially. "
-    "In each new reply, start numbering from 1 again. Do not discuss numbering; just do it automatically."
-)
-EDUCATIONAL_CONTENT = [{'role': 'user', 'content': educational_text}]
-
-def get_system_content() -> str:
-    """Construct system prompt content with lazy system info loading"""
-    user_content = config.get("global", "user_content", "")
-
-    # Базовая информация без вызова медленной системной информации
-    additional_content_main = (
-        "Your name is Penguin Tamer, a sysadmin assistant. "
-        "You and the user always work in a terminal. "
-        "Respond based on the user's environment and commands. "
-    )
-    
-    system_content = f"{user_content} {additional_content_main}".strip()
-    return system_content
+from penguin_tamer.prompts import get_system_prompt, get_educational_prompt
 
 
 # === Основная логика ===
@@ -131,18 +109,16 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     # Создаем форматтер ввода
     input_formatter = DialogInputFormatter(history_file_path)
 
-    # Use module global EDUCATIONAL_CONTENT inside the function
-    global EDUCATIONAL_CONTENT
-
+    # Get educational prompt for first message
+    educational_prompt = [get_educational_prompt()]
     last_code_blocks = []  # code blocks from the last AI answer
 
     # If there is an initial prompt, process it
     if initial_user_prompt:
-        initial_user_prompt
         try:
             Markdown = _get_markdown_class()
-            reply = chat_client.ask_stream(initial_user_prompt, educational_content=EDUCATIONAL_CONTENT)
-            EDUCATIONAL_CONTENT = []  # clear educational content after first use
+            reply = chat_client.ask_stream(initial_user_prompt, educational_prompt=educational_prompt)
+            educational_prompt = []  # clear educational prompt after first use
             last_code_blocks = _get_formatter_text()(reply)
         except Exception as e:
             console.print(connection_error(e))
@@ -186,8 +162,8 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
 
             Markdown = _get_markdown_class()
-            reply = chat_client.ask_stream(user_prompt, educational_content=EDUCATIONAL_CONTENT)
-            EDUCATIONAL_CONTENT = []  # clear educational content after first use
+            reply = chat_client.ask_stream(user_prompt, educational_prompt=educational_prompt)
+            educational_prompt = []  # clear educational prompt after first use
             last_code_blocks = _get_formatter_text()(reply)
             console.print()  # new line after answer
 
@@ -205,13 +181,20 @@ def _create_chat_client(console):
 
     llm_config = config.get_current_llm_config()
     
+    # Получаем все параметры генерации из конфига
     chat_client = OpenRouterClient(
         console=console,
         api_key=llm_config["api_key"],
         api_url=llm_config["api_url"],
         model=llm_config["model"],
-        system_content=get_system_content(),
-        temperature=config.get("global", "temperature", 0.7)
+        system_message=get_system_prompt(),
+        temperature=config.get("global", "temperature", 0.7),
+        max_tokens=config.get("global", "max_tokens", None),
+        top_p=config.get("global", "top_p", 0.95),
+        frequency_penalty=config.get("global", "frequency_penalty", 0.0),
+        presence_penalty=config.get("global", "presence_penalty", 0.0),
+        stop=config.get("global", "stop", None),
+        seed=config.get("global", "seed", None)
     )
     return chat_client
 
