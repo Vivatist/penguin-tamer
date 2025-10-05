@@ -157,7 +157,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                     console.print()
                     continue
                 else:
-                    console.print(f"[dim]Code block #{user_prompt} not found.[/dim]")
+                    console.print(t("[dim]Code block #{number} not found.[/dim]").format(number=user_prompt))
                     continue
 
 

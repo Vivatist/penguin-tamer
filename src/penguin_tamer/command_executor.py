@@ -253,9 +253,10 @@ def execute_and_handle_result(console: Console, code: str) -> None:
         try:
             process = executor.execute(code)
             
-            # Выводим только код завершения, поскольку вывод уже был показан в реальном времени
+            # Выводим код завершения только при ошибке (не равен 0)
             exit_code = process.returncode
-            console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
+            if exit_code != 0:
+                console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=exit_code))
             
             # Показываем итоговую сводку только если есть stderr или особые случаи
             if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):

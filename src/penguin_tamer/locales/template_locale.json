@@ -84,5 +84,6 @@
   "Current Time": "Текущее время",
   "Shell": "Shell",
   "Shell Executable": "Shell executable", 
-  "Shell Version": "Shell version"
+  "Shell Version": "Shell version",
+  "[dim]Code block #{number} not found.[/dim]": "[dim]Блок кода #{number} не найден.[/dim]"
 }
