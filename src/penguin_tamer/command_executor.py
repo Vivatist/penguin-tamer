@@ -32,6 +32,7 @@ class LinuxCommandExecutor(CommandExecutor):
     
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bash-команды в Linux с выводом в реальном времени"""
+        import threading
         
         # Используем Popen для вывода в реальном времени
         process = subprocess.Popen(
@@ -42,9 +43,34 @@ class LinuxCommandExecutor(CommandExecutor):
             text=True  # Используем текстовый режим для автоматического декодирования
         )
         
-        # Ждем завершения и получаем вывод
+        # Буферы для накопления вывода
+        stdout_lines = []
+        stderr_lines = []
+        
+        # Функция для чтения stderr в отдельном потоке
+        def read_stderr():
+            if process.stderr:
+                for line in process.stderr:
+                    stderr_lines.append(line.rstrip('\n'))
+        
+        # Запускаем поток для чтения stderr
+        stderr_thread = threading.Thread(target=read_stderr, daemon=True)
+        stderr_thread.start()
+        
+        # Читаем stdout построчно в основном потоке и сразу выводим
         try:
-            stdout, stderr = process.communicate()
+            if process.stdout:
+                for line in process.stdout:
+                    line_clean = line.rstrip('\n')
+                    stdout_lines.append(line_clean)
+                    print(line_clean)  # Выводим сразу!
+            
+            # Ждем завершения процесса
+            process.wait()
+            
+            # Даем потоку stderr время завершиться
+            stderr_thread.join(timeout=1)
+            
         except KeyboardInterrupt:
             # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
             try:
@@ -53,20 +79,16 @@ class LinuxCommandExecutor(CommandExecutor):
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
+            # Ждем поток stderr
+            stderr_thread.join(timeout=1)
             raise
-        
-        # Выводим stdout в реальном времени (после завершения)
-        if stdout:
-            for line in stdout.strip().split('\n'):
-                if line:
-                    print(line)
         
         # Создаем объект CompletedProcess для совместимости
         result = subprocess.CompletedProcess(
             args=code_block,
             returncode=process.returncode,
-            stdout=stdout,
-            stderr=stderr
+            stdout='\n'.join(stdout_lines),
+            stderr='\n'.join(stderr_lines)
         )
         
         return result
@@ -96,6 +118,8 @@ class WindowsCommandExecutor(CommandExecutor):
 
     def execute(self, code_block: str) -> subprocess.CompletedProcess:
         """Выполняет bat-команды в Windows через временный файл с выводом в реальном времени"""
+        import threading
+        
         # Предобработка кода для Windows - отключаем echo для предотвращения дублирования команд
         code = '@echo off\n' + code_block.replace('@echo off', '')
         code = code.replace('pause', 'rem pause')
@@ -104,7 +128,7 @@ class WindowsCommandExecutor(CommandExecutor):
         fd, temp_path = tempfile.mkstemp(suffix='.bat')
         
         try:
-            with os.fdopen(fd, 'w', encoding='cp1251', errors='replace') as f:
+            with os.fdopen(fd, 'w', encoding='cp866', errors='replace') as f:
                 f.write(code)
             
             # Запускаем команду
@@ -117,9 +141,39 @@ class WindowsCommandExecutor(CommandExecutor):
                 creationflags=subprocess.CREATE_NO_WINDOW  # Предотвращаем создание окна консоли
             )
             
-            # Ждем завершения и получаем вывод
+            # Буферы для накопления вывода
+            stdout_lines = []
+            stderr_lines = []
+            
+            # Функция для чтения stderr в отдельном потоке
+            def read_stderr():
+                if process.stderr:
+                    for line in process.stderr:
+                        if line:
+                            decoded = self._decode_line_windows(line)
+                            if decoded:
+                                stderr_lines.append(decoded)
+            
+            # Запускаем поток для чтения stderr
+            stderr_thread = threading.Thread(target=read_stderr, daemon=True)
+            stderr_thread.start()
+            
+            # Читаем stdout построчно в основном потоке и сразу выводим
             try:
-                stdout_bytes, stderr_bytes = process.communicate()
+                if process.stdout:
+                    for line in process.stdout:
+                        if line:
+                            decoded = self._decode_line_windows(line)
+                            if decoded:
+                                stdout_lines.append(decoded)
+                                print(decoded)  # Выводим сразу!
+                
+                # Ждем завершения процесса
+                process.wait()
+                
+                # Даем потоку stderr время завершиться
+                stderr_thread.join(timeout=1)
+                
             except KeyboardInterrupt:
                 # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
                 try:
@@ -128,28 +182,16 @@ class WindowsCommandExecutor(CommandExecutor):
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
+                # Ждем поток stderr
+                stderr_thread.join(timeout=1)
                 raise
-            
-            # Декодируем stdout
-            stdout = ''
-            if stdout_bytes:
-                stdout = self._decode_line_windows(stdout_bytes)
-                # Выводим stdout
-                for line in stdout.split('\n'):
-                    if line.strip():
-                        print(line)
-            
-            # Декодируем stderr
-            stderr = ''
-            if stderr_bytes:
-                stderr = self._decode_line_windows(stderr_bytes)
             
             # Создаем объект CompletedProcess для совместимости
             result = subprocess.CompletedProcess(
                 args=[temp_path],
                 returncode=process.returncode,
-                stdout=stdout,
-                stderr=stderr
+                stdout='\n'.join(stdout_lines),
+                stderr='\n'.join(stderr_lines)
             )
             
             return result
