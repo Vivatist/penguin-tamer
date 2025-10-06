@@ -94,8 +94,8 @@ class ResponsiveButtonRow(Container):
         """Handle container resize to adapt layout."""
         container_width = self.size.width
         
-        # Calculate how many buttons fit: each button ~22 chars (20 + margins)
-        button_width = 22
+        # Calculate how many buttons fit: each button ~19 chars (17 content + 2 margins)
+        button_width = 19
         buttons_per_row = max(1, container_width // button_width)
         buttons_per_row = min(buttons_per_row, len(self.buttons_data))
         
