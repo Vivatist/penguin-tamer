@@ -105,7 +105,7 @@ class InputDialog(ModalScreen):
             input_field = self.query_one("#input-field", Input)
             value = input_field.value
             if self.validator and not self.validator(value):
-                self.notify("Неверный формат ввода", severity="error")
+                self.notify("❌ Неверный формат ввода", severity="error")
                 return
             self.result = value
         self.dismiss(self.result)
@@ -149,39 +149,39 @@ class StatusPanel(Static):
             }
             theme_display = theme_names.get(current_theme, current_theme)
 
-            content = f"""[bold cyan]ТЕКУЩАЯ КОНФИГУРАЦИЯ[/bold cyan]
+            content = f"""[bold cyan]📊 ТЕКУЩАЯ КОНФИГУРАЦИЯ[/bold cyan]
 
-[bold]Текущая LLM:[/bold] {current_llm}{llm_info}
+[bold]🤖 Текущая LLM:[/bold] {current_llm}{llm_info}
 [dim]Выбранная модель для генерации[/dim]
 
-[bold]Температура:[/bold] {config.temperature}
+[bold]⚙️  Температура:[/bold] {config.temperature}
 [dim]Креативность (0.0-2.0)[/dim]
 
-[bold]Максимум токенов:[/bold] {config.max_tokens or 'Без ограничений'}
+[bold]📏 Максимум токенов:[/bold] {config.max_tokens or 'Без ограничений'}
 [dim]Длина ответа[/dim]
 
-[bold]Top P:[/bold] {config.top_p}
+[bold]🎯 Top P:[/bold] {config.top_p}
 [dim]Nucleus sampling (0.0-1.0)[/dim]
 
-[bold]Штраф частоты:[/bold] {config.frequency_penalty}
+[bold]🔄 Штраф частоты:[/bold] {config.frequency_penalty}
 [dim]Снижает повторения (-2.0 до 2.0)[/dim]
 
-[bold]Штраф присутствия:[/bold] {config.presence_penalty}
+[bold]👁️  Штраф присутствия:[/bold] {config.presence_penalty}
 [dim]Разнообразие тем (-2.0 до 2.0)[/dim]
 
-[bold]Seed:[/bold] {config.seed or 'Случайный'}
+[bold]🎲 Seed:[/bold] {config.seed or 'Случайный'}
 [dim]Для воспроизводимости[/dim]
 
-[bold]Контент:[/bold]
+[bold]📝 Контент:[/bold]
 [dim]{content_preview}[/dim]
 
-[bold]Язык:[/bold] {lang_display}
-[bold]Тема:[/bold] {theme_display}
-[bold]Отладка:[/bold] {'Вкл' if getattr(config, 'debug', False) else 'Выкл'}
+[bold]🌐 Язык:[/bold] {lang_display}
+[bold]🎨 Тема:[/bold] {theme_display}
+[bold]🐛 Отладка:[/bold] {'Вкл' if getattr(config, 'debug', False) else 'Выкл'}
 """
             self.update(content)
         except Exception as e:
-            self.update(f"[red]Ошибка: {e}[/red]")
+            self.update(f"[red]❌ Ошибка: {e}[/red]")
 
 
 class ConfigMenuApp(App):
@@ -194,19 +194,27 @@ class ConfigMenuApp(App):
 
     #left-panel {
         width: 65%;
+        height: 100%;
         border: solid $primary;
         padding: 1;
     }
 
     #right-panel {
         width: 35%;
+        height: 100%;
         border: solid $secondary;
         padding: 1;
         margin-left: 1;
     }
 
+    TabbedContent {
+        height: 100%;
+        width: 100%;
+    }
+
     TabPane {
-        padding: 1;
+        padding: 2;
+        overflow-y: auto;
     }
 
     .tab-header {
@@ -244,11 +252,14 @@ class ConfigMenuApp(App):
     }
 
     DataTable {
+        min-height: 15;
+        max-height: 20;
         margin-bottom: 1;
         border: solid $primary;
     }
 
     .button-row {
+        height: auto;
         margin-bottom: 1;
         margin-top: 1;
     }
@@ -258,7 +269,7 @@ class ConfigMenuApp(App):
     }
 
     TextArea {
-        height: 15;
+        min-height: 20;
         margin-bottom: 1;
         border: solid $primary;
     }
@@ -272,9 +283,18 @@ class ConfigMenuApp(App):
         min-width: 12;
     }
 
+    Container {
+        height: auto;
+    }
+
+    Horizontal {
+        height: auto;
+    }
+
     /* Dialog styles */
     .dialog-container {
         width: 60;
+        height: auto;
         background: $surface;
         border: thick $primary;
         padding: 2;
@@ -345,7 +365,7 @@ class ConfigMenuApp(App):
         Binding("ctrl+r", "refresh_status", "Обновить"),
     ]
 
-    TITLE = "Penguin Tamer - Конфигурация"
+    TITLE = "🐧 Penguin Tamer - Конфигурация"
     SUB_TITLE = "Управление настройками ИИ"
 
     def compose(self) -> ComposeResult:
@@ -357,9 +377,9 @@ class ConfigMenuApp(App):
             with Vertical(id="left-panel"):
                 with TabbedContent():
                     # Tab 1: LLM Selection
-                    with TabPane("Выбор LLM", id="tab-llm-select"):
+                    with TabPane("🤖 Выбор LLM", id="tab-llm-select"):
                         yield Static(
-                            "[bold]ВЫБОР ТЕКУЩЕЙ LLM[/bold]\n"
+                            "[bold]🤖 ВЫБОР ТЕКУЩЕЙ LLM[/bold]\n"
                             "[dim]Выберите модель для генерации ответов[/dim]",
                             classes="tab-header",
                         )
@@ -368,36 +388,38 @@ class ConfigMenuApp(App):
                             f"Текущая: [bold cyan]{current_llm}[/bold cyan]",
                             classes="param-current",
                         )
-                        selector_dt = DataTable(id="llm-selector-table", show_header=True, cursor_type="row")
-                        yield selector_dt
+                        table = DataTable(id="llm-selector-table")
+                        table.add_columns("✓", "Название", "Модель")
+                        yield table
                         with Horizontal(classes="button-row"):
                             yield Button(
-                                "Выбрать",
+                                "✅ Выбрать",
                                 id="select-llm-btn",
                                 variant="success",
                             )
                             yield Button(
-                                "Обновить", id="refresh-llm-btn", variant="default"
+                                "🔄 Обновить", id="refresh-llm-btn", variant="default"
                             )
 
                     # Tab 2: LLM Management
-                    with TabPane("Управление LLM", id="tab-llm-manage"):
+                    with TabPane("⚙️ Управление LLM", id="tab-llm-manage"):
                         yield Static(
-                            "[bold]УПРАВЛЕНИЕ LLM[/bold]\n"
+                            "[bold]⚙️ УПРАВЛЕНИЕ LLM[/bold]\n"
                             "[dim]Добавление, редактирование, удаление моделей[/dim]",
                             classes="tab-header",
                         )
-                        management_dt = DataTable(id="llm-management-table", show_header=True, cursor_type="row")
-                        yield management_dt
+                        table = DataTable(id="llm-management-table")
+                        table.add_columns("✓", "Название", "Модель", "API URL")
+                        yield table
                         with Horizontal(classes="button-row"):
-                            yield Button("Добавить", id="add-llm-btn", variant="success")
-                            yield Button("Редактировать", id="edit-llm-btn")
-                            yield Button("Удалить", id="delete-llm-btn", variant="error")
+                            yield Button("➕ Добавить", id="add-llm-btn", variant="success")
+                            yield Button("✏️ Редактировать", id="edit-llm-btn")
+                            yield Button("🗑️ Удалить", id="delete-llm-btn", variant="error")
 
                     # Tab 3: Generation Parameters
-                    with TabPane("Параметры", id="tab-params"):
+                    with TabPane("🎛️ Параметры", id="tab-params"):
                         yield Static(
-                            "[bold]ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold]\n"
+                            "[bold]🎛️ ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold]\n"
                             "[dim]Настройка поведения ИИ[/dim]",
                             classes="tab-header",
                         )
@@ -513,9 +535,9 @@ class ConfigMenuApp(App):
                                 )
 
                     # Tab 4: User Content
-                    with TabPane("Контент", id="tab-content"):
+                    with TabPane("📝 Контент", id="tab-content"):
                         yield Static(
-                            "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ[/bold]\n"
+                            "[bold]📝 ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ[/bold]\n"
                             "[dim]Дополнительный контекст для всех запросов[/dim]",
                             classes="tab-header",
                         )
@@ -527,18 +549,18 @@ class ConfigMenuApp(App):
                         yield TextArea(text=config.user_content, id="content-textarea")
                         with Horizontal(classes="button-row"):
                             yield Button(
-                                "Сохранить",
+                                "💾 Сохранить",
                                 id="save-content-btn",
                                 variant="success",
                             )
                             yield Button(
-                                "Сбросить", id="reset-content-btn", variant="warning"
+                                "🔄 Сбросить", id="reset-content-btn", variant="warning"
                             )
 
                     # Tab 5: System Settings
-                    with TabPane("Система", id="tab-system"):
+                    with TabPane("🔧 Система", id="tab-system"):
                         yield Static(
-                            "[bold]СИСТЕМНЫЕ НАСТРОЙКИ[/bold]\n"
+                            "[bold]🔧 СИСТЕМНЫЕ НАСТРОЙКИ[/bold]\n"
                             "[dim]Поведение приложения[/dim]",
                             classes="tab-header",
                         )
@@ -599,9 +621,9 @@ class ConfigMenuApp(App):
                             )
 
                     # Tab 6: Language & Theme
-                    with TabPane("Язык/Тема", id="tab-appearance"):
+                    with TabPane("🌐 Язык/Тема", id="tab-appearance"):
                         yield Static(
-                            "[bold]ЯЗЫК И ТЕМА[/bold]\n"
+                            "[bold]🌐 ЯЗЫК И ТЕМА[/bold]\n"
                             "[dim]Настройки интерфейса[/dim]",
                             classes="tab-header",
                         )
@@ -620,14 +642,14 @@ class ConfigMenuApp(App):
                             )
                             with Horizontal(classes="button-row"):
                                 yield Button(
-                                    "English",
+                                    "🇺🇸 English",
                                     id="lang-en-btn",
                                     variant="primary"
                                     if current_lang == "en"
                                     else "default",
                                 )
                                 yield Button(
-                                    "Русский",
+                                    "🇷🇺 Русский",
                                     id="lang-ru-btn",
                                     variant="primary"
                                     if current_lang == "ru"
@@ -689,40 +711,38 @@ class ConfigMenuApp(App):
 
     def on_mount(self) -> None:
         """Initialize the app."""
-        self.notify("Загрузка данных...", severity="information")
+        self.notify("🔄 Загрузка данных...", severity="information")
         self.update_llm_tables()
-        self.notify("Приложение загружено", severity="information")
+        self.notify("✅ Приложение загружено", severity="information")
         
         # Диагностика
         try:
             selector_table = self.query_one("#llm-selector-table", DataTable)
-            self.notify(f"Селектор: {selector_table.row_count} строк", severity="information")
+            self.notify(f"📊 Селектор: {selector_table.row_count} строк", severity="information")
         except Exception as e:
-            self.notify(f"Ошибка селектора: {e}", severity="error")
+            self.notify(f"❌ Ошибка селектора: {e}", severity="error")
 
     def update_llm_tables(self) -> None:
         """Update LLM tables with current data."""
         current = config.current_llm
         llms = config.get_available_llms()
         
-        self.notify(f"Найдено LLM: {len(llms)}", severity="information")
+        self.notify(f"🔍 Найдено LLM: {len(llms)}", severity="information")
 
         # Update selector table
         selector_table = self.query_one("#llm-selector-table", DataTable)
-        selector_table.clear(columns=True)
-        selector_table.add_columns("✓", "Название", "Модель")
+        selector_table.clear()
         for llm_name in llms:
             cfg = config.get_llm_config(llm_name) or {}
             is_current = "✓" if llm_name == current else ""
             selector_table.add_row(
                 is_current, llm_name, cfg.get("model", "N/A")
             )
-        self.notify(f"Селектор обновлён: {selector_table.row_count} строк", severity="information")
+        self.notify(f"✅ Селектор обновлён: {selector_table.row_count} строк", severity="information")
 
         # Update management table
         management_table = self.query_one("#llm-management-table", DataTable)
-        management_table.clear(columns=True)
-        management_table.add_columns("✓", "Название", "Модель", "API URL")
+        management_table.clear()
         for llm_name in llms:
             cfg = config.get_llm_config(llm_name) or {}
             is_current = "✓" if llm_name == current else ""
@@ -732,7 +752,7 @@ class ConfigMenuApp(App):
                 cfg.get("model", "N/A"),
                 cfg.get("api_url", "N/A"),
             )
-        self.notify(f"Управление обновлено: {management_table.row_count} строк", severity="information")
+        self.notify(f"✅ Управление обновлено: {management_table.row_count} строк", severity="information")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
@@ -743,7 +763,7 @@ class ConfigMenuApp(App):
             self.select_current_llm()
         elif btn_id == "refresh-llm-btn":
             self.update_llm_tables()
-            self.notify("Список обновлён", severity="information")
+            self.notify("✅ Список обновлён", severity="information")
 
         # LLM Management
         elif btn_id == "add-llm-btn":
@@ -799,21 +819,21 @@ class ConfigMenuApp(App):
             setattr(config, "debug", event.value)
             self.refresh_status()
             status = "включен" if event.value else "выключен"
-            self.notify(f"Режим отладки {status}", severity="information")
+            self.notify(f"✅ Режим отладки {status}", severity="information")
 
     # LLM Methods
     def select_current_llm(self) -> None:
         """Select current LLM from table."""
         table = self.query_one("#llm-selector-table", DataTable)
         if table.cursor_row < 0:
-            self.notify("Выберите LLM из списка", severity="warning")
+            self.notify("⚠️ Выберите LLM из списка", severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
         llm_name = str(row[1])
         config.current_llm = llm_name
         self.update_llm_tables()
         self.refresh_status()
-        self.notify(f"Текущая LLM: {llm_name}", severity="information")
+        self.notify(f"✅ Текущая LLM: {llm_name}", severity="information")
 
     def add_llm(self) -> None:
         """Add new LLM."""
@@ -834,7 +854,7 @@ class ConfigMenuApp(App):
                         config.add_llm(name, model, api_url, api_key or "")
                         self.update_llm_tables()
                         self.refresh_status()
-                        self.notify(f"LLM '{name}' добавлена", severity="information")
+                        self.notify(f"✅ LLM '{name}' добавлена", severity="information")
 
                     self.push_screen(
                         InputDialog(
@@ -859,7 +879,7 @@ class ConfigMenuApp(App):
         """Edit selected LLM."""
         table = self.query_one("#llm-management-table", DataTable)
         if table.cursor_row < 0:
-            self.notify("Выберите LLM для редактирования", severity="warning")
+            self.notify("⚠️ Выберите LLM для редактирования", severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
         llm_name = str(row[1])
@@ -870,7 +890,7 @@ class ConfigMenuApp(App):
                 config.update_llm(llm_name, model=model)
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(f"LLM '{llm_name}' обновлена", severity="information")
+                self.notify(f"✅ LLM '{llm_name}' обновлена", severity="information")
 
         self.push_screen(
             InputDialog(
@@ -885,13 +905,13 @@ class ConfigMenuApp(App):
         """Delete selected LLM."""
         table = self.query_one("#llm-management-table", DataTable)
         if table.cursor_row < 0:
-            self.notify("Выберите LLM для удаления", severity="warning")
+            self.notify("⚠️ Выберите LLM для удаления", severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
         llm_name = str(row[1])
 
         if llm_name == config.current_llm:
-            self.notify("Нельзя удалить текущую LLM", severity="error")
+            self.notify("❌ Нельзя удалить текущую LLM", severity="error")
             return
 
         def handle_confirm(confirm):
@@ -899,7 +919,7 @@ class ConfigMenuApp(App):
                 config.remove_llm(llm_name)
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(f"LLM '{llm_name}' удалена", severity="information")
+                self.notify(f"✅ LLM '{llm_name}' удалена", severity="information")
 
         self.push_screen(
             ConfirmDialog(f"Удалить LLM '{llm_name}'?", title="Подтверждение"),
@@ -915,11 +935,11 @@ class ConfigMenuApp(App):
             if 0.0 <= value <= 2.0:
                 config.temperature = value
                 self.refresh_status()
-                self.notify(f"Температура: {value}", severity="information")
+                self.notify(f"✅ Температура: {value}", severity="information")
             else:
-                self.notify("Температура должна быть от 0.0 до 2.0", severity="error")
+                self.notify("❌ Температура должна быть от 0.0 до 2.0", severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify("❌ Неверный числовой формат", severity="error")
 
     def set_max_tokens(self) -> None:
         """Set max tokens parameter."""
@@ -928,18 +948,18 @@ class ConfigMenuApp(App):
         if value in ["null", "none", ""]:
             config.max_tokens = None
             self.refresh_status()
-            self.notify("Максимум токенов: без ограничений", severity="information")
+            self.notify("✅ Максимум токенов: без ограничений", severity="information")
         else:
             try:
                 num_value = int(value)
                 if num_value > 0:
                     config.max_tokens = num_value
                     self.refresh_status()
-                    self.notify(f"Максимум токенов: {num_value}", severity="information")
+                    self.notify(f"✅ Максимум токенов: {num_value}", severity="information")
                 else:
-                    self.notify("Должно быть положительным", severity="error")
+                    self.notify("❌ Должно быть положительным", severity="error")
             except ValueError:
-                self.notify("Неверный числовой формат", severity="error")
+                self.notify("❌ Неверный числовой формат", severity="error")
 
     def set_top_p(self) -> None:
         """Set top_p parameter."""
@@ -949,11 +969,11 @@ class ConfigMenuApp(App):
             if 0.0 <= value <= 1.0:
                 config.top_p = value
                 self.refresh_status()
-                self.notify(f"Top P: {value}", severity="information")
+                self.notify(f"✅ Top P: {value}", severity="information")
             else:
-                self.notify("Top P должен быть от 0.0 до 1.0", severity="error")
+                self.notify("❌ Top P должен быть от 0.0 до 1.0", severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify("❌ Неверный числовой формат", severity="error")
 
     def set_frequency_penalty(self) -> None:
         """Set frequency penalty."""
@@ -963,11 +983,11 @@ class ConfigMenuApp(App):
             if -2.0 <= value <= 2.0:
                 config.frequency_penalty = value
                 self.refresh_status()
-                self.notify(f"Штраф частоты: {value}", severity="information")
+                self.notify(f"✅ Штраф частоты: {value}", severity="information")
             else:
-                self.notify("Должно быть от -2.0 до 2.0", severity="error")
+                self.notify("❌ Должно быть от -2.0 до 2.0", severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify("❌ Неверный числовой формат", severity="error")
 
     def set_presence_penalty(self) -> None:
         """Set presence penalty."""
@@ -977,11 +997,11 @@ class ConfigMenuApp(App):
             if -2.0 <= value <= 2.0:
                 config.presence_penalty = value
                 self.refresh_status()
-                self.notify(f"Штраф присутствия: {value}", severity="information")
+                self.notify(f"✅ Штраф присутствия: {value}", severity="information")
             else:
-                self.notify("Должно быть от -2.0 до 2.0", severity="error")
+                self.notify("❌ Должно быть от -2.0 до 2.0", severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify("❌ Неверный числовой формат", severity="error")
 
     def set_seed(self) -> None:
         """Set seed parameter."""
@@ -990,15 +1010,15 @@ class ConfigMenuApp(App):
         if value in ["null", "none", ""]:
             config.seed = None
             self.refresh_status()
-            self.notify("Seed: случайный", severity="information")
+            self.notify("✅ Seed: случайный", severity="information")
         else:
             try:
                 num_value = int(value)
                 config.seed = num_value
                 self.refresh_status()
-                self.notify(f"Seed: {num_value}", severity="information")
+                self.notify(f"✅ Seed: {num_value}", severity="information")
             except ValueError:
-                self.notify("Неверный числовой формат", severity="error")
+                self.notify("❌ Неверный числовой формат", severity="error")
 
     # User Content Methods
     def save_user_content(self) -> None:
@@ -1006,7 +1026,7 @@ class ConfigMenuApp(App):
         text_area = self.query_one("#content-textarea", TextArea)
         config.user_content = text_area.text
         self.refresh_status()
-        self.notify("Контент сохранён", severity="information")
+        self.notify("✅ Контент сохранён", severity="information")
 
     def reset_user_content(self) -> None:
         """Reset user content."""
@@ -1017,7 +1037,7 @@ class ConfigMenuApp(App):
                 text_area = self.query_one("#content-textarea", TextArea)
                 text_area.text = ""
                 self.refresh_status()
-                self.notify("Контент сброшен", severity="information")
+                self.notify("✅ Контент сброшен", severity="information")
 
         self.push_screen(
             ConfirmDialog("Сбросить пользовательский контент?"), handle_confirm
@@ -1032,11 +1052,11 @@ class ConfigMenuApp(App):
             if 0.001 <= value <= 0.1:
                 config.set("global", "sleep_time", value)
                 self.refresh_status()
-                self.notify(f"Задержка стрима: {value} сек", severity="information")
+                self.notify(f"✅ Задержка стрима: {value} сек", severity="information")
             else:
-                self.notify("Должно быть от 0.001 до 0.1", severity="error")
+                self.notify("❌ Должно быть от 0.001 до 0.1", severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify("❌ Неверный числовой формат", severity="error")
 
     def set_refresh_rate(self) -> None:
         """Set refresh rate."""
@@ -1046,11 +1066,11 @@ class ConfigMenuApp(App):
             if 1 <= value <= 60:
                 config.set("global", "refresh_per_second", value)
                 self.refresh_status()
-                self.notify(f"Частота обновлений: {value} Гц", severity="information")
+                self.notify(f"✅ Частота обновлений: {value} Гц", severity="information")
             else:
-                self.notify("Должно быть от 1 до 60", severity="error")
+                self.notify("❌ Должно быть от 1 до 60", severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify("❌ Неверный числовой формат", severity="error")
 
     # Language & Theme Methods
     def set_language(self, lang: str) -> None:
@@ -1059,7 +1079,7 @@ class ConfigMenuApp(App):
         translator.set_language(lang)
         self.refresh_status()
         lang_name = "English" if lang == "en" else "Русский"
-        self.notify(f"Язык: {lang_name}", severity="information")
+        self.notify(f"✅ Язык: {lang_name}", severity="information")
 
     def set_theme(self, theme: str) -> None:
         """Set interface theme."""
@@ -1072,7 +1092,7 @@ class ConfigMenuApp(App):
             "nord": "Nord",
         }
         theme_name = theme_names.get(theme, theme)
-        self.notify(f"Тема: {theme_name}", severity="information")
+        self.notify(f"✅ Тема: {theme_name}", severity="information")
 
     # Utility Methods
     def refresh_status(self) -> None:
@@ -1094,7 +1114,7 @@ class ConfigMenuApp(App):
     def action_refresh_status(self) -> None:
         """Refresh status action."""
         self.refresh_status()
-        self.notify("Статус обновлён", severity="information")
+        self.notify("✅ Статус обновлён", severity="information")
 
 
 if __name__ == "__main__":
