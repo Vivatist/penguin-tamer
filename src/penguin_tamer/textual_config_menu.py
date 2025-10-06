@@ -220,9 +220,20 @@ class ConfigMenuApp(App):
         padding: 0;
     }
 
+    .setting-row {
+        height: auto;
+        align: left middle;
+    }
+
     .param-label {
+        width: 40%;
         color: $text;
         text-style: bold;
+        padding-right: 2;
+    }
+
+    .param-control {
+        width: 60%;
     }
 
     .param-description {
@@ -259,7 +270,15 @@ class ConfigMenuApp(App):
 
     Input {
         width: 1fr;
-        margin-right: 1;
+    }
+
+    .param-control Input {
+        width: 100%;
+        margin: 0;
+    }
+
+    .param-control Switch {
+        width: auto;
     }
 
     Select {
@@ -387,87 +406,87 @@ class ConfigMenuApp(App):
                         )
 
                         # Temperature
-                        with Container(classes="setting-group"):
-                            yield Static("Температура", classes="param-label")
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{config.temperature}[/green] • Контролирует креативность (0.0-2.0)",
-                                classes="param-description",
+                                "Температура\n[dim]Креативность (0.0-2.0)[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=str(config.temperature), 
                                 id="temp-input",
-                                placeholder="0.0-2.0"
+                                placeholder="0.0-2.0",
+                                classes="param-control"
                             )
 
                         # Max Tokens
-                        with Container(classes="setting-group"):
-                            max_tokens_str = (
-                                str(config.max_tokens)
-                                if config.max_tokens
-                                else "неограниченно"
-                            )
-                            yield Static("Максимум токенов", classes="param-label")
+                        max_tokens_str = (
+                            str(config.max_tokens)
+                            if config.max_tokens
+                            else "неограниченно"
+                        )
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{max_tokens_str}[/green] • Ограничивает длину ответа",
-                                classes="param-description",
+                                "Максимум токенов\n[dim]Длина ответа[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=max_tokens_str, 
                                 id="max-tokens-input",
-                                placeholder="число или 'null'"
+                                placeholder="число или 'null'",
+                                classes="param-control"
                             )
 
                         # Top P
-                        with Container(classes="setting-group"):
-                            yield Static("Top P", classes="param-label")
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{config.top_p}[/green] • Nucleus sampling (0.0-1.0)",
-                                classes="param-description",
+                                "Top P\n[dim]Nucleus sampling (0.0-1.0)[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=str(config.top_p), 
                                 id="top-p-input",
-                                placeholder="0.0-1.0"
+                                placeholder="0.0-1.0",
+                                classes="param-control"
                             )
 
                         # Frequency Penalty
-                        with Container(classes="setting-group"):
-                            yield Static("Штраф частоты", classes="param-label")
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{config.frequency_penalty}[/green] • Снижает повторения (-2.0 до 2.0)",
-                                classes="param-description",
+                                "Штраф частоты\n[dim]Снижает повторения (-2.0 до 2.0)[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=str(config.frequency_penalty),
                                 id="freq-penalty-input",
-                                placeholder="-2.0 до 2.0"
+                                placeholder="-2.0 до 2.0",
+                                classes="param-control"
                             )
 
                         # Presence Penalty
-                        with Container(classes="setting-group"):
-                            yield Static("Штраф присутствия", classes="param-label")
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{config.presence_penalty}[/green] • Разнообразие тем (-2.0 до 2.0)",
-                                classes="param-description",
+                                "Штраф присутствия\n[dim]Разнообразие тем (-2.0 до 2.0)[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=str(config.presence_penalty),
                                 id="pres-penalty-input",
-                                placeholder="-2.0 до 2.0"
+                                placeholder="-2.0 до 2.0",
+                                classes="param-control"
                             )
 
                         # Seed
-                        with Container(classes="setting-group"):
-                            seed_str = str(config.seed) if config.seed else "случайный"
-                            yield Static("Seed", classes="param-label")
+                        seed_str = str(config.seed) if config.seed else "случайный"
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{seed_str}[/green] • Для воспроизводимости результатов",
-                                classes="param-description",
+                                "Seed\n[dim]Для воспроизводимости[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=seed_str, 
                                 id="seed-input",
-                                placeholder="число или 'null'"
+                                placeholder="число или 'null'",
+                                classes="param-control"
                             )
 
                     # Tab 4: User Content
@@ -502,48 +521,43 @@ class ConfigMenuApp(App):
                         )
 
                         # Stream Delay
-                        with Container(classes="setting-group"):
-                            yield Static("Задержка стрима", classes="param-label")
-                            stream_delay = config.get("global", "sleep_time", 0.01)
+                        stream_delay = config.get("global", "sleep_time", 0.01)
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{stream_delay} сек[/green] • Пауза между частями текста (0.001-0.1)",
-                                classes="param-description",
+                                "Задержка стрима\n[dim]Пауза между частями (0.001-0.1)[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=str(stream_delay), 
                                 id="stream-delay-input",
-                                placeholder="0.001-0.1"
+                                placeholder="0.001-0.1",
+                                classes="param-control"
                             )
 
                         # Refresh Rate
-                        with Container(classes="setting-group"):
-                            yield Static("Частота обновлений", classes="param-label")
-                            refresh_rate = config.get("global", "refresh_per_second", 10)
+                        refresh_rate = config.get("global", "refresh_per_second", 10)
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{refresh_rate} Гц[/green] • Как часто обновляется интерфейс (1-60)",
-                                classes="param-description",
+                                "Частота обновлений\n[dim]Обновление интерфейса (1-60 Гц)[/dim]",
+                                classes="param-label"
                             )
                             yield Input(
                                 value=str(refresh_rate), 
                                 id="refresh-rate-input",
-                                placeholder="1-60"
+                                placeholder="1-60",
+                                classes="param-control"
                             )
 
                         # Debug Mode
-                        with Container(classes="setting-group"):
-                            yield Static("Режим отладки", classes="param-label")
-                            debug_status = (
-                                "Включен"
-                                if getattr(config, "debug", False)
-                                else "Выключен"
-                            )
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                f"Текущее: [green]{debug_status}[/green]\n"
-                                "Подробная информация о запросах к API",
-                                classes="param-description",
+                                "Режим отладки\n[dim]Подробная информация о запросах[/dim]",
+                                classes="param-label"
                             )
                             yield Switch(
-                                value=getattr(config, "debug", False), id="debug-switch"
+                                value=getattr(config, "debug", False),
+                                id="debug-switch",
+                                classes="param-control"
                             )
 
                     # Tab 5: Interface
