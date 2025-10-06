@@ -61,7 +61,7 @@ print("   Используйте Tab для переключения между 
 print("   Используйте стрелки для навигации по таблицам\n")
 
 # Запуск приложения
-from penguin_tamer.textual_config_menu import ConfigMenuApp
+from penguin_tamer.config_menu import ConfigMenuApp
 
 app = ConfigMenuApp()
 app.run()

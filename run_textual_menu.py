@@ -48,7 +48,7 @@ print()
 import sys
 sys.path.insert(0, 'src')
 
-from penguin_tamer.textual_config_menu import ConfigMenu
+from penguin_tamer.config_menu import ConfigMenu
 
 app = ConfigMenu()
 app.run()
