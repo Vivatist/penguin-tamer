@@ -275,7 +275,6 @@ class ConfigMenuApp(App):
         text-align: right;
     }
 
-
     .param-control Input {
         width: 100%;
         margin: 0;
