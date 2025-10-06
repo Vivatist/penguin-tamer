@@ -23,6 +23,7 @@ from textual.widgets import (
     Footer,
     Header,
     Input,
+    Select,
     Static,
     Switch,
     TabbedContent,
@@ -210,37 +211,30 @@ class ConfigMenuApp(App):
     }
 
     .tab-header {
-        padding: 1;
+        padding: 0 0 1 0;
         margin-bottom: 1;
-        background: $boost;
-        border: solid $primary;
     }
 
     .setting-group {
-        margin-bottom: 2;
-        border: solid $primary-darken-3;
-        padding: 1;
-        background: $surface;
+        margin-bottom: 1;
+        padding: 0;
     }
 
     .param-label {
-        margin-top: 1;
         color: $text;
         text-style: bold;
     }
 
     .param-description {
-        margin-bottom: 1;
+        margin-bottom: 0;
         color: $text-muted;
         text-style: italic;
     }
 
     .param-current {
-        margin-bottom: 1;
+        margin-bottom: 0;
         color: $success;
         text-style: bold;
-        background: $success-darken-3;
-        padding: 1;
     }
 
     DataTable {
@@ -249,7 +243,7 @@ class ConfigMenuApp(App):
     }
 
     .button-row {
-        margin-bottom: 1;
+        margin-bottom: 0;
         margin-top: 1;
     }
 
@@ -258,7 +252,7 @@ class ConfigMenuApp(App):
     }
 
     TextArea {
-        height: 15;
+        height: 12;
         margin-bottom: 1;
         border: solid $primary;
     }
@@ -266,6 +260,12 @@ class ConfigMenuApp(App):
     Input {
         width: 1fr;
         margin-right: 1;
+    }
+
+    Select {
+        width: 100%;
+        margin-top: 0;
+        margin-bottom: 0;
     }
 
     .setting-button {
@@ -546,11 +546,11 @@ class ConfigMenuApp(App):
                                 value=getattr(config, "debug", False), id="debug-switch"
                             )
 
-                    # Tab 5: Language & Theme
-                    with TabPane("Язык/Тема", id="tab-appearance"):
+                    # Tab 5: Interface
+                    with TabPane("Интерфейс", id="tab-appearance"):
                         yield Static(
-                            "[bold]ЯЗЫК И ТЕМА[/bold]\n"
-                            "[dim]Настройки интерфейса (клик по кнопке сохраняет)[/dim]",
+                            "[bold]НАСТРОЙКИ ИНТЕРФЕЙСА[/bold]\n"
+                            "[dim]Язык и внешний вид (изменения сохраняются автоматически)[/dim]",
                             classes="tab-header",
                         )
 
@@ -558,76 +558,36 @@ class ConfigMenuApp(App):
                         with Container(classes="setting-group"):
                             yield Static("Язык интерфейса", classes="param-label")
                             current_lang = getattr(config, "language", "en")
-                            lang_display = (
-                                "English" if current_lang == "en" else "Русский"
-                            )
                             yield Static(
-                                f"Текущий: [green]{lang_display}[/green]\n"
                                 "Изменения вступят в силу после перезапуска",
                                 classes="param-description",
                             )
-                            with Horizontal(classes="button-row"):
-                                yield Button(
-                                    "English",
-                                    id="lang-en-btn",
-                                    variant="primary"
-                                    if current_lang == "en"
-                                    else "default",
-                                )
-                                yield Button(
-                                    "Русский",
-                                    id="lang-ru-btn",
-                                    variant="primary"
-                                    if current_lang == "ru"
-                                    else "default",
-                                )
+                            yield Select(
+                                [("English", "en"), ("Русский", "ru")],
+                                value=current_lang,
+                                id="language-select",
+                                allow_blank=False,
+                            )
 
                         # Theme
                         with Container(classes="setting-group"):
-                            yield Static("Цветовая тема", classes="param-label")
+                            yield Static("Цветовая схема", classes="param-label")
                             current_theme = getattr(config, "theme", "default")
-                            theme_names = {
-                                "default": "Классический",
-                                "monokai": "Monokai",
-                                "dracula": "Dracula",
-                                "nord": "Nord",
-                            }
-                            theme_display = theme_names.get(current_theme, current_theme)
                             yield Static(
-                                f"Текущая: [green]{theme_display}[/green]\n"
                                 "Изменения вступят в силу после перезапуска",
                                 classes="param-description",
                             )
-                            with Horizontal(classes="button-row"):
-                                yield Button(
-                                    "Классический",
-                                    id="theme-default-btn",
-                                    variant="primary"
-                                    if current_theme == "default"
-                                    else "default",
-                                )
-                                yield Button(
-                                    "Monokai",
-                                    id="theme-monokai-btn",
-                                    variant="primary"
-                                    if current_theme == "monokai"
-                                    else "default",
-                                )
-                            with Horizontal(classes="button-row"):
-                                yield Button(
-                                    "Dracula",
-                                    id="theme-dracula-btn",
-                                    variant="primary"
-                                    if current_theme == "dracula"
-                                    else "default",
-                                )
-                                yield Button(
-                                    "Nord",
-                                    id="theme-nord-btn",
-                                    variant="primary"
-                                    if current_theme == "nord"
-                                    else "default",
-                                )
+                            yield Select(
+                                [
+                                    ("Классический", "default"),
+                                    ("Monokai", "monokai"),
+                                    ("Dracula", "dracula"),
+                                    ("Nord", "nord"),
+                                ],
+                                value=current_theme,
+                                id="theme-select",
+                                allow_blank=False,
+                            )
 
             # Right panel with status
             with Vertical(id="right-panel"):
@@ -705,20 +665,6 @@ class ConfigMenuApp(App):
         elif btn_id == "reset-content-btn":
             self.reset_user_content()
 
-        # Language & Theme
-        elif btn_id == "lang-en-btn":
-            self.set_language("en")
-        elif btn_id == "lang-ru-btn":
-            self.set_language("ru")
-        elif btn_id in [
-            "theme-default-btn",
-            "theme-monokai-btn",
-            "theme-dracula-btn",
-            "theme-nord-btn",
-        ]:
-            theme = btn_id.replace("theme-", "").replace("-btn", "")
-            self.set_theme(theme)
-
     def on_switch_changed(self, event: Switch.Changed) -> None:
         """Handle switch changes."""
         if event.switch.id == "debug-switch":
@@ -726,6 +672,15 @@ class ConfigMenuApp(App):
             self.refresh_status()
             status = "включен" if event.value else "выключен"
             self.notify(f"Режим отладки {status}", severity="information")
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        """Handle select changes."""
+        select_id = event.select.id
+        
+        if select_id == "language-select" and event.value != Select.BLANK:
+            self.set_language(str(event.value))
+        elif select_id == "theme-select" and event.value != Select.BLANK:
+            self.set_theme(str(event.value))
 
     # LLM Methods
     def select_current_llm(self) -> None:
@@ -992,6 +947,7 @@ class ConfigMenuApp(App):
     def set_language(self, lang: str) -> None:
         """Set interface language."""
         setattr(config, "language", lang)
+        config.save()
         translator.set_language(lang)
         self.refresh_status()
         lang_name = "English" if lang == "en" else "Русский"
@@ -1000,6 +956,7 @@ class ConfigMenuApp(App):
     def set_theme(self, theme: str) -> None:
         """Set interface theme."""
         setattr(config, "theme", theme)
+        config.save()
         self.refresh_status()
         theme_names = {
             "default": "Классический",
