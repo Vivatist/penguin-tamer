@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
@@ -220,9 +220,12 @@ class ConfigMenuApp(App):
         padding: 0;
     }
 
+
     .setting-row {
         height: auto;
         align: left middle;
+        margin-bottom: 1;
+        margin-top: 1;
     }
 
     .param-label {
@@ -265,16 +268,18 @@ class ConfigMenuApp(App):
     TextArea {
         height: 12;
         margin-bottom: 1;
-        border: solid $primary;
     }
 
     Input {
         width: 1fr;
+        text-align: right;
     }
+
 
     .param-control Input {
         width: 100%;
         margin: 0;
+        text-align: right;
     }
 
     .param-control Switch {
@@ -284,6 +289,7 @@ class ConfigMenuApp(App):
     .param-control Select {
         width: 100%;
         margin: 0;
+        text-align: right;
     }
 
     .setting-button {
@@ -392,12 +398,10 @@ class ConfigMenuApp(App):
                             yield Button("Выбрать", id="select-llm-btn", variant="success")
                             yield Button("Добавить", id="add-llm-btn", variant="primary")
                             yield Button("Редактировать", id="edit-llm-btn", variant="default")
-                        with Horizontal(classes="button-row"):
                             yield Button("Удалить", id="delete-llm-btn", variant="error")
-                            yield Button("Обновить", id="refresh-llm-btn", variant="default")
 
                     # Tab 2: Generation Parameters
-                    with TabPane("Параметры", id="tab-params"):
+                    with TabPane("Генерация", id="tab-params"):
                         yield Static(
                             "[bold]ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold]\n"
                             "[dim]Настройка поведения ИИ (нажмите Enter для сохранения)[/dim]",
@@ -489,118 +493,124 @@ class ConfigMenuApp(App):
                             )
 
                     # Tab 4: User Content
+
                     with TabPane("Контент", id="tab-content"):
-                        yield Static(
-                            "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ[/bold]\n"
-                            "[dim]Дополнительный контекст для всех запросов[/dim]",
-                            classes="tab-header",
-                        )
-                        yield Static(
-                            "Этот контент автоматически добавляется к каждому запросу.\n"
-                            "Используйте для системных промптов и инструкций.",
-                            classes="param-description",
-                        )
-                        yield TextArea(text=config.user_content, id="content-textarea")
-                        with Horizontal(classes="button-row"):
-                            yield Button(
-                                "Сохранить",
-                                id="save-content-btn",
-                                variant="success",
+                        with VerticalScroll():
+                            yield Static(
+                                "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ[/bold]\n"
+                                "[dim]Дополнительный контекст для всех запросов[/dim]",
+                                classes="tab-header",
                             )
-                            yield Button(
-                                "Сбросить", id="reset-content-btn", variant="warning"
+                            yield Static(
+                                "Этот контент автоматически добавляется к каждому запросу.\n"
+                                "Используйте для системных промптов и инструкций.",
+                                classes="param-description",
                             )
+                            yield TextArea(text=config.user_content, id="content-textarea")
+                            with Horizontal(classes="button-row"):
+                                yield Button(
+                                    "Сохранить",
+                                    id="save-content-btn",
+                                    variant="success",
+                                )
+                                yield Button(
+                                    "Сбросить", id="reset-content-btn", variant="warning"
+                                )
 
                     # Tab 4: System Settings
+
                     with TabPane("Система", id="tab-system"):
-                        yield Static(
-                            "[bold]СИСТЕМНЫЕ НАСТРОЙКИ[/bold]\n"
-                            "[dim]Поведение приложения (нажмите Enter для сохранения)[/dim]",
-                            classes="tab-header",
-                        )
-
-                        # Stream Delay
-                        stream_delay = config.get("global", "sleep_time", 0.01)
-                        with Horizontal(classes="setting-row"):
+                        with VerticalScroll():
                             yield Static(
-                                "Задержка стрима\n[dim]Пауза между частями (0.001-0.1)[/dim]",
-                                classes="param-label"
-                            )
-                            yield Input(
-                                value=str(stream_delay), 
-                                id="stream-delay-input",
-                                placeholder="0.001-0.1",
-                                classes="param-control"
+                                "[bold]СИСТЕМНЫЕ НАСТРОЙКИ[/bold]\n"
+                                "[dim]Поведение приложения (нажмите Enter для сохранения)[/dim]",
+                                classes="tab-header",
                             )
 
-                        # Refresh Rate
-                        refresh_rate = config.get("global", "refresh_per_second", 10)
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Частота обновлений\n[dim]Обновление интерфейса (1-60 Гц)[/dim]",
-                                classes="param-label"
-                            )
-                            yield Input(
-                                value=str(refresh_rate), 
-                                id="refresh-rate-input",
-                                placeholder="1-60",
-                                classes="param-control"
-                            )
+                            # Stream Delay
+                            stream_delay = config.get("global", "sleep_time", 0.01)
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Задержка стрима\n[dim]Пауза между частями (0.001-0.1)[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=str(stream_delay), 
+                                    id="stream-delay-input",
+                                    placeholder="0.001-0.1",
+                                    classes="param-control"
+                                )
 
-                        # Debug Mode
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Режим отладки\n[dim]Подробная информация о запросах[/dim]",
-                                classes="param-label"
-                            )
-                            yield Switch(
-                                value=getattr(config, "debug", False),
-                                id="debug-switch",
-                                classes="param-control"
-                            )
+                            # Refresh Rate
+                            refresh_rate = config.get("global", "refresh_per_second", 10)
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Частота обновлений\n[dim]Обновление интерфейса (1-60 Гц)[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=str(refresh_rate), 
+                                    id="refresh-rate-input",
+                                    placeholder="1-60",
+                                    classes="param-control"
+                                )
+
+                            # Debug Mode
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Режим отладки\n[dim]Подробная информация о запросах[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Switch(
+                                    value=getattr(config, "debug", False),
+                                    id="debug-switch",
+                                    classes="param-control"
+                                )
 
                     # Tab 5: Interface
+
                     with TabPane("Интерфейс", id="tab-appearance"):
-                        yield Static(
-                            "[bold]НАСТРОЙКИ ИНТЕРФЕЙСА[/bold]\n"
-                            "[dim]Язык и внешний вид (изменения сохраняются автоматически)[/dim]",
-                            classes="tab-header",
-                        )
-
-                        # Language
-                        current_lang = getattr(config, "language", "en")
-                        with Horizontal(classes="setting-row"):
+                        with VerticalScroll():
                             yield Static(
-                                "Язык интерфейса\n[dim]Перезапуск после изменения[/dim]",
-                                classes="param-label"
-                            )
-                            yield Select(
-                                [("English", "en"), ("Русский", "ru")],
-                                value=current_lang,
-                                id="language-select",
-                                allow_blank=False,
-                                classes="param-control"
+                                "[bold]НАСТРОЙКИ ИНТЕРФЕЙСА[/bold]\n"
+                                "[dim]Язык и внешний вид (изменения сохраняются автоматически)[/dim]",
+                                classes="tab-header",
                             )
 
-                        # Theme
-                        current_theme = getattr(config, "theme", "default")
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Цветовая схема\n[dim]Перезапуск после изменения[/dim]",
-                                classes="param-label"
-                            )
-                            yield Select(
-                                [
-                                    ("Классический", "default"),
-                                    ("Monokai", "monokai"),
-                                    ("Dracula", "dracula"),
-                                    ("Nord", "nord"),
-                                ],
-                                value=current_theme,
-                                id="theme-select",
-                                allow_blank=False,
-                                classes="param-control"
-                            )
+                            # Language
+                            current_lang = getattr(config, "language", "en")
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Язык интерфейса\n[dim]Перезапуск после изменения[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Select(
+                                    [("English", "en"), ("Русский", "ru")],
+                                    value=current_lang,
+                                    id="language-select",
+                                    allow_blank=False,
+                                    classes="param-control"
+                                )
+
+                            # Theme
+                            current_theme = getattr(config, "theme", "default")
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Цветовая схема\n[dim]Перезапуск после изменения[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Select(
+                                    [
+                                        ("Классический", "default"),
+                                        ("Monokai", "monokai"),
+                                        ("Dracula", "dracula"),
+                                        ("Nord", "nord"),
+                                    ],
+                                    value=current_theme,
+                                    id="theme-select",
+                                    allow_blank=False,
+                                    classes="param-control"
+                                )
 
             # Right panel with status
             with Vertical(id="right-panel"):
@@ -661,8 +671,6 @@ class ConfigMenuApp(App):
         # LLM Management
         if btn_id == "select-llm-btn":
             self.select_current_llm()
-        elif btn_id == "refresh-llm-btn":
-            self.update_llm_tables()
 
         # LLM Management
         elif btn_id == "add-llm-btn":
