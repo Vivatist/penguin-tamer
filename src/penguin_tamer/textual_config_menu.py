@@ -119,6 +119,208 @@ class StatusPanel(Static):
         """Update content when mounted."""
         self.update_content()
 
+    def show_help(self, widget_id: str) -> None:
+        """Show detailed help for specific widget."""
+        help_texts = {
+            "temp-input": """[bold cyan]ТЕМПЕРАТУРА[/bold cyan]
+
+Контролирует креативность и случайность ответов.
+
+[bold]Диапазон:[/bold] 0.0 - 2.0
+
+[bold]Низкие значения (0.0-0.5):[/bold]
+• Более предсказуемые ответы
+• Подходит для технических задач
+• Факты и точность
+
+[bold]Средние значения (0.6-1.0):[/bold]
+• Баланс креативности и точности
+• Подходит для большинства задач
+
+[bold]Высокие значения (1.1-2.0):[/bold]
+• Очень креативные ответы
+• Подходит для творческих задач
+• Может быть менее точным""",
+            "max-tokens-input": """[bold cyan]МАКСИМУМ ТОКЕНОВ[/bold cyan]
+
+Ограничивает длину генерируемого ответа.
+
+[bold]Значения:[/bold]
+• Пусто или 0 = без ограничений
+• Число > 0 = максимальное количество токенов
+
+[bold]Примерно:[/bold]
+• 100 токенов ≈ 75 слов
+• 500 токенов ≈ 375 слов
+• 1000 токенов ≈ 750 слов
+
+[bold]Рекомендации:[/bold]
+• Короткие ответы: 100-300
+• Средние ответы: 500-1000
+• Длинные ответы: 1500-3000""",
+            "top-p-input": """[bold cyan]TOP P (Nucleus Sampling)[/bold cyan]
+
+Контролирует разнообразие выбора слов.
+
+[bold]Диапазон:[/bold] 0.0 - 1.0
+
+[bold]Как работает:[/bold]
+Модель выбирает из топ N% наиболее вероятных токенов.
+
+[bold]Низкие значения (0.1-0.5):[/bold]
+• Более консервативный выбор
+• Предсказуемые ответы
+
+[bold]Средние значения (0.6-0.9):[/bold]
+• Баланс разнообразия
+• Рекомендуется для большинства задач
+
+[bold]Высокие значения (0.95-1.0):[/bold]
+• Максимальное разнообразие
+• Более неожиданные ответы""",
+            "freq-penalty-input": """[bold cyan]ШТРАФ ЧАСТОТЫ[/bold cyan]
+
+Снижает повторение одних и тех же слов.
+
+[bold]Диапазон:[/bold] -2.0 до 2.0
+
+[bold]Отрицательные значения:[/bold]
+• Поощряет повторения
+• Редко используется
+
+[bold]Нулевое значение (0.0):[/bold]
+• Без штрафов
+• По умолчанию
+
+[bold]Положительные значения:[/bold]
+• 0.1-0.5: легкое снижение повторов
+• 0.6-1.0: заметное снижение
+• 1.1-2.0: сильное снижение (может быть неестественным)""",
+            "presence-penalty-input": """[bold cyan]ШТРАФ ПРИСУТСТВИЯ[/bold cyan]
+
+Поощряет обсуждение новых тем.
+
+[bold]Диапазон:[/bold] -2.0 до 2.0
+
+[bold]Отрицательные значения:[/bold]
+• Фокус на текущей теме
+• Глубокое обсуждение
+
+[bold]Нулевое значение (0.0):[/bold]
+• Естественное поведение
+• По умолчанию
+
+[bold]Положительные значения:[/bold]
+• 0.1-0.5: легкое разнообразие тем
+• 0.6-1.0: заметное разнообразие
+• 1.1-2.0: максимальное разнообразие (может терять фокус)""",
+            "seed-input": """[bold cyan]SEED (Зерно генерации)[/bold cyan]
+
+Обеспечивает воспроизводимость результатов.
+
+[bold]Значения:[/bold]
+• Пусто или 0 = случайная генерация
+• Любое число = фиксированный seed
+
+[bold]Применение:[/bold]
+• Тестирование: один и тот же seed даст одинаковые результаты
+• Отладка: воспроизведение проблем
+• Эксперименты: сравнение разных параметров
+
+[bold]Примечание:[/bold]
+Одинаковый seed с одинаковыми параметрами даст идентичный ответ.""",
+            "stream-delay-input": """[bold cyan]ЗАДЕРЖКА СТРИМА[/bold cyan]
+
+Пауза между порциями текста при потоковой генерации.
+
+[bold]Диапазон:[/bold] 0.001 - 0.1 секунд
+
+[bold]Малые значения (0.001-0.01):[/bold]
+• Быстрое отображение
+• Может мерцать
+
+[bold]Средние значения (0.02-0.05):[/bold]
+• Комфортная скорость
+• Рекомендуется
+
+[bold]Большие значения (0.06-0.1):[/bold]
+• Медленное отображение
+• Легче читать в реальном времени""",
+            "refresh-rate-input": """[bold cyan]ЧАСТОТА ОБНОВЛЕНИЙ[/bold cyan]
+
+Скорость обновления интерфейса.
+
+[bold]Диапазон:[/bold] 1-60 Гц (обновлений в секунду)
+
+[bold]Низкие значения (1-10):[/bold]
+• Меньше нагрузка на систему
+• Может быть менее плавным
+
+[bold]Средние значения (10-30):[/bold]
+• Оптимальный баланс
+• Рекомендуется (10 по умолчанию)
+
+[bold]Высокие значения (30-60):[/bold]
+• Очень плавный интерфейс
+• Больше нагрузка на CPU""",
+            "debug-switch": """[bold cyan]РЕЖИМ ОТЛАДКИ[/bold cyan]
+
+Включает подробное логирование.
+
+[bold]Выключен (OFF):[/bold]
+• Обычный режим работы
+• Только важные сообщения
+• Рекомендуется для повседневного использования
+
+[bold]Включен (ON):[/bold]
+• Подробная информация о запросах
+• Логирование параметров
+• Отображение токенов и времени выполнения
+• Полезно для диагностики проблем
+
+[bold]Применение:[/bold]
+• Разработка и тестирование
+• Поиск проблем с API
+• Анализ производительности""",
+            "language-select": """[bold cyan]ЯЗЫК ИНТЕРФЕЙСА[/bold cyan]
+
+Выбор языка меню и сообщений.
+
+[bold]Доступные языки:[/bold]
+• English (en)
+• Русский (ru)
+
+[bold]Что изменится:[/bold]
+• Язык меню
+• Системные сообщения
+• Подсказки и описания
+
+[bold]Примечание:[/bold]
+Язык общения с LLM зависит от вашего промпта, а не от этой настройки.""",
+            "theme-select": """[bold cyan]ТЕМА ОФОРМЛЕНИЯ[/bold cyan]
+
+Выбор цветовой схемы интерфейса.
+
+[bold]Доступные темы:[/bold]
+• Классический (default) - стандартная тема
+• Monokai - тёмная с контрастными акцентами
+• Dracula - популярная тёмная тема
+• Nord - холодные северные тона
+
+[bold]Выбор темы влияет на:[/bold]
+• Цвета интерфейса
+• Контрастность текста
+• Общее восприятие
+
+[bold]Рекомендация:[/bold]
+Выберите тему, которая комфортна для ваших глаз.""",
+        }
+        content = help_texts.get(widget_id, "")
+        if content:
+            self.update(content)
+        else:
+            self.update_content()
+
     def update_content(self) -> None:
         """Update the status display."""
         try:
@@ -187,6 +389,9 @@ class StatusPanel(Static):
 
 class ConfigMenuApp(App):
     """Main Textual configuration application."""
+    
+    # Flag to prevent notifications during initialization
+    _initialized = False
 
     CSS = """
     Screen {
@@ -282,6 +487,10 @@ class ConfigMenuApp(App):
     }
 
     .param-control Switch {
+        width: auto;
+    }
+    
+    Switch {
         width: auto;
     }
 
@@ -381,115 +590,117 @@ class ConfigMenuApp(App):
                 with TabbedContent():
                     # Tab 1: LLM Management (Объединённая)
                     with TabPane("Управление LLM", id="tab-llm"):
-                        yield Static(
-                            "[bold]УПРАВЛЕНИЕ LLM[/bold]\n"
-                            "[dim]Выбор текущей модели, добавление, редактирование, удаление[/dim]",
-                            classes="tab-header",
-                        )
-                        current_llm = config.current_llm or "Не выбрана"
-                        yield Static(
-                            f"Текущая: [bold cyan]{current_llm}[/bold cyan]",
-                            classes="param-current",
-                        )
-                        llm_dt = DataTable(id="llm-table", show_header=True, cursor_type="row")
-                        yield llm_dt
-                        with Horizontal(classes="button-row"):
-                            yield Button("Выбрать", id="select-llm-btn", variant="success")
-                            yield Button("Добавить", id="add-llm-btn", variant="primary")
-                            yield Button("Редактировать", id="edit-llm-btn", variant="default")
-                            yield Button("Удалить", id="delete-llm-btn", variant="error")
+                        with VerticalScroll():
+                            yield Static(
+                                "[bold]УПРАВЛЕНИЕ LLM[/bold]\n"
+                                "[dim]Выбор текущей модели, добавление, редактирование, удаление[/dim]",
+                                classes="tab-header",
+                            )
+                            current_llm = config.current_llm or "Не выбрана"
+                            yield Static(
+                                f"Текущая: [bold cyan]{current_llm}[/bold cyan]",
+                                classes="param-current",
+                            )
+                            llm_dt = DataTable(id="llm-table", show_header=True, cursor_type="row")
+                            yield llm_dt
+                            with Horizontal(classes="button-row"):
+                                yield Button("Выбрать", id="select-llm-btn", variant="success")
+                                yield Button("Добавить", id="add-llm-btn", variant="primary")
+                                yield Button("Редактировать", id="edit-llm-btn", variant="default")
+                                yield Button("Удалить", id="delete-llm-btn", variant="error")
 
                     # Tab 2: Generation Parameters
                     with TabPane("Генерация", id="tab-params"):
-                        yield Static(
-                            "[bold]ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold]\n"
-                            "[dim]Настройка поведения ИИ (нажмите Enter для сохранения)[/dim]",
-                            classes="tab-header",
-                        )
-
-                        # Temperature
-                        with Horizontal(classes="setting-row"):
+                        with VerticalScroll():
                             yield Static(
-                                "Температура\n[dim]Креативность (0.0-2.0)[/dim]",
-                                classes="param-label"
-                            )
-                            yield Input(
-                                value=str(config.temperature), 
-                                id="temp-input",
-                                placeholder="0.0-2.0",
-                                classes="param-control"
+                                "[bold]ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold]\n"
+                                "[dim]Настройка поведения ИИ (нажмите Enter для сохранения)[/dim]",
+                                classes="tab-header",
                             )
 
-                        # Max Tokens
-                        max_tokens_str = (
-                            str(config.max_tokens)
-                            if config.max_tokens
-                            else "неограниченно"
-                        )
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Максимум токенов\n[dim]Длина ответа[/dim]",
-                                classes="param-label"
-                            )
-                            yield Input(
-                                value=max_tokens_str, 
-                                id="max-tokens-input",
-                                placeholder="число или 'null'",
-                                classes="param-control"
-                            )
+                            # Temperature
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Температура\n[dim]Креативность (0.0-2.0)[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=str(config.temperature), 
+                                    id="temp-input",
+                                    placeholder="0.0-2.0",
+                                    classes="param-control"
+                                )
 
-                        # Top P
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Top P\n[dim]Nucleus sampling (0.0-1.0)[/dim]",
-                                classes="param-label"
+                            # Max Tokens
+                            max_tokens_str = (
+                                str(config.max_tokens)
+                                if config.max_tokens
+                                else "неограниченно"
                             )
-                            yield Input(
-                                value=str(config.top_p), 
-                                id="top-p-input",
-                                placeholder="0.0-1.0",
-                                classes="param-control"
-                            )
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Максимум токенов\n[dim]Длина ответа[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=max_tokens_str, 
+                                    id="max-tokens-input",
+                                    placeholder="число или 'null'",
+                                    classes="param-control"
+                                )
 
-                        # Frequency Penalty
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Штраф частоты\n[dim]Снижает повторения (-2.0 до 2.0)[/dim]",
-                                classes="param-label"
-                            )
-                            yield Input(
-                                value=str(config.frequency_penalty),
-                                id="freq-penalty-input",
-                                placeholder="-2.0 до 2.0",
-                                classes="param-control"
-                            )
+                            # Top P
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Top P\n[dim]Nucleus sampling (0.0-1.0)[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=str(config.top_p), 
+                                    id="top-p-input",
+                                    placeholder="0.0-1.0",
+                                    classes="param-control"
+                                )
 
-                        # Presence Penalty
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Штраф присутствия\n[dim]Разнообразие тем (-2.0 до 2.0)[/dim]",
-                                classes="param-label"
-                            )
-                            yield Input(
-                                value=str(config.presence_penalty),
-                                id="pres-penalty-input",
-                                placeholder="-2.0 до 2.0",
-                                classes="param-control"
-                            )
+                            # Frequency Penalty
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Штраф частоты\n[dim]Снижает повторения (-2.0 до 2.0)[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=str(config.frequency_penalty),
+                                    id="freq-penalty-input",
+                                    placeholder="-2.0 до 2.0",
+                                    classes="param-control"
+                                )
 
-                        # Seed
-                        seed_str = str(config.seed) if config.seed else "случайный"
-                        with Horizontal(classes="setting-row"):
-                            yield Static(
-                                "Seed\n[dim]Для воспроизводимости[/dim]",
-                                classes="param-label"
-                            )
-                            yield Input(
-                                value=seed_str, 
-                                id="seed-input",
-                                placeholder="число или 'null'",
-                                classes="param-control"
-                            )
+                            # Presence Penalty
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Штраф присутствия\n[dim]Разнообразие тем (-2.0 до 2.0)[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=str(config.presence_penalty),
+                                    id="pres-penalty-input",
+                                    placeholder="-2.0 до 2.0",
+                                    classes="param-control"
+                                )
+
+                            # Seed
+                            seed_str = str(config.seed) if config.seed else "случайный"
+                            with Horizontal(classes="setting-row"):
+                                yield Static(
+                                    "Seed\n[dim]Для воспроизводимости[/dim]",
+                                    classes="param-label"
+                                )
+                                yield Input(
+                                    value=seed_str, 
+                                    id="seed-input",
+                                    placeholder="число или 'null'",
+                                    classes="param-control"
+                                )
 
                     # Tab 4: User Content
 
@@ -560,11 +771,11 @@ class ConfigMenuApp(App):
                                     "Режим отладки\n[dim]Подробная информация о запросах[/dim]",
                                     classes="param-label"
                                 )
-                                yield Switch(
-                                    value=getattr(config, "debug", False),
-                                    id="debug-switch",
-                                    classes="param-control"
-                                )
+                                with Container(classes="param-control"):
+                                    yield Switch(
+                                        value=getattr(config, "debug", False),
+                                        id="debug-switch"
+                                    )
 
                     # Tab 5: Interface
 
@@ -620,6 +831,30 @@ class ConfigMenuApp(App):
     def on_mount(self) -> None:
         """Initialize the app."""
         self.update_llm_tables()
+        # Set flag after initialization to enable notifications
+        self.set_timer(0.1, lambda: setattr(self, '_initialized', True))
+    
+    def on_switch_changed(self, event: Switch.Changed) -> None:
+        """Handle switch state changes."""
+        if event.switch.id == "debug-switch":
+            config.debug = event.value
+            config.save()
+            self.refresh_status()
+            status = "включен" if event.value else "выключен"
+            self.notify(f"Режим отладки {status}", severity="information")
+    
+    def on_select_changed(self, event: Select.Changed) -> None:
+        """Handle select changes."""
+        # Skip notifications during initialization
+        if not self._initialized:
+            return
+            
+        select_id = event.select.id
+        
+        if select_id == "language-select" and event.value != Select.BLANK:
+            self.set_language(str(event.value))
+        elif select_id == "theme-select" and event.value != Select.BLANK:
+            self.set_theme(str(event.value))
 
     def update_llm_tables(self) -> None:
         """Update LLM table with current data."""
@@ -684,23 +919,6 @@ class ConfigMenuApp(App):
             self.save_user_content()
         elif btn_id == "reset-content-btn":
             self.reset_user_content()
-
-    def on_switch_changed(self, event: Switch.Changed) -> None:
-        """Handle switch changes."""
-        if event.switch.id == "debug-switch":
-            setattr(config, "debug", event.value)
-            self.refresh_status()
-            status = "включен" if event.value else "выключен"
-            self.notify(f"Режим отладки {status}", severity="information")
-
-    def on_select_changed(self, event: Select.Changed) -> None:
-        """Handle select changes."""
-        select_id = event.select.id
-        
-        if select_id == "language-select" and event.value != Select.BLANK:
-            self.set_language(str(event.value))
-        elif select_id == "theme-select" and event.value != Select.BLANK:
-            self.set_theme(str(event.value))
 
     # LLM Methods
     def select_current_llm(self) -> None:
