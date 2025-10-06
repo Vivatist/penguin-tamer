@@ -281,10 +281,9 @@ class ConfigMenuApp(App):
         width: auto;
     }
 
-    Select {
+    .param-control Select {
         width: 100%;
-        margin-top: 0;
-        margin-bottom: 0;
+        margin: 0;
     }
 
     .setting-button {
@@ -569,27 +568,26 @@ class ConfigMenuApp(App):
                         )
 
                         # Language
-                        with Container(classes="setting-group"):
-                            yield Static("Язык интерфейса", classes="param-label")
-                            current_lang = getattr(config, "language", "en")
+                        current_lang = getattr(config, "language", "en")
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                "Изменения вступят в силу после перезапуска",
-                                classes="param-description",
+                                "Язык интерфейса\n[dim]Перезапуск после изменения[/dim]",
+                                classes="param-label"
                             )
                             yield Select(
                                 [("English", "en"), ("Русский", "ru")],
                                 value=current_lang,
                                 id="language-select",
                                 allow_blank=False,
+                                classes="param-control"
                             )
 
                         # Theme
-                        with Container(classes="setting-group"):
-                            yield Static("Цветовая схема", classes="param-label")
-                            current_theme = getattr(config, "theme", "default")
+                        current_theme = getattr(config, "theme", "default")
+                        with Horizontal(classes="setting-row"):
                             yield Static(
-                                "Изменения вступят в силу после перезапуска",
-                                classes="param-description",
+                                "Цветовая схема\n[dim]Перезапуск после изменения[/dim]",
+                                classes="param-label"
                             )
                             yield Select(
                                 [
@@ -601,6 +599,7 @@ class ConfigMenuApp(App):
                                 value=current_theme,
                                 id="theme-select",
                                 allow_blank=False,
+                                classes="param-control"
                             )
 
             # Right panel with status
