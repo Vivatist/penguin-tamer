@@ -1625,8 +1625,14 @@ class ConfigMenuApp(App):
 
 def main_menu():
     """Entry point for running the config menu."""
-    app = ConfigMenuApp()
-    app.run()
+    try:
+        app = ConfigMenuApp()
+        app.run()
+    except Exception as e:
+        print(f"Ошибка при запуске меню настроек: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

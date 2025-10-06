@@ -374,6 +374,9 @@ def main() -> None:
     except KeyboardInterrupt:
         return 130
     except Exception as e:
+        print(f"Ошибка: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
         return 1
     finally:
         print()  # print empty line anyway
