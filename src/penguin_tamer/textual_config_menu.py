@@ -149,6 +149,103 @@ class InputDialog(ModalScreen):
         self.dismiss(self.result)
 
 
+class LLMEditDialog(ModalScreen):
+    """Modal dialog for adding or editing LLM with all fields in one screen."""
+
+    def __init__(
+        self,
+        title: str = "Добавление LLM",
+        name: str = "",
+        model: str = "",
+        api_url: str = "",
+        api_key: str = "",
+        name_editable: bool = True,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.title_text = title
+        self.default_name = name
+        self.default_model = model
+        self.default_api_url = api_url
+        self.default_api_key = api_key
+        self.name_editable = name_editable
+        self.result = None
+
+    def compose(self) -> ComposeResult:
+        yield Container(
+            Static(self.title_text, classes="llm-dialog-title"),
+            Container(
+                Static("Название LLM:", classes="llm-field-label"),
+                Input(
+                    value=self.default_name, 
+                    id="llm-name-input",
+                    disabled=not self.name_editable,
+                    placeholder="[dim italic]Например: GPT-4[/]"
+                ),
+                Static("Модель:", classes="llm-field-label"),
+                Input(
+                    value=self.default_model, 
+                    id="llm-model-input",
+                    placeholder="[dim italic]Например: gpt-4-turbo-preview[/]"
+                ),
+                Static("API URL:", classes="llm-field-label"),
+                Input(
+                    value=self.default_api_url, 
+                    id="llm-url-input",
+                    placeholder="[dim italic]Например: https://api.openai.com/v1[/]"
+                ),
+                Static("API ключ (необязательно):", classes="llm-field-label"),
+                Input(
+                    value=self.default_api_key, 
+                    id="llm-key-input",
+                    password=True,
+                    placeholder="[dim italic]Оставьте пустым, если не требуется[/]"
+                ),
+                classes="llm-fields-container"
+            ),
+            Horizontal(
+                Button("Сохранить", variant="success", id="save-btn"),
+                Button("Отмена", variant="error", id="cancel-btn"),
+                classes="llm-dialog-buttons",
+            ),
+            classes="llm-dialog-container",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "save-btn":
+            name_input = self.query_one("#llm-name-input", Input)
+            model_input = self.query_one("#llm-model-input", Input)
+            url_input = self.query_one("#llm-url-input", Input)
+            key_input = self.query_one("#llm-key-input", Input)
+            
+            name = name_input.value.strip()
+            model = model_input.value.strip()
+            api_url = url_input.value.strip()
+            api_key = key_input.value.strip()
+            
+            # Validation
+            if not name:
+                self.notify("Название LLM обязательно", severity="error")
+                name_input.focus()
+                return
+            if not model:
+                self.notify("Модель обязательна", severity="error")
+                model_input.focus()
+                return
+            if not api_url:
+                self.notify("API URL обязателен", severity="error")
+                url_input.focus()
+                return
+            
+            self.result = {
+                "name": name,
+                "model": model,
+                "api_url": api_url,
+                "api_key": api_key
+            }
+        self.dismiss(self.result)
+
+
 class InfoPanel(Static):
     """Information panel showing detailed help for current tab and widgets."""
     
@@ -713,6 +810,53 @@ class ConfigMenuApp(App):
         margin: 0 2;
         min-width: 10;
     }
+
+    /* LLM Edit Dialog */
+    .llm-dialog-container {
+        width: 80;
+        height: auto;
+        background: $surface;
+        border: thick $primary;
+        padding: 2;
+    }
+
+    .llm-dialog-title {
+        width: 100%;
+        content-align: center middle;
+        text-style: bold;
+        color: $accent;
+        margin-bottom: 2;
+    }
+
+    .llm-fields-container {
+        width: 100%;
+        height: auto;
+        margin-bottom: 1;
+    }
+
+    .llm-field-label {
+        width: 100%;
+        margin-top: 1;
+        margin-bottom: 0;
+        color: $text;
+    }
+
+    .llm-fields-container Input {
+        width: 100%;
+        margin-bottom: 1;
+    }
+
+    .llm-dialog-buttons {
+        width: 100%;
+        height: auto;
+        align: center middle;
+        margin-top: 1;
+    }
+
+    .llm-dialog-buttons Button {
+        margin: 0 2;
+        min-width: 15;
+    }
     """
 
     BINDINGS = [
@@ -1170,43 +1314,22 @@ class ConfigMenuApp(App):
 
     def add_llm(self) -> None:
         """Add new LLM."""
-
-        def handle_name(name):
-            if not name:
-                return
-
-            def handle_model(model):
-                if not model:
-                    return
-
-                def handle_url(api_url):
-                    if not api_url:
-                        return
-
-                    def handle_key(api_key):
-                        config.add_llm(name, model, api_url, api_key or "")
-                        self.update_llm_tables()
-                        self.refresh_status()
-                        self.notify(f"LLM '{name}' добавлена", severity="information")
-
-                    self.push_screen(
-                        InputDialog(
-                            "API ключ (необязательно):",
-                            title="Добавление LLM",
-                            default="",
-                        ),
-                        handle_key,
-                    )
-
-                self.push_screen(
-                    InputDialog("API URL:", title="Добавление LLM"), handle_url
+        def handle_result(result):
+            if result:
+                config.add_llm(
+                    result["name"], 
+                    result["model"], 
+                    result["api_url"], 
+                    result["api_key"]
                 )
+                self.update_llm_tables()
+                self.refresh_status()
+                self.notify(f"LLM '{result['name']}' добавлена", severity="information")
 
-            self.push_screen(
-                InputDialog("Модель:", title="Добавление LLM"), handle_model
-            )
-
-        self.push_screen(InputDialog("Название LLM:", title="Добавление LLM"), handle_name)
+        self.push_screen(
+            LLMEditDialog(title="Добавление LLM"),
+            handle_result
+        )
 
     def edit_llm(self) -> None:
         """Edit selected LLM."""
@@ -1218,20 +1341,28 @@ class ConfigMenuApp(App):
         llm_name = str(row[1])  # Название во втором столбце (после галочки)
         cfg = config.get_llm_config(llm_name) or {}
 
-        def handle_model(model):
-            if model is not None:
-                config.update_llm(llm_name, model=model)
+        def handle_result(result):
+            if result:
+                config.update_llm(
+                    llm_name,
+                    model=result["model"],
+                    api_url=result["api_url"],
+                    api_key=result["api_key"]
+                )
                 self.update_llm_tables()
                 self.refresh_status()
                 self.notify(f"LLM '{llm_name}' обновлена", severity="information")
 
         self.push_screen(
-            InputDialog(
-                "Модель:",
-                default=cfg.get("model", ""),
+            LLMEditDialog(
                 title=f"Редактирование {llm_name}",
+                name=llm_name,
+                model=cfg.get("model", ""),
+                api_url=cfg.get("api_url", ""),
+                api_key=cfg.get("api_key", ""),
+                name_editable=False  # При редактировании имя не меняется
             ),
-            handle_model,
+            handle_result
         )
 
     def delete_llm(self) -> None:
