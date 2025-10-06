@@ -116,15 +116,29 @@ class ResponsiveButtonRow(Container):
         buttons_per_row = self._current_layout
         total_buttons = len(self.buttons_data)
         
+        # Calculate total rows needed
+        total_rows = (total_buttons + buttons_per_row - 1) // buttons_per_row
+        
         # Create rows dynamically
         current_index = 0
+        row_number = 0
         while current_index < total_buttons:
+            row_number += 1
             # Create a new row
-            row = Horizontal(classes="adaptive-button-row")
+            row_classes = "adaptive-button-row"
+            
+            # Calculate how many buttons will be in next row
+            end_index = min(current_index + buttons_per_row, total_buttons)
+            remaining = total_buttons - end_index
+            
+            # If there's a next row with fewer buttons, reduce margin of current row
+            if remaining > 0 and remaining < buttons_per_row:
+                row_classes += " adaptive-button-row-tight"
+            
+            row = Horizontal(classes=row_classes)
             self.mount(row)
             
-            # Add buttons to this row (up to buttons_per_row)
-            end_index = min(current_index + buttons_per_row, total_buttons)
+            # Add buttons to this row
             for text, btn_id, variant in self.buttons_data[current_index:end_index]:
                 row.mount(Button(text, id=btn_id, variant=variant))
             
@@ -787,6 +801,10 @@ class ConfigMenuApp(App):
     height: auto;
     align: center middle;
     margin-bottom: 1;
+}
+
+.adaptive-button-row-tight {
+    margin-bottom: 0;
 }
 
 .adaptive-button-row Button {
