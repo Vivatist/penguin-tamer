@@ -112,12 +112,179 @@ class InputDialog(ModalScreen):
         self.dismiss(self.result)
 
 
-class StatusPanel(Static):
-    """Live status panel showing current configuration."""
+class InfoPanel(Static):
+    """Information panel showing detailed help for current tab and widgets."""
+    
+    content_text = reactive("")
 
     def on_mount(self) -> None:
-        """Update content when mounted."""
-        self.update_content()
+        """Panel mounted - will show help when first tab is activated."""
+        pass
+    
+    def watch_content_text(self, new_text: str) -> None:
+        """Update display when content changes."""
+        self.update(new_text)
+
+    def show_tab_help(self, tab_id: str) -> None:
+        """Show general help for a tab."""
+        tab_help = {
+            "tab-llm": """[bold cyan]УПРАВЛЕНИЕ LLM[/bold cyan]
+
+Управление языковыми моделями для генерации текста.
+
+[bold]Текущая LLM:[/bold]
+Модель, которая будет использоваться для всех запросов.
+
+[bold]Доступные операции:[/bold]
+• [bold]Выбрать[/bold] - установить выбранную модель как текущую
+• [bold]Добавить[/bold] - добавить новую LLM с параметрами
+• [bold]Редактировать[/bold] - изменить параметры модели
+• [bold]Удалить[/bold] - удалить модель из списка
+
+[bold]Параметры LLM:[/bold]
+• Название - уникальное имя модели
+• Модель - идентификатор модели (например, gpt-4)
+• API URL - адрес эндпоинта API
+• API ключ - ключ доступа к API
+
+[bold]Совет:[/bold]
+Для переключения между моделями выберите строку в таблице и нажмите кнопку "Выбрать".""",
+
+            "tab-params": """[bold cyan]ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold cyan]
+
+Настройка поведения языковой модели при генерации текста.
+
+[bold]Основные параметры:[/bold]
+
+[bold]Температура (0.0-2.0):[/bold]
+Контролирует креативность ответов. Низкие значения дают более предсказуемые результаты, высокие - более креативные и разнообразные.
+
+[bold]Максимум токенов:[/bold]
+Ограничивает длину ответа. 1 токен ≈ 0.75 слова. Пустое значение = без ограничений.
+
+[bold]Top P (0.0-1.0):[/bold]
+Nucleus sampling. Модель выбирает из топ-N% наиболее вероятных токенов. Рекомендуется 0.9-0.95.
+
+[bold]Штраф частоты (-2.0 до 2.0):[/bold]
+Снижает повторение одних и тех же слов. Положительные значения уменьшают повторы.
+
+[bold]Штраф присутствия (-2.0 до 2.0):[/bold]
+Поощряет обсуждение новых тем. Положительные значения увеличивают разнообразие тем.
+
+[bold]Seed:[/bold]
+Для воспроизводимости результатов. Одинаковый seed с теми же параметрами даст идентичный ответ.
+
+[bold]Совет:[/bold]
+Начните со стандартных значений и меняйте по одному параметру для тонкой настройки.""",
+
+            "tab-content": """[bold cyan]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ[/bold cyan]
+
+Дополнительный контекст, добавляемый ко всем запросам.
+
+[bold]Назначение:[/bold]
+Используйте это поле для системных промптов и инструкций, которые должны автоматически добавляться к каждому запросу.
+
+[bold]Примеры использования:[/bold]
+
+• [bold]Роль ассистента:[/bold]
+  "Ты - опытный программист Python. Всегда давай подробные объяснения с примерами кода."
+
+• [bold]Формат ответов:[/bold]
+  "Отвечай кратко и по делу. Используй маркированные списки."
+
+• [bold]Стиль общения:[/bold]
+  "Общайся дружелюбно и неформально, используй примеры из жизни."
+
+• [bold]Специализация:[/bold]
+  "Ты специализируешься на веб-разработке с фокусом на React и TypeScript."
+
+[bold]Кнопки:[/bold]
+• [bold]Сохранить[/bold] - применить изменения
+• [bold]Сбросить[/bold] - очистить контент
+
+[bold]Совет:[/bold]
+Хороший системный промпт может значительно улучшить качество ответов модели.""",
+
+            "tab-system": """[bold cyan]СИСТЕМНЫЕ НАСТРОЙКИ[/bold cyan]
+
+Настройки поведения приложения.
+
+[bold]Задержка стрима (0.001-0.1 сек):[/bold]
+Пауза между порциями текста при потоковой генерации.
+• Малые значения (0.001-0.01): быстрое отображение
+• Средние (0.02-0.05): оптимально
+• Большие (0.06-0.1): легче читать в реальном времени
+
+[bold]Частота обновлений (1-60 Гц):[/bold]
+Скорость обновления интерфейса.
+• Низкие (1-10): меньше нагрузка на CPU
+• Средние (10-30): рекомендуется
+• Высокие (30-60): очень плавно, но больше нагрузка
+
+[bold]Режим отладки:[/bold]
+Включает подробное логирование:
+• Информация о запросах к API
+• Логирование параметров
+• Отображение токенов и времени
+• Полезно для диагностики проблем
+
+[bold]Совет:[/bold]
+Стандартные значения (delay: 0.01, refresh: 10, debug: OFF) подходят для большинства случаев.""",
+
+            "tab-appearance": """[bold cyan]НАСТРОЙКИ ИНТЕРФЕЙСА[/bold cyan]
+
+Язык и внешний вид приложения.
+
+[bold]Язык интерфейса:[/bold]
+Выбор языка меню и сообщений:
+• English (en) - английский
+• Русский (ru) - русский
+
+Изменение языка требует перезапуска приложения.
+
+[bold]Цветовая схема:[/bold]
+Выбор темы оформления:
+• [bold]Классический[/bold] - стандартная тема Textual
+• [bold]Monokai[/bold] - темная с контрастными акцентами
+• [bold]Dracula[/bold] - популярная темная тема
+• [bold]Nord[/bold] - холодные северные тона
+
+Изменение темы требует перезапуска приложения.
+
+[bold]Примечание:[/bold]
+Язык интерфейса не влияет на язык общения с LLM. Для изменения языка ответов модели используйте соответствующие промпты в запросах или пользовательском контенте.
+
+[bold]Совет:[/bold]
+Выберите тему, комфортную для ваших глаз при длительной работе.""",
+            "tab-appearance": """[bold cyan]НАСТРОЙКИ ИНТЕРФЕЙСА[/bold cyan]
+
+Язык и внешний вид приложения.
+
+[bold]Язык интерфейса:[/bold]
+Выбор языка меню и сообщений:
+• English (en) - английский
+• Русский (ru) - русский
+
+Изменение языка требует перезапуска приложения.
+
+[bold]Цветовая схема:[/bold]
+Выбор темы оформления:
+• [bold]Классический[/bold] - стандартная тема Textual
+• [bold]Monokai[/bold] - темная с контрастными акцентами
+• [bold]Dracula[/bold] - популярная темная тема
+• [bold]Nord[/bold] - холодные северные тона
+
+Изменение темы требует перезапуска приложения.
+
+[bold]Примечание:[/bold]
+Язык интерфейса не влияет на язык общения с LLM. Для изменения языка ответов модели используйте соответствующие промпты в запросах или пользовательском контенте.
+
+[bold]Совет:[/bold]
+Выберите тему, комфортную для ваших глаз при длительной работе.""",
+        }
+        
+        content = tab_help.get(tab_id, f"[bold red]Информация для вкладки {tab_id} не найдена[/bold red]")
+        self.content_text = content
 
     def show_help(self, widget_id: str) -> None:
         """Show detailed help for specific widget."""
@@ -315,76 +482,8 @@ class StatusPanel(Static):
 [bold]Рекомендация:[/bold]
 Выберите тему, которая комфортна для ваших глаз.""",
         }
-        content = help_texts.get(widget_id, "")
-        if content:
-            self.update(content)
-        else:
-            self.update_content()
-
-    def update_content(self) -> None:
-        """Update the status display."""
-        try:
-            current_llm = config.current_llm or "Не выбран"
-            llm_info = ""
-            if current_llm != "Не выбран":
-                cfg = config.get_llm_config(current_llm) or {}
-                model = cfg.get("model", "N/A")
-                llm_info = f" [dim](модель: {model})[/dim]"
-
-            content_preview = (
-                config.user_content[:100] + "..."
-                if len(config.user_content) > 100
-                else config.user_content
-            )
-            if not content_preview.strip():
-                content_preview = "[dim italic]Пусто[/dim italic]"
-
-            # Получаем информацию о языке и теме
-            current_lang = getattr(config, "language", "en")
-            lang_display = "English" if current_lang == "en" else "Русский"
-
-            current_theme = getattr(config, "theme", "default")
-            theme_names = {
-                "default": "Классический",
-                "monokai": "Monokai",
-                "dracula": "Dracula",
-                "nord": "Nord",
-            }
-            theme_display = theme_names.get(current_theme, current_theme)
-
-            content = f"""[bold cyan]ТЕКУЩАЯ КОНФИГУРАЦИЯ[/bold cyan]
-
-[bold]Текущая LLM:[/bold] {current_llm}{llm_info}
-[dim]Выбранная модель для генерации[/dim]
-
-[bold]Температура:[/bold] {config.temperature}
-[dim]Креативность (0.0-2.0)[/dim]
-
-[bold]Максимум токенов:[/bold] {config.max_tokens or 'Без ограничений'}
-[dim]Длина ответа[/dim]
-
-[bold]Top P:[/bold] {config.top_p}
-[dim]Nucleus sampling (0.0-1.0)[/dim]
-
-[bold]Штраф частоты:[/bold] {config.frequency_penalty}
-[dim]Снижает повторения (-2.0 до 2.0)[/dim]
-
-[bold]Штраф присутствия:[/bold] {config.presence_penalty}
-[dim]Разнообразие тем (-2.0 до 2.0)[/dim]
-
-[bold]Seed:[/bold] {config.seed or 'Случайный'}
-[dim]Для воспроизводимости[/dim]
-
-[bold]Контент:[/bold]
-[dim]{content_preview}[/dim]
-
-[bold]Язык:[/bold] {lang_display}
-[bold]Тема:[/bold] {theme_display}
-[bold]Отладка:[/bold] {'Вкл' if getattr(config, 'debug', False) else 'Выкл'}
-"""
-            self.update(content)
-        except Exception as e:
-            self.update(f"[red]Ошибка: {e}[/red]")
+        content = help_texts.get(widget_id, f"[bold yellow]Подсказка для {widget_id} не найдена[/bold yellow]")
+        self.content_text = content
 
 
 class ConfigMenuApp(App):
@@ -822,17 +921,70 @@ class ConfigMenuApp(App):
                                     classes="param-control"
                                 )
 
-            # Right panel with status
+            # Right panel with info
             with Vertical(id="right-panel"):
-                yield StatusPanel(id="status-panel")
+                with VerticalScroll():
+                    yield InfoPanel(id="info-panel")
 
         yield Footer()
 
     def on_mount(self) -> None:
         """Initialize the app."""
+        self._initialized = False
         self.update_llm_tables()
-        # Set flag after initialization to enable notifications
-        self.set_timer(0.1, lambda: setattr(self, '_initialized', True))
+        # Set flag after initialization to enable notifications and tab switching
+        def finish_init():
+            self._initialized = True
+            # Show help for first tab
+            panel = self.query_one("#info-panel", InfoPanel)
+            panel.show_tab_help("tab-llm")
+        
+        self.set_timer(0.2, finish_init)
+    
+    def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+        """Handle tab change to update info panel."""
+        # Ensure we're initialized
+        if not getattr(self, '_initialized', False):
+            return
+            
+        try:
+            panel = self.query_one("#info-panel", InfoPanel)
+            # Extract actual tab ID from the event
+            raw_id = event.tab.id
+            
+            # Format is "--content-tab-tab-system", we need "tab-system"
+            # Remove "--content-" prefix first
+            if raw_id and raw_id.startswith("--content-"):
+                tab_id = raw_id[len("--content-"):]
+                # If it has duplicate "tab-tab-", fix it
+                if tab_id.startswith("tab-tab-"):
+                    tab_id = tab_id[4:]  # Remove one "tab-"
+            else:
+                tab_id = raw_id
+            
+            panel.show_tab_help(tab_id)
+        except Exception as e:
+            self.notify(f"Ошибка: {e}", severity="error")
+    
+    def on_focus(self, event) -> None:
+        """Show help when any widget gets focus."""
+        widget = event.widget
+        widget_id = getattr(widget, 'id', None)
+        
+        if widget_id and isinstance(widget, (Input, Select, Switch)):
+            panel = self.query_one(InfoPanel)
+            panel.show_help(widget_id)
+    
+    def on_blur(self, event) -> None:
+        """Restore config when widget loses focus."""
+        widget = event.widget
+        
+        if isinstance(widget, (Input, Select, Switch)):
+            # Get current tab and show its help
+            tabs = self.query_one(TabbedContent)
+            current_tab = tabs.active
+            panel = self.query_one(InfoPanel)
+            panel.show_tab_help(current_tab)
     
     def on_switch_changed(self, event: Switch.Changed) -> None:
         """Handle switch state changes."""
@@ -1207,9 +1359,11 @@ class ConfigMenuApp(App):
 
     # Utility Methods
     def refresh_status(self) -> None:
-        """Refresh status panel."""
-        status_panel = self.query_one("#status-panel", StatusPanel)
-        status_panel.update_content()
+        """Refresh info panel to show current tab help."""
+        tabs = self.query_one(TabbedContent)
+        current_tab = tabs.active
+        info_panel = self.query_one("#info-panel", InfoPanel)
+        info_panel.show_tab_help(current_tab)
 
     def action_help(self) -> None:
         """Show help."""
