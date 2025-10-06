@@ -39,6 +39,7 @@ dependencies = [
     "PyYAML==6.0.2",
     "inquirer==3.4.0",
     "prompt-toolkit==3.0.52",
+    "textual>=0.47.0",
 ]
 dynamic = ["version"]
 

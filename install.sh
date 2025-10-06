@@ -89,15 +89,61 @@ fi
 
 # 4. Install Penguin Tamer via pipx
 echo "[+] Installing Penguin Tamer from PyPI..."
+echo "    This may take a minute - downloading and installing dependencies..."
+echo ""
+
+# Function to show spinner
+show_spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    while ps -p $pid > /dev/null 2>&1; do
+        local temp=${spinstr#?}
+        printf " [%c] Installing packages..." "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\r"
+    done
+    printf "    \r"
+}
+
 INSTALL_OUTPUT=""
 if command_exists pipx; then
-    INSTALL_OUTPUT=$(pipx install penguin-tamer --force 2>&1)
+    # Run pipx install in background to show spinner
+    pipx install penguin-tamer --force > /tmp/pt_install.log 2>&1 &
+    INSTALL_PID=$!
+    show_spinner $INSTALL_PID
+    wait $INSTALL_PID
+    INSTALL_EXIT=$?
+    INSTALL_OUTPUT=$(cat /tmp/pt_install.log)
+    rm -f /tmp/pt_install.log
+    
+    if [ $INSTALL_EXIT -ne 0 ]; then
+        echo "[!] Installation failed. Output:"
+        echo "$INSTALL_OUTPUT"
+        exit 1
+    fi
 elif $PYTHON_CMD -m pipx --version >/dev/null 2>&1; then
-    INSTALL_OUTPUT=$($PYTHON_CMD -m pipx install penguin-tamer --force 2>&1)
+    $PYTHON_CMD -m pipx install penguin-tamer --force > /tmp/pt_install.log 2>&1 &
+    INSTALL_PID=$!
+    show_spinner $INSTALL_PID
+    wait $INSTALL_PID
+    INSTALL_EXIT=$?
+    INSTALL_OUTPUT=$(cat /tmp/pt_install.log)
+    rm -f /tmp/pt_install.log
+    
+    if [ $INSTALL_EXIT -ne 0 ]; then
+        echo "[!] Installation failed. Output:"
+        echo "$INSTALL_OUTPUT"
+        exit 1
+    fi
 else
     echo "[!] pipx not found after installation. Falling back to pip..."
     $PYTHON_CMD -m pip install --user penguin-tamer --upgrade
 fi
+
+echo "[✓] Download and installation complete!"
+echo ""
 
 # Extract version from pipx output
 INSTALLED_VERSION=""
