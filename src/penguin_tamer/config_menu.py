@@ -311,6 +311,33 @@ class LLMEditDialog(ModalScreen):
         self.dismiss(self.result)
 
 
+class ConfirmDialog(ModalScreen):
+    """Диалог подтверждения действия."""
+    
+    def __init__(self, message: str, title: str = "Подтверждение") -> None:
+        super().__init__()
+        self.message = message
+        self.title = title
+        self.result = False
+    
+    def compose(self) -> ComposeResult:
+        yield Container(
+            Static(self.title, classes="input-dialog-title"),
+            Static(self.message, classes="input-dialog-prompt"),
+            Horizontal(
+                Button("Да", variant="error", id="confirm-yes-btn"),
+                Button("Отмена", variant="default", id="confirm-no-btn"),
+                classes="input-dialog-buttons",
+            ),
+            classes="input-dialog-container",
+        )
+    
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "confirm-yes-btn":
+            self.result = True
+        self.dismiss(self.result)
+
+
 class InfoPanel(VerticalScroll):
     """Information panel showing detailed help for current tab and widgets with Markdown support."""
     
@@ -895,6 +922,10 @@ class ConfigMenuApp(App):
         margin-top: 1;
     }
 
+    .setting-spacer {
+        height: 1;
+    }
+
     .param-label {
         width: 40%;
         color: $text;
@@ -1140,12 +1171,15 @@ class ConfigMenuApp(App):
                             # System Info
                             config_dir = Path(config.config_path).parent if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
                             bin_path = Path(sys.executable).parent
+                            current_llm = config.current_llm or "Не выбрана"
                             
                             yield Static(
                                 f"[bold]Версия ПО:[/bold] {__version__}\n"
                                 f"[bold]Папка конфига:[/bold] {config_dir}\n"
-                                f"[bold]Папка бинарника:[/bold] {bin_path}",
+                                f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
+                                f"[bold]Текущая LLM:[/bold] [green]{current_llm}[/green]",
                                 classes="system-info-panel",
+                                id="system-info-display"
                             )
                             
                             # Language setting
@@ -1162,13 +1196,6 @@ class ConfigMenuApp(App):
                                     allow_blank=False,
                                     classes="param-control"
                                 )
-                            
-                            current_llm = config.current_llm or "Не выбрана"
-                            yield Static(
-                                f"Текущая LLM: {current_llm}",
-                                classes="current-llm-panel",
-                                id="current-llm-display"
-                            )
                             
                             llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
@@ -1345,6 +1372,14 @@ class ConfigMenuApp(App):
                                         value=getattr(config, "debug", False),
                                         id="debug-switch"
                                     )
+                            
+                            # Reset Settings Button
+                            yield Static("", classes="setting-spacer")
+                            yield Button(
+                                "Сброс настроек",
+                                id="reset-settings-btn",
+                                variant="error",
+                            )
 
                     # Tab 5: Interface
 
@@ -1541,8 +1576,12 @@ class ConfigMenuApp(App):
         """Handle button presses."""
         btn_id = event.button.id
 
+        # Reset Settings
+        if btn_id == "reset-settings-btn":
+            self.action_reset_settings()
+
         # LLM Management
-        if btn_id == "select-llm-btn":
+        elif btn_id == "select-llm-btn":
             self.select_current_llm()
 
         # LLM Management
@@ -1573,9 +1612,18 @@ class ConfigMenuApp(App):
         config.current_llm = llm_name
         config.save()
         self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
-        # Update current LLM display panel
-        current_llm_display = self.query_one("#current-llm-display", Static)
-        current_llm_display.update(f"Текущая LLM: {llm_name}")
+        
+        # Update system info panel with new current LLM
+        config_dir = Path(config.config_path).parent if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+        bin_path = Path(sys.executable).parent
+        system_info_display = self.query_one("#system-info-display", Static)
+        system_info_display.update(
+            f"[bold]Версия ПО:[/bold] {__version__}\n"
+            f"[bold]Папка конфига:[/bold] {config_dir}\n"
+            f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
+            f"[bold]Текущая LLM:[/bold] [green]{llm_name}[/green]"
+        )
+        
         self.refresh_status()
         self.notify(f"Текущая LLM: {llm_name}", severity="information")
 
@@ -1861,6 +1909,119 @@ class ConfigMenuApp(App):
         """Refresh status action."""
         self.refresh_status()
         self.notify("Статус обновлён", severity="information")
+    
+    def action_reset_settings(self) -> None:
+        """Сброс настроек к значениям по умолчанию."""
+        message = (
+            "Внимание! Все настройки, включая API ключи,\n"
+            "будут сброшены к настройкам по умолчанию.\n\n"
+            "Продолжить?"
+        )
+        
+        def handle_confirm(result):
+            if result:
+                try:
+                    # Загружаем default_config.yaml
+                    default_config_path = Path(__file__).parent / "default_config.yaml"
+                    
+                    if not default_config_path.exists():
+                        self.notify("Файл default_config.yaml не найден", severity="error")
+                        return
+                    
+                    # Читаем содержимое default_config.yaml
+                    with open(default_config_path, 'r', encoding='utf-8') as f:
+                        default_content = f.read()
+                    
+                    # Записываем в пользовательский конфиг
+                    config_path = Path(config.config_path) if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer" / "config.yaml"
+                    
+                    # Создаем директорию если не существует
+                    config_path.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    # Записываем default конфиг
+                    with open(config_path, 'w', encoding='utf-8') as f:
+                        f.write(default_content)
+                    
+                    # Перезагружаем конфигурацию
+                    config.reload()
+                    
+                    # Обновляем все отображаемые значения
+                    self.update_all_inputs()
+                    self.update_llm_tables()
+                    
+                    self.notify("Настройки успешно сброшены к значениям по умолчанию", severity="information")
+                    
+                except Exception as e:
+                    self.notify(f"Ошибка при сбросе настроек: {e}", severity="error")
+        
+        self.push_screen(ConfirmDialog(message, "Сброс настроек"), handle_confirm)
+    
+    def update_all_inputs(self) -> None:
+        """Обновляет все поля ввода значениями из конфига."""
+        try:
+            # Обновляем параметры генерации
+            temp_input = self.query_one("#temp-input", Input)
+            temp_input.value = str(config.temperature)
+            
+            max_tokens_input = self.query_one("#max-tokens-input", Input)
+            max_tokens_str = str(config.max_tokens) if config.max_tokens else "неограниченно"
+            max_tokens_input.value = max_tokens_str
+            
+            top_p_input = self.query_one("#top-p-input", Input)
+            top_p_input.value = str(config.top_p)
+            
+            freq_penalty_input = self.query_one("#freq-penalty-input", Input)
+            freq_penalty_input.value = str(config.frequency_penalty)
+            
+            pres_penalty_input = self.query_one("#pres-penalty-input", Input)
+            pres_penalty_input.value = str(config.presence_penalty)
+            
+            seed_input = self.query_one("#seed-input", Input)
+            seed_str = str(config.seed) if config.seed else "случайный"
+            seed_input.value = seed_str
+            
+            # Обновляем системные настройки
+            stream_delay_input = self.query_one("#stream-delay-input", Input)
+            stream_delay = config.get("global", "sleep_time", 0.01)
+            stream_delay_input.value = str(stream_delay)
+            
+            refresh_rate_input = self.query_one("#refresh-rate-input", Input)
+            refresh_rate = config.get("global", "refresh_per_second", 10)
+            refresh_rate_input.value = str(refresh_rate)
+            
+            debug_switch = self.query_one("#debug-switch", Switch)
+            debug_switch.value = getattr(config, "debug", False)
+            
+            # Обновляем контент
+            content_textarea = self.query_one("#content-textarea", TextArea)
+            content_textarea.text = config.user_content
+            
+            # Обновляем язык
+            language_select = self.query_one("#language-select", Select)
+            current_lang = getattr(config, "language", "en")
+            language_select.value = current_lang
+            
+            # Обновляем тему
+            theme_select = self.query_one("#theme-select", Select)
+            current_theme = getattr(config, "theme", "default")
+            theme_select.value = current_theme
+            
+            # Обновляем панель с системной информацией и текущей LLM
+            config_dir = Path(config.config_path).parent if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+            bin_path = Path(sys.executable).parent
+            current_llm = config.current_llm or "Не выбрана"
+            
+            system_info_display = self.query_one("#system-info-display", Static)
+            system_info_display.update(
+                f"[bold]Версия ПО:[/bold] {__version__}\n"
+                f"[bold]Папка конфига:[/bold] {config_dir}\n"
+                f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
+                f"[bold]Текущая LLM:[/bold] [green]{current_llm}[/green]"
+            )
+            
+        except Exception as e:
+            # Некоторые виджеты могут быть не найдены, это нормально
+            pass
 
 
 def main_menu():
