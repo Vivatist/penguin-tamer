@@ -31,6 +31,8 @@ from textual.widgets import (
     TextArea,
 )
 from textual.reactive import reactive
+from textual.message import Message
+import time
 
 from penguin_tamer.config_manager import config
 from penguin_tamer.i18n import translator
@@ -41,6 +43,41 @@ def format_api_key_display(key: str) -> str:
     if not key or len(key) < 8:
         return "***" if key else "пусто"
     return f"...{key[-4:]}"
+
+
+class DoubleClickDataTable(DataTable):
+    """DataTable with double-click support."""
+    
+    class DoubleClicked(Message):
+        """Message sent when table is double-clicked."""
+        def __init__(self, row: int) -> None:
+            self.row = row
+            super().__init__()
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._last_click_time = 0
+        self._last_clicked_row = -1
+        self._double_click_threshold = 0.5
+    
+    def on_click(self, event) -> None:
+        """Handle click to detect double-click."""
+        current_time = time.time()
+        current_row = self.cursor_row
+        
+        # Check for double-click
+        if (current_row == self._last_clicked_row and 
+            current_time - self._last_click_time < self._double_click_threshold):
+            # Double-click detected!
+            if current_row >= 0:
+                self.post_message(self.DoubleClicked(current_row))
+            # Reset
+            self._last_click_time = 0
+            self._last_clicked_row = -1
+        else:
+            # First click
+            self._last_click_time = current_time
+            self._last_clicked_row = current_row
 
 
 class ConfirmDialog(ModalScreen):
@@ -711,7 +748,7 @@ class ConfigMenuApp(App):
                                 classes="current-llm-panel",
                                 id="current-llm-display"
                             )
-                            llm_dt = DataTable(id="llm-table", show_header=True, cursor_type="row")
+                            llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
                             with Horizontal(classes="button-row"):
                                 yield Button("Выбрать", id="select-llm-btn", variant="success")
@@ -1016,16 +1053,33 @@ class ConfigMenuApp(App):
         elif select_id == "theme-select" and event.value != Select.BLANK:
             self.set_theme(str(event.value))
 
-    def update_llm_tables(self) -> None:
-        """Update LLM table with current data."""
+    def update_llm_tables(self, keep_cursor_position: bool = False) -> None:
+        """Update LLM table with current data.
+        
+        Args:
+            keep_cursor_position: If True, try to keep cursor on the same row
+        """
         current = config.current_llm
         llms = config.get_available_llms()
 
         # Update unified LLM table
         llm_table = self.query_one("#llm-table", DataTable)
+        
+        # Save cursor position
+        old_cursor_row = llm_table.cursor_row if keep_cursor_position else -1
+        old_llm_name = None
+        if old_cursor_row >= 0:
+            try:
+                row = llm_table.get_row_at(old_cursor_row)
+                old_llm_name = str(row[1])  # Название LLM
+            except:
+                pass
+        
         llm_table.clear(columns=True)
         llm_table.add_columns("", "Название", "Модель", "API URL")
-        for llm_name in llms:
+        
+        new_cursor_row = 0
+        for idx, llm_name in enumerate(llms):
             cfg = config.get_llm_config(llm_name) or {}
             is_current = "✓" if llm_name == current else ""
             llm_table.add_row(
@@ -1034,6 +1088,21 @@ class ConfigMenuApp(App):
                 cfg.get("model", "N/A"),
                 cfg.get("api_url", "N/A"),
             )
+            # Запоминаем новую позицию для старой LLM
+            if old_llm_name and llm_name == old_llm_name:
+                new_cursor_row = idx
+        
+        # Восстанавливаем позицию курсора и highlight
+        if keep_cursor_position and old_llm_name and len(llms) > 0:
+            try:
+                # Устанавливаем cursor_coordinate для правильного highlight
+                llm_table.cursor_coordinate = (new_cursor_row, 0)
+            except:
+                try:
+                    # Альтернативный способ
+                    llm_table.move_cursor(row=new_cursor_row, animate=False)
+                except:
+                    pass
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle Enter key in input fields."""
@@ -1077,6 +1146,10 @@ class ConfigMenuApp(App):
         # User Content
         elif btn_id == "save-content-btn":
             self.save_user_content()
+    
+    def on_double_click_data_table_double_clicked(self, event: DoubleClickDataTable.DoubleClicked) -> None:
+        """Handle double-click on DataTable."""
+        self.select_current_llm()
 
     # LLM Methods
     def select_current_llm(self) -> None:
@@ -1089,7 +1162,7 @@ class ConfigMenuApp(App):
         llm_name = str(row[1])  # Название во втором столбце (после галочки)
         config.current_llm = llm_name
         config.save()
-        self.update_llm_tables()
+        self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
         # Update current LLM display panel
         current_llm_display = self.query_one("#current-llm-display", Static)
         current_llm_display.update(f"Текущая LLM: {llm_name}")
