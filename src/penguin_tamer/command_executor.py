@@ -39,77 +39,34 @@ class LinuxCommandExecutor(CommandExecutor):
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=False  # Используем байты для корректной работы
+            text=True  # Используем текстовый режим для автоматического декодирования
         )
         
-        # Читаем вывод в реальном времени
-        stdout_lines = []
-        stderr_lines = []
-        
-        # Читаем stdout построчно
-        if process.stdout:
-            for line in process.stdout:
-                if line:  # Проверяем, что линия не пустая
-                    try:
-                        decoded_line = line.decode('utf-8', errors='replace').strip()
-                        if decoded_line:  # Игнорируем пустые строки
-                            print(decoded_line)  # Выводим в реальном времени
-                            stdout_lines.append(decoded_line)
-                    except UnicodeDecodeError:
-                        # Если UTF-8 не работает, пробуем системную кодировку
-                        try:
-                            decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
-                            if decoded_line:
-                                print(decoded_line)
-                                stdout_lines.append(decoded_line)
-                        except:
-                            # В крайнем случае выводим как есть
-                            raw_line = line.decode('latin1', errors='replace').strip()
-                            if raw_line:
-                                print(raw_line)
-                                stdout_lines.append(raw_line)
-        
-        # # Читаем stderr построчно
-        # if process.stderr:
-        #     for line in process.stderr:
-        #         if line:  # Проверяем, что линия не пустая
-        #             try:
-        #                 decoded_line = line.decode('utf-8', errors='replace').strip()
-        #                 if decoded_line:  # Игнорируем пустые строки
-        #                     print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)  # Выводим ошибки в реальном времени
-        #                     stderr_lines.append(decoded_line)
-        #             except UnicodeDecodeError:
-        #                 try:
-        #                     decoded_line = line.decode(sys.getdefaultencoding(), errors='replace').strip()
-        #                     if decoded_line:
-        #                         print(t("Error: {line}").format(line=decoded_line), file=sys.stderr)
-        #                         stderr_lines.append(decoded_line)
-        #                 except:
-        #                     raw_line = line.decode('latin1', errors='replace').strip()
-        #                     if raw_line:
-        #                         print(t("Error: {line}").format(line=raw_line), file=sys.stderr)
-        #                         stderr_lines.append(raw_line)
-        
-        # Ждем завершения процесса с обработкой прерывания
+        # Ждем завершения и получаем вывод
         try:
-            process.wait()
+            stdout, stderr = process.communicate()
         except KeyboardInterrupt:
             # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
             try:
                 process.terminate()
-                process.wait(timeout=5)  # Ждем 5 секунд на корректное завершение
+                process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
-            # Пробрасываем KeyboardInterrupt дальше для обработки в execute_and_handle_result
             raise
+        
+        # Выводим stdout в реальном времени (после завершения)
+        if stdout:
+            for line in stdout.strip().split('\n'):
+                if line:
+                    print(line)
         
         # Создаем объект CompletedProcess для совместимости
         result = subprocess.CompletedProcess(
             args=code_block,
             returncode=process.returncode,
-            stdout='\n'.join(stdout_lines) if stdout_lines else '',
-            stderr='\n'.join(stderr_lines) if stderr_lines else ''
+            stdout=stdout,
+            stderr=stderr
         )
         
         return result
@@ -143,7 +100,6 @@ class WindowsCommandExecutor(CommandExecutor):
         code = '@echo off\n' + code_block.replace('@echo off', '')
         code = code.replace('pause', 'rem pause')
         
-        
         # Создаем временный .bat файл с правильной кодировкой
         fd, temp_path = tempfile.mkstemp(suffix='.bat')
         
@@ -151,58 +107,49 @@ class WindowsCommandExecutor(CommandExecutor):
             with os.fdopen(fd, 'w', encoding='cp1251', errors='replace') as f:
                 f.write(code)
             
-            # Запускаем с кодировкой консоли Windows и выводом в реальном времени
-            
+            # Запускаем команду
             process = subprocess.Popen(
                 [temp_path],
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=False,  # Используем байты для корректной работы
+                text=False,  # Используем байты для корректной работы с кодировками
                 creationflags=subprocess.CREATE_NO_WINDOW  # Предотвращаем создание окна консоли
             )
             
-            # Читаем вывод в реальном времени
-            stdout_lines = []
-            stderr_lines = []
-            
-            # Читаем stdout построчно
-            if process.stdout:
-                for line in process.stdout:
-                    if line:  # Проверяем, что линия не пустая
-                        decoded_line = self._decode_line_windows(line)
-                        if decoded_line:  # Игнорируем пустые строки
-                            print(decoded_line)  # Выводим в реальном времени
-                            stdout_lines.append(decoded_line)
-            
-            # Читаем stderr построчно (только собираем, не выводим сразу)
-            if process.stderr:
-                for line in process.stderr:
-                    if line:  # Проверяем, что линия не пустая
-                        decoded_line = self._decode_line_windows(line)
-                        if decoded_line:  # Игнорируем пустые строки
-                            stderr_lines.append(decoded_line)  # Только собираем ошибки для итоговой сводки
-            
-            # Ждем завершения процесса с обработкой прерывания
+            # Ждем завершения и получаем вывод
             try:
-                process.wait()
+                stdout_bytes, stderr_bytes = process.communicate()
             except KeyboardInterrupt:
                 # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
                 try:
                     process.terminate()
-                    process.wait(timeout=5)  # Ждем 5 секунд на корректное завершение
+                    process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
-                # Пробрасываем KeyboardInterrupt дальше для обработки в execute_and_handle_result
                 raise
+            
+            # Декодируем stdout
+            stdout = ''
+            if stdout_bytes:
+                stdout = self._decode_line_windows(stdout_bytes)
+                # Выводим stdout
+                for line in stdout.split('\n'):
+                    if line.strip():
+                        print(line)
+            
+            # Декодируем stderr
+            stderr = ''
+            if stderr_bytes:
+                stderr = self._decode_line_windows(stderr_bytes)
             
             # Создаем объект CompletedProcess для совместимости
             result = subprocess.CompletedProcess(
                 args=[temp_path],
                 returncode=process.returncode,
-                stdout='\n'.join(stdout_lines) if stdout_lines else '',
-                stderr='\n'.join(stderr_lines) if stderr_lines else ''
+                stdout=stdout,
+                stderr=stderr
             )
             
             return result
@@ -212,7 +159,7 @@ class WindowsCommandExecutor(CommandExecutor):
             # Всегда удаляем временный файл
             try:
                 os.unlink(temp_path)
-            except Exception as e:
+            except Exception:
                 pass
 
 
@@ -275,13 +222,13 @@ def execute_and_handle_result(console: Console, code: str) -> dict:
             result['stderr'] = process.stderr
             result['success'] = process.returncode == 0
             
-            # Выводим код завершения только при ошибке (не равен 0)
-            if process.returncode != 0:
-                console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=process.returncode))
+            # Выводим код завершения
+            console.print(t("[dim]>>> Exit code: {code}[/dim]").format(code=process.returncode))
             
-            # Показываем итоговую сводку только если есть stderr или особые случаи
-            if process.stderr and not any("Error:" in line for line in process.stderr.split('\n')):
-                console.print(t("[yellow]>>> Error:[/yellow]") + "\n" + process.stderr)
+            # Показываем stderr если есть
+            if process.stderr:
+                console.print(t("[yellow]>>> Error:[/yellow]"))
+                console.print(process.stderr)
                 
         except KeyboardInterrupt:
             # Перехватываем Ctrl+C во время выполнения команды
