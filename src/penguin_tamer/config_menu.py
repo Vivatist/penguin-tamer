@@ -76,6 +76,61 @@ class DoubleClickDataTable(DataTable):
             self._last_clicked_row = current_row
 
 
+class ResponsiveButtonRow(Container):
+    """Container that adapts button layout based on available width."""
+    
+    def __init__(self, buttons_data: list, **kwargs):
+        super().__init__(**kwargs)
+        self.buttons_data = buttons_data  # List of (text, id, variant)
+        self._current_layout = 4  # How many buttons fit in first row
+    
+    def compose(self) -> ComposeResult:
+        """Create initial layout with all buttons in one row."""
+        with Horizontal(classes="adaptive-button-row"):
+            for text, btn_id, variant in self.buttons_data:
+                yield Button(text, id=btn_id, variant=variant)
+    
+    def on_resize(self, event) -> None:
+        """Handle container resize to adapt layout."""
+        container_width = self.size.width
+        
+        # Calculate how many buttons fit: each button ~22 chars (20 + margins)
+        button_width = 22
+        buttons_per_row = max(1, container_width // button_width)
+        buttons_per_row = min(buttons_per_row, len(self.buttons_data))
+        
+        # Only rebuild if layout changed
+        if buttons_per_row != self._current_layout:
+            self._current_layout = buttons_per_row
+            self._rebuild_layout()
+    
+    def _rebuild_layout(self):
+        """Rebuild button layout based on how many buttons fit per row."""
+        # Remove all children first
+        try:
+            for child in list(self.children):
+                child.remove()
+        except Exception:
+            pass
+        
+        buttons_per_row = self._current_layout
+        total_buttons = len(self.buttons_data)
+        
+        # Create rows dynamically
+        current_index = 0
+        while current_index < total_buttons:
+            # Create a new row
+            row = Horizontal(classes="adaptive-button-row")
+            self.mount(row)
+            
+            # Add buttons to this row (up to buttons_per_row)
+            end_index = min(current_index + buttons_per_row, total_buttons)
+            for text, btn_id, variant in self.buttons_data[current_index:end_index]:
+                row.mount(Button(text, id=btn_id, variant=variant))
+            
+            current_index = end_index
+
+
 class ConfirmDialog(ModalScreen):
     """Modal dialog for confirmation prompts."""
 
@@ -724,11 +779,19 @@ class ConfigMenuApp(App):
 .button-row {
     margin-bottom: 0;
     margin-top: 1;
-    min-height: 3;
+    min-height: 6;
+    height: auto;
 }
 
-.button-row Button {
+.adaptive-button-row {
+    height: auto;
+    align: center middle;
+    margin-bottom: 1;
+}
+
+.adaptive-button-row Button {
     margin: 0 1;
+    min-width: 16;
 }    TextArea {
         height: 12;
         margin-bottom: 1;
@@ -920,11 +983,15 @@ class ConfigMenuApp(App):
                             )
                             llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
-                            with Horizontal(classes="button-row"):
-                                yield Button("Выбрать", id="select-llm-btn", variant="success")
-                                yield Button("Добавить", id="add-llm-btn", variant="primary")
-                                yield Button("Редактировать", id="edit-llm-btn", variant="default")
-                                yield Button("Удалить", id="delete-llm-btn", variant="error")
+                            yield ResponsiveButtonRow(
+                                buttons_data=[
+                                    ("Выбрать", "select-llm-btn", "success"),
+                                    ("Добавить", "add-llm-btn", "primary"),
+                                    ("Редактировать", "edit-llm-btn", "default"),
+                                    ("Удалить", "delete-llm-btn", "error"),
+                                ],
+                                classes="button-row"
+                            )
 
                     # Tab 2: Generation Parameters
                     with TabPane("Генерация", id="tab-params"):
