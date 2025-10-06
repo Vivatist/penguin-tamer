@@ -356,11 +356,11 @@ class ConfigMenuApp(App):
             # Left panel with tabs
             with Vertical(id="left-panel"):
                 with TabbedContent():
-                    # Tab 1: LLM Selection
-                    with TabPane("Выбор LLM", id="tab-llm-select"):
+                    # Tab 1: LLM Management (Объединённая)
+                    with TabPane("Управление LLM", id="tab-llm"):
                         yield Static(
-                            "[bold]ВЫБОР ТЕКУЩЕЙ LLM[/bold]\n"
-                            "[dim]Выберите модель для генерации ответов[/dim]",
+                            "[bold]УПРАВЛЕНИЕ LLM[/bold]\n"
+                            "[dim]Выбор текущей модели, добавление, редактирование, удаление[/dim]",
                             classes="tab-header",
                         )
                         current_llm = config.current_llm or "Не выбрана"
@@ -368,37 +368,21 @@ class ConfigMenuApp(App):
                             f"Текущая: [bold cyan]{current_llm}[/bold cyan]",
                             classes="param-current",
                         )
-                        selector_dt = DataTable(id="llm-selector-table", show_header=True, cursor_type="row")
-                        yield selector_dt
+                        llm_dt = DataTable(id="llm-table", show_header=True, cursor_type="row")
+                        yield llm_dt
                         with Horizontal(classes="button-row"):
-                            yield Button(
-                                "Выбрать",
-                                id="select-llm-btn",
-                                variant="success",
-                            )
-                            yield Button(
-                                "Обновить", id="refresh-llm-btn", variant="default"
-                            )
-
-                    # Tab 2: LLM Management
-                    with TabPane("Управление LLM", id="tab-llm-manage"):
-                        yield Static(
-                            "[bold]УПРАВЛЕНИЕ LLM[/bold]\n"
-                            "[dim]Добавление, редактирование, удаление моделей[/dim]",
-                            classes="tab-header",
-                        )
-                        management_dt = DataTable(id="llm-management-table", show_header=True, cursor_type="row")
-                        yield management_dt
+                            yield Button("Выбрать", id="select-llm-btn", variant="success")
+                            yield Button("Добавить", id="add-llm-btn", variant="primary")
+                            yield Button("Редактировать", id="edit-llm-btn", variant="default")
                         with Horizontal(classes="button-row"):
-                            yield Button("Добавить", id="add-llm-btn", variant="success")
-                            yield Button("Редактировать", id="edit-llm-btn")
                             yield Button("Удалить", id="delete-llm-btn", variant="error")
+                            yield Button("Обновить", id="refresh-llm-btn", variant="default")
 
-                    # Tab 3: Generation Parameters
+                    # Tab 2: Generation Parameters
                     with TabPane("Параметры", id="tab-params"):
                         yield Static(
                             "[bold]ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold]\n"
-                            "[dim]Настройка поведения ИИ[/dim]",
+                            "[dim]Настройка поведения ИИ (нажмите Enter для сохранения)[/dim]",
                             classes="tab-header",
                         )
 
@@ -406,19 +390,14 @@ class ConfigMenuApp(App):
                         with Container(classes="setting-group"):
                             yield Static("Температура", classes="param-label")
                             yield Static(
-                                f"Текущее: [green]{config.temperature}[/green]\n"
-                                "Контролирует креативность (0.0-2.0)",
+                                f"Текущее: [green]{config.temperature}[/green] • Контролирует креативность (0.0-2.0)",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(
-                                    value=str(config.temperature), id="temp-input"
-                                )
-                                yield Button(
-                                    "Установить",
-                                    id="set-temp-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=str(config.temperature), 
+                                id="temp-input",
+                                placeholder="0.0-2.0"
+                            )
 
                         # Max Tokens
                         with Container(classes="setting-group"):
@@ -429,88 +408,67 @@ class ConfigMenuApp(App):
                             )
                             yield Static("Максимум токенов", classes="param-label")
                             yield Static(
-                                f"Текущее: [green]{max_tokens_str}[/green]\n"
-                                "Ограничивает длину ответа",
+                                f"Текущее: [green]{max_tokens_str}[/green] • Ограничивает длину ответа",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(value=max_tokens_str, id="max-tokens-input")
-                                yield Button(
-                                    "Установить",
-                                    id="set-max-tokens-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=max_tokens_str, 
+                                id="max-tokens-input",
+                                placeholder="число или 'null'"
+                            )
 
                         # Top P
                         with Container(classes="setting-group"):
                             yield Static("Top P", classes="param-label")
                             yield Static(
-                                f"Текущее: [green]{config.top_p}[/green]\n"
-                                "Nucleus sampling (0.0-1.0)",
+                                f"Текущее: [green]{config.top_p}[/green] • Nucleus sampling (0.0-1.0)",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(value=str(config.top_p), id="top-p-input")
-                                yield Button(
-                                    "Установить",
-                                    id="set-top-p-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=str(config.top_p), 
+                                id="top-p-input",
+                                placeholder="0.0-1.0"
+                            )
 
                         # Frequency Penalty
                         with Container(classes="setting-group"):
                             yield Static("Штраф частоты", classes="param-label")
                             yield Static(
-                                f"Текущее: [green]{config.frequency_penalty}[/green]\n"
-                                "Снижает повторения (-2.0 до 2.0)",
+                                f"Текущее: [green]{config.frequency_penalty}[/green] • Снижает повторения (-2.0 до 2.0)",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(
-                                    value=str(config.frequency_penalty),
-                                    id="freq-penalty-input",
-                                )
-                                yield Button(
-                                    "Установить",
-                                    id="set-freq-penalty-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=str(config.frequency_penalty),
+                                id="freq-penalty-input",
+                                placeholder="-2.0 до 2.0"
+                            )
 
                         # Presence Penalty
                         with Container(classes="setting-group"):
                             yield Static("Штраф присутствия", classes="param-label")
                             yield Static(
-                                f"Текущее: [green]{config.presence_penalty}[/green]\n"
-                                "Разнообразие тем (-2.0 до 2.0)",
+                                f"Текущее: [green]{config.presence_penalty}[/green] • Разнообразие тем (-2.0 до 2.0)",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(
-                                    value=str(config.presence_penalty),
-                                    id="pres-penalty-input",
-                                )
-                                yield Button(
-                                    "Установить",
-                                    id="set-pres-penalty-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=str(config.presence_penalty),
+                                id="pres-penalty-input",
+                                placeholder="-2.0 до 2.0"
+                            )
 
                         # Seed
                         with Container(classes="setting-group"):
                             seed_str = str(config.seed) if config.seed else "случайный"
                             yield Static("Seed", classes="param-label")
                             yield Static(
-                                f"Текущее: [green]{seed_str}[/green]\n"
-                                "Для воспроизводимости результатов",
+                                f"Текущее: [green]{seed_str}[/green] • Для воспроизводимости результатов",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(value=seed_str, id="seed-input")
-                                yield Button(
-                                    "Установить",
-                                    id="set-seed-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=seed_str, 
+                                id="seed-input",
+                                placeholder="число или 'null'"
+                            )
 
                     # Tab 4: User Content
                     with TabPane("Контент", id="tab-content"):
@@ -535,11 +493,11 @@ class ConfigMenuApp(App):
                                 "Сбросить", id="reset-content-btn", variant="warning"
                             )
 
-                    # Tab 5: System Settings
+                    # Tab 4: System Settings
                     with TabPane("Система", id="tab-system"):
                         yield Static(
                             "[bold]СИСТЕМНЫЕ НАСТРОЙКИ[/bold]\n"
-                            "[dim]Поведение приложения[/dim]",
+                            "[dim]Поведение приложения (нажмите Enter для сохранения)[/dim]",
                             classes="tab-header",
                         )
 
@@ -548,38 +506,28 @@ class ConfigMenuApp(App):
                             yield Static("Задержка стрима", classes="param-label")
                             stream_delay = config.get("global", "sleep_time", 0.01)
                             yield Static(
-                                f"Текущее: [green]{stream_delay} сек[/green]\n"
-                                "Пауза между частями текста (0.001-0.1)",
+                                f"Текущее: [green]{stream_delay} сек[/green] • Пауза между частями текста (0.001-0.1)",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(
-                                    value=str(stream_delay), id="stream-delay-input"
-                                )
-                                yield Button(
-                                    "Установить",
-                                    id="set-stream-delay-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=str(stream_delay), 
+                                id="stream-delay-input",
+                                placeholder="0.001-0.1"
+                            )
 
                         # Refresh Rate
                         with Container(classes="setting-group"):
                             yield Static("Частота обновлений", classes="param-label")
                             refresh_rate = config.get("global", "refresh_per_second", 10)
                             yield Static(
-                                f"Текущее: [green]{refresh_rate} Гц[/green]\n"
-                                "Как часто обновляется интерфейс (1-60)",
+                                f"Текущее: [green]{refresh_rate} Гц[/green] • Как часто обновляется интерфейс (1-60)",
                                 classes="param-description",
                             )
-                            with Horizontal():
-                                yield Input(
-                                    value=str(refresh_rate), id="refresh-rate-input"
-                                )
-                                yield Button(
-                                    "Установить",
-                                    id="set-refresh-rate-btn",
-                                    classes="setting-button",
-                                )
+                            yield Input(
+                                value=str(refresh_rate), 
+                                id="refresh-rate-input",
+                                placeholder="1-60"
+                            )
 
                         # Debug Mode
                         with Container(classes="setting-group"):
@@ -598,11 +546,11 @@ class ConfigMenuApp(App):
                                 value=getattr(config, "debug", False), id="debug-switch"
                             )
 
-                    # Tab 6: Language & Theme
+                    # Tab 5: Language & Theme
                     with TabPane("Язык/Тема", id="tab-appearance"):
                         yield Static(
                             "[bold]ЯЗЫК И ТЕМА[/bold]\n"
-                            "[dim]Настройки интерфейса[/dim]",
+                            "[dim]Настройки интерфейса (клик по кнопке сохраняет)[/dim]",
                             classes="tab-header",
                         )
 
@@ -689,61 +637,59 @@ class ConfigMenuApp(App):
 
     def on_mount(self) -> None:
         """Initialize the app."""
-        self.notify("Загрузка данных...", severity="information")
         self.update_llm_tables()
-        self.notify("Приложение загружено", severity="information")
-        
-        # Диагностика
-        try:
-            selector_table = self.query_one("#llm-selector-table", DataTable)
-            self.notify(f"Селектор: {selector_table.row_count} строк", severity="information")
-        except Exception as e:
-            self.notify(f"Ошибка селектора: {e}", severity="error")
 
     def update_llm_tables(self) -> None:
-        """Update LLM tables with current data."""
+        """Update LLM table with current data."""
         current = config.current_llm
         llms = config.get_available_llms()
-        
-        self.notify(f"Найдено LLM: {len(llms)}", severity="information")
 
-        # Update selector table
-        selector_table = self.query_one("#llm-selector-table", DataTable)
-        selector_table.clear(columns=True)
-        selector_table.add_columns("✓", "Название", "Модель")
+        # Update unified LLM table
+        llm_table = self.query_one("#llm-table", DataTable)
+        llm_table.clear(columns=True)
+        llm_table.add_columns("✓", "Название", "Модель", "API URL")
         for llm_name in llms:
             cfg = config.get_llm_config(llm_name) or {}
             is_current = "✓" if llm_name == current else ""
-            selector_table.add_row(
-                is_current, llm_name, cfg.get("model", "N/A")
-            )
-        self.notify(f"Селектор обновлён: {selector_table.row_count} строк", severity="information")
-
-        # Update management table
-        management_table = self.query_one("#llm-management-table", DataTable)
-        management_table.clear(columns=True)
-        management_table.add_columns("✓", "Название", "Модель", "API URL")
-        for llm_name in llms:
-            cfg = config.get_llm_config(llm_name) or {}
-            is_current = "✓" if llm_name == current else ""
-            management_table.add_row(
+            llm_table.add_row(
                 is_current,
                 llm_name,
                 cfg.get("model", "N/A"),
                 cfg.get("api_url", "N/A"),
             )
-        self.notify(f"Управление обновлено: {management_table.row_count} строк", severity="information")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle Enter key in input fields."""
+        input_id = event.input.id
+        
+        # Parameters
+        if input_id == "temp-input":
+            self.set_temperature()
+        elif input_id == "max-tokens-input":
+            self.set_max_tokens()
+        elif input_id == "top-p-input":
+            self.set_top_p()
+        elif input_id == "freq-penalty-input":
+            self.set_frequency_penalty()
+        elif input_id == "pres-penalty-input":
+            self.set_presence_penalty()
+        elif input_id == "seed-input":
+            self.set_seed()
+        # System
+        elif input_id == "stream-delay-input":
+            self.set_stream_delay()
+        elif input_id == "refresh-rate-input":
+            self.set_refresh_rate()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         btn_id = event.button.id
 
-        # LLM Selection
+        # LLM Management
         if btn_id == "select-llm-btn":
             self.select_current_llm()
         elif btn_id == "refresh-llm-btn":
             self.update_llm_tables()
-            self.notify("Список обновлён", severity="information")
 
         # LLM Management
         elif btn_id == "add-llm-btn":
@@ -753,31 +699,11 @@ class ConfigMenuApp(App):
         elif btn_id == "delete-llm-btn":
             self.delete_llm()
 
-        # Parameters
-        elif btn_id == "set-temp-btn":
-            self.set_temperature()
-        elif btn_id == "set-max-tokens-btn":
-            self.set_max_tokens()
-        elif btn_id == "set-top-p-btn":
-            self.set_top_p()
-        elif btn_id == "set-freq-penalty-btn":
-            self.set_frequency_penalty()
-        elif btn_id == "set-pres-penalty-btn":
-            self.set_presence_penalty()
-        elif btn_id == "set-seed-btn":
-            self.set_seed()
-
         # User Content
         elif btn_id == "save-content-btn":
             self.save_user_content()
         elif btn_id == "reset-content-btn":
             self.reset_user_content()
-
-        # System Settings
-        elif btn_id == "set-stream-delay-btn":
-            self.set_stream_delay()
-        elif btn_id == "set-refresh-rate-btn":
-            self.set_refresh_rate()
 
         # Language & Theme
         elif btn_id == "lang-en-btn":
@@ -804,13 +730,14 @@ class ConfigMenuApp(App):
     # LLM Methods
     def select_current_llm(self) -> None:
         """Select current LLM from table."""
-        table = self.query_one("#llm-selector-table", DataTable)
+        table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
             self.notify("Выберите LLM из списка", severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
         llm_name = str(row[1])
         config.current_llm = llm_name
+        config.save()
         self.update_llm_tables()
         self.refresh_status()
         self.notify(f"Текущая LLM: {llm_name}", severity="information")
@@ -857,7 +784,7 @@ class ConfigMenuApp(App):
 
     def edit_llm(self) -> None:
         """Edit selected LLM."""
-        table = self.query_one("#llm-management-table", DataTable)
+        table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
             self.notify("Выберите LLM для редактирования", severity="warning")
             return
@@ -883,7 +810,7 @@ class ConfigMenuApp(App):
 
     def delete_llm(self) -> None:
         """Delete selected LLM."""
-        table = self.query_one("#llm-management-table", DataTable)
+        table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
             self.notify("Выберите LLM для удаления", severity="warning")
             return
@@ -914,6 +841,7 @@ class ConfigMenuApp(App):
             value = float(input_field.value.replace(",", "."))
             if 0.0 <= value <= 2.0:
                 config.temperature = value
+                config.save()
                 self.refresh_status()
                 self.notify(f"Температура: {value}", severity="information")
             else:
@@ -927,6 +855,7 @@ class ConfigMenuApp(App):
         value = input_field.value.strip().lower()
         if value in ["null", "none", ""]:
             config.max_tokens = None
+            config.save()
             self.refresh_status()
             self.notify("Максимум токенов: без ограничений", severity="information")
         else:
@@ -934,6 +863,7 @@ class ConfigMenuApp(App):
                 num_value = int(value)
                 if num_value > 0:
                     config.max_tokens = num_value
+                    config.save()
                     self.refresh_status()
                     self.notify(f"Максимум токенов: {num_value}", severity="information")
                 else:
@@ -948,6 +878,7 @@ class ConfigMenuApp(App):
             value = float(input_field.value.replace(",", "."))
             if 0.0 <= value <= 1.0:
                 config.top_p = value
+                config.save()
                 self.refresh_status()
                 self.notify(f"Top P: {value}", severity="information")
             else:
@@ -956,12 +887,13 @@ class ConfigMenuApp(App):
             self.notify("Неверный числовой формат", severity="error")
 
     def set_frequency_penalty(self) -> None:
-        """Set frequency penalty."""
+        """Сет frequency penalty."""
         input_field = self.query_one("#freq-penalty-input", Input)
         try:
             value = float(input_field.value.replace(",", "."))
             if -2.0 <= value <= 2.0:
                 config.frequency_penalty = value
+                config.save()
                 self.refresh_status()
                 self.notify(f"Штраф частоты: {value}", severity="information")
             else:
@@ -976,6 +908,7 @@ class ConfigMenuApp(App):
             value = float(input_field.value.replace(",", "."))
             if -2.0 <= value <= 2.0:
                 config.presence_penalty = value
+                config.save()
                 self.refresh_status()
                 self.notify(f"Штраф присутствия: {value}", severity="information")
             else:
@@ -989,12 +922,14 @@ class ConfigMenuApp(App):
         value = input_field.value.strip().lower()
         if value in ["null", "none", ""]:
             config.seed = None
+            config.save()
             self.refresh_status()
             self.notify("Seed: случайный", severity="information")
         else:
             try:
                 num_value = int(value)
                 config.seed = num_value
+                config.save()
                 self.refresh_status()
                 self.notify(f"Seed: {num_value}", severity="information")
             except ValueError:
@@ -1005,6 +940,7 @@ class ConfigMenuApp(App):
         """Save user content."""
         text_area = self.query_one("#content-textarea", TextArea)
         config.user_content = text_area.text
+        config.save()
         self.refresh_status()
         self.notify("Контент сохранён", severity="information")
 
