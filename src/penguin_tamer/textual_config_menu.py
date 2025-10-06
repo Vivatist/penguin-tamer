@@ -511,7 +511,7 @@ class ConfigMenuApp(App):
     }
 
     TabPane {
-        padding: 1;
+        padding: 0;
     }
 
     .tab-header {
@@ -553,6 +553,16 @@ class ConfigMenuApp(App):
         margin-bottom: 0;
         color: $success;
         text-style: bold;
+    }
+
+    .current-llm-panel {
+        height: 3;
+        width: 100%;
+        background: $success;
+        color: $text;
+        text-style: bold;
+        content-align: center middle;
+        margin-bottom: 1;
     }
 
     DataTable {
@@ -697,8 +707,9 @@ class ConfigMenuApp(App):
                             )
                             current_llm = config.current_llm or "Не выбрана"
                             yield Static(
-                                f"Текущая: [bold cyan]{current_llm}[/bold cyan]",
-                                classes="param-current",
+                                f"Текущая LLM: {current_llm}",
+                                classes="current-llm-panel",
+                                id="current-llm-display"
                             )
                             llm_dt = DataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
@@ -821,9 +832,6 @@ class ConfigMenuApp(App):
                                     "Сохранить",
                                     id="save-content-btn",
                                     variant="success",
-                                )
-                                yield Button(
-                                    "Сбросить", id="reset-content-btn", variant="warning"
                                 )
 
                     # Tab 4: System Settings
@@ -1016,7 +1024,7 @@ class ConfigMenuApp(App):
         # Update unified LLM table
         llm_table = self.query_one("#llm-table", DataTable)
         llm_table.clear(columns=True)
-        llm_table.add_columns("✓", "Название", "Модель", "API URL")
+        llm_table.add_columns("", "Название", "Модель", "API URL")
         for llm_name in llms:
             cfg = config.get_llm_config(llm_name) or {}
             is_current = "✓" if llm_name == current else ""
@@ -1069,8 +1077,6 @@ class ConfigMenuApp(App):
         # User Content
         elif btn_id == "save-content-btn":
             self.save_user_content()
-        elif btn_id == "reset-content-btn":
-            self.reset_user_content()
 
     # LLM Methods
     def select_current_llm(self) -> None:
@@ -1080,10 +1086,13 @@ class ConfigMenuApp(App):
             self.notify("Выберите LLM из списка", severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])
+        llm_name = str(row[1])  # Название во втором столбце (после галочки)
         config.current_llm = llm_name
         config.save()
         self.update_llm_tables()
+        # Update current LLM display panel
+        current_llm_display = self.query_one("#current-llm-display", Static)
+        current_llm_display.update(f"Текущая LLM: {llm_name}")
         self.refresh_status()
         self.notify(f"Текущая LLM: {llm_name}", severity="information")
 
@@ -1134,7 +1143,7 @@ class ConfigMenuApp(App):
             self.notify("Выберите LLM для редактирования", severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])
+        llm_name = str(row[1])  # Название во втором столбце (после галочки)
         cfg = config.get_llm_config(llm_name) or {}
 
         def handle_model(model):
@@ -1160,7 +1169,7 @@ class ConfigMenuApp(App):
             self.notify("Выберите LLM для удаления", severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])
+        llm_name = str(row[1])  # Название во втором столбце (после галочки)
 
         if llm_name == config.current_llm:
             self.notify("Нельзя удалить текущую LLM", severity="error")
