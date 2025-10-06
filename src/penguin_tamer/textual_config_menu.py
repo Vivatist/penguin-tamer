@@ -607,16 +607,15 @@ class ConfigMenuApp(App):
         border: solid $primary;
     }
 
-    .button-row {
-        margin-bottom: 0;
-        margin-top: 1;
-    }
+.button-row {
+    margin-bottom: 0;
+    margin-top: 1;
+    min-height: 3;
+}
 
-    .button-row Button {
-        margin: 0 1;
-    }
-
-    TextArea {
+.button-row Button {
+    margin: 0 1;
+}    TextArea {
         height: 12;
         margin-bottom: 1;
     }
