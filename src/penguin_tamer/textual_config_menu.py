@@ -301,7 +301,7 @@ class LLMManagementTab(ScrollableContainer):
         self.app.query_one(StatusPanel).refresh_status()
         self.notify(f"✅ Current LLM set to '{llm_name}'", severity="information")
     
-    async def delete_selected_llm(self) -> None:
+    def delete_selected_llm(self) -> None:
         """Delete selected LLM."""
         table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
