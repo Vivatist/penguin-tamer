@@ -23,6 +23,7 @@ from textual.widgets import (
     Footer,
     Header,
     Input,
+    Markdown,
     Select,
     Static,
     Switch,
@@ -37,13 +38,6 @@ import time
 from penguin_tamer.config_manager import config
 from penguin_tamer.i18n import translator
 from penguin_tamer.text_utils import format_api_key_display
-
-
-def format_api_key_display(key: str) -> str:
-    """Format API key for display (show only last 4 chars)."""
-    if not key or len(key) < 8:
-        return "***" if key else "пусто"
-    return f"...{key[-4:]}"
 
 
 class DoubleClickDataTable(DataTable):
@@ -181,7 +175,7 @@ class LLMEditDialog(ModalScreen):
                     value=self.default_name, 
                     id="llm-name-input",
                     disabled=not self.name_editable,
-                    placeholder="Например: GPT-4"
+                    placeholder="Любое, например: GPT-4, Claude, Gemini"
                 ),
                 Static("Модель:", classes="llm-field-label"),
                 Input(
@@ -246,10 +240,14 @@ class LLMEditDialog(ModalScreen):
         self.dismiss(self.result)
 
 
-class InfoPanel(Static):
-    """Information panel showing detailed help for current tab and widgets."""
+class InfoPanel(VerticalScroll):
+    """Information panel showing detailed help for current tab and widgets with Markdown support."""
     
     content_text = reactive("")
+
+    def compose(self) -> ComposeResult:
+        """Create markdown viewer."""
+        yield Markdown(id="info-markdown")
 
     def on_mount(self) -> None:
         """Panel mounted - will show help when first tab is activated."""
@@ -257,7 +255,26 @@ class InfoPanel(Static):
     
     def watch_content_text(self, new_text: str) -> None:
         """Update display when content changes."""
-        self.update(new_text)
+        try:
+            md_widget = self.query_one("#info-markdown", Markdown)
+            # Convert Rich markup to Markdown
+            markdown_text = self._rich_to_markdown(new_text)
+            md_widget.update(markdown_text)
+        except Exception:
+            pass
+    
+    def _rich_to_markdown(self, rich_text: str) -> str:
+        """Convert Rich markup to Markdown."""
+        # Replace Rich bold cyan headers with Markdown headers
+        text = rich_text.replace("[bold cyan]", "## ").replace("[/bold cyan]", "")
+        # Replace Rich bold with Markdown bold
+        text = text.replace("[bold]", "**").replace("[/bold]", "**")
+        # Replace Rich dim with Markdown italic
+        text = text.replace("[dim]", "*").replace("[/dim]", "*")
+        # Remove other Rich tags
+        import re
+        text = re.sub(r'\[/?[^\]]+\]', '', text)
+        return text
 
     def show_tab_help(self, tab_id: str) -> None:
         """Show general help for a tab."""
@@ -1606,6 +1623,11 @@ class ConfigMenuApp(App):
         self.notify("Статус обновлён", severity="information")
 
 
-if __name__ == "__main__":
+def main_menu():
+    """Entry point for running the config menu."""
     app = ConfigMenuApp()
     app.run()
+
+
+if __name__ == "__main__":
+    main_menu()
