@@ -4,7 +4,9 @@ Textual-based configuration menu for Penguin Tamer.
 Provides a modern TUI interface with tabs, tables, and live status updates.
 """
 
+import re
 import sys
+import time
 from pathlib import Path
 
 # Add src directory to path for direct execution
@@ -33,7 +35,6 @@ from textual.widgets import (
 )
 from textual.reactive import reactive
 from textual.message import Message
-import time
 
 from penguin_tamer.config_manager import config
 from penguin_tamer.i18n import translator
@@ -272,7 +273,6 @@ class InfoPanel(VerticalScroll):
         # Replace Rich dim with Markdown italic
         text = text.replace("[dim]", "*").replace("[/dim]", "*")
         # Remove other Rich tags
-        import re
         text = re.sub(r'\[/?[^\]]+\]', '', text)
         return text
 
