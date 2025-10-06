@@ -234,12 +234,24 @@ Here’s how to get started:
    pip install -e .
    ```
 
+4. **Install git hooks (optional but recommended)**:
+   ```bash
+   make install-hooks        # Linux/Mac
+   make.bat install-hooks    # Windows
+   ```
+   This will automatically run tests before commits and pushes.
+
 ### Contribution Guidelines
 
 - 📝 **Code Style**: Follow PEP 8
-- 🧪 **Testing**: Add tests for new features
+- 🧪 **Testing**: Add tests for new features (run `python run_tests.py`)
+- 🔍 **Pre-commit**: Tests run automatically before commits (or use `git commit --no-verify` to skip)
 - 📚 **Documentation**: Update README for new features
 - 🔄 **Pull Requests**: Use clear commit messages
+
+For detailed information about testing and git hooks, see:
+- [tests/README.md](tests/README.md) - Testing documentation
+- [docs/GIT_HOOKS.md](docs/GIT_HOOKS.md) - Git hooks setup and usage
 
 ## License
 
