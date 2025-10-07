@@ -969,6 +969,7 @@ class ConfigMenuApp(App):
     margin-top: 1;
     min-height: 6;
     height: auto;
+    align: center middle;
 }
 
 .adaptive-button-row {
@@ -1057,6 +1058,10 @@ class ConfigMenuApp(App):
         background: $surface;
         border: thick $primary;
         padding: 2;
+    }
+
+    ConfirmDialog {
+        align: center middle;
     }
 
     .input-dialog-title {
@@ -1375,11 +1380,12 @@ class ConfigMenuApp(App):
                             
                             # Reset Settings Button
                             yield Static("", classes="setting-spacer")
-                            yield Button(
-                                "Сброс настроек",
-                                id="reset-settings-btn",
-                                variant="error",
-                            )
+                            with Horizontal(classes="button-row"):
+                                yield Button(
+                                    "Сброс настроек",
+                                    id="reset-settings-btn",
+                                    variant="error",
+                                )
 
                     # Tab 5: Interface
 
