@@ -350,7 +350,7 @@ def main() -> None:
 
         # Settings mode - не нужен LLM клиент
         if args.settings:
-            from penguin_tamer.config_menu import main_menu
+            from penguin_tamer.menu.config_menu import main_menu
             main_menu()
             return 0
 
