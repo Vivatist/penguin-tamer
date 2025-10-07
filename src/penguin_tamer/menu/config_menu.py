@@ -11,7 +11,9 @@ from pathlib import Path
 
 # Add src directory to path for direct execution
 if __name__ == "__main__":
-    src_path = Path(__file__).parent.parent
+    # Файл находится в src/penguin_tamer/menu/config_menu.py
+    # Нужно подняться на 3 уровня до src/
+    src_path = Path(__file__).parent.parent.parent
     if str(src_path) not in sys.path:
         sys.path.insert(0, str(src_path))
 
@@ -86,7 +88,7 @@ class ResponsiveButtonRow(Container):
         self._current_layout = 4  # How many buttons fit in first row
     
     def compose(self) -> ComposeResult:
-        """Create initial layout with all buttons in one row."""
+        """Create layout with all buttons in one row aligned to the right."""
         with Horizontal(classes="adaptive-button-row"):
             for text, btn_id, variant in self.buttons_data:
                 yield Button(text, id=btn_id, variant=variant)
@@ -117,27 +119,17 @@ class ResponsiveButtonRow(Container):
         buttons_per_row = self._current_layout
         total_buttons = len(self.buttons_data)
         
-        # Calculate total rows needed
-        total_rows = (total_buttons + buttons_per_row - 1) // buttons_per_row
-        
         # Create rows dynamically
         current_index = 0
-        row_number = 0
         while current_index < total_buttons:
-            row_number += 1
-            # Create a new row
+            # Create a new row with spacing between rows
             row_classes = "adaptive-button-row"
-            
-            # Calculate how many buttons will be in next row
-            end_index = min(current_index + buttons_per_row, total_buttons)
-            remaining = total_buttons - end_index
-            
-            # If there's a next row with fewer buttons, reduce margin of current row
-            if remaining > 0 and remaining < buttons_per_row:
-                row_classes += " adaptive-button-row-tight"
             
             row = Horizontal(classes=row_classes)
             self.mount(row)
+            
+            # Calculate how many buttons in this row
+            end_index = min(current_index + buttons_per_row, total_buttons)
             
             # Add buttons to this row
             for text, btn_id, variant in self.buttons_data[current_index:end_index]:
@@ -161,7 +153,7 @@ class ConfirmDialog(ModalScreen):
             Static(self.message, classes="dialog-message"),
             Horizontal(
                 Button("Да", variant="success", id="yes-btn"),
-                Button("Нет", variant="error", id="no-btn"),
+                Button("Нет", variant="success", id="no-btn"),
                 classes="dialog-buttons",
             ),
             classes="dialog-container",
@@ -198,7 +190,7 @@ class InputDialog(ModalScreen):
             Input(value=self.default, id="input-field"),
             Horizontal(
                 Button("OK", variant="success", id="ok-btn"),
-                Button("Отмена", variant="error", id="cancel-btn"),
+                Button("Отмена", variant="success", id="cancel-btn"),
                 classes="input-dialog-buttons",
             ),
             classes="input-dialog-container",
@@ -270,7 +262,7 @@ class LLMEditDialog(ModalScreen):
             ),
             Horizontal(
                 Button("Сохранить", variant="success", id="save-btn"),
-                Button("Отмена", variant="error", id="cancel-btn"),
+                Button("Отмена", variant="success", id="cancel-btn"),
                 classes="llm-dialog-buttons",
             ),
             classes="llm-dialog-container",
@@ -326,7 +318,7 @@ class ConfirmDialog(ModalScreen):
             Static(self.message, classes="input-dialog-prompt"),
             Horizontal(
                 Button("Да", variant="error", id="confirm-yes-btn"),
-                Button("Отмена", variant="default", id="confirm-no-btn"),
+                Button("Отмена", variant="success", id="confirm-no-btn"),
                 classes="input-dialog-buttons",
             ),
             classes="input-dialog-container",
@@ -407,7 +399,7 @@ class InfoPanel(VerticalScroll):
 
 - **Выбрать** — установить выбранную модель как текущую
 - **Добавить** — добавить новую LLM с параметрами подключения
-- **Редактировать** — изменить параметры существующей модели
+- **Изменить** — изменить параметры существующей модели
 - **Удалить** — удалить модель из списка
 
 ### Параметры LLM
@@ -875,13 +867,13 @@ class ConfigMenuApp(App):
 
     #left-panel {
         width: 65%;
-        border: solid $primary;
+        border: solid #1e2a30;
         padding: 1;
     }
 
     #right-panel {
         width: 35%;
-        border: solid $secondary;
+        border: solid #1e2a30;
         padding: 1;
         margin-left: 1;
     }
@@ -916,7 +908,7 @@ class ConfigMenuApp(App):
 
 
     .setting-row {
-        height: auto;
+        height: 3;
         align: left middle;
         margin-bottom: 1;
         margin-top: 1;
@@ -924,6 +916,14 @@ class ConfigMenuApp(App):
 
     .setting-spacer {
         height: 1;
+    }
+
+    .flexible-spacer {
+        height: 1fr;
+    }
+
+    #reset-settings-btn {
+        dock: left;
     }
 
     .param-label {
@@ -960,32 +960,39 @@ class ConfigMenuApp(App):
     }
 
     DataTable {
-        margin-bottom: 1;
+        height: auto;
+        max-height: 15;
+        margin-bottom: 0;
         border: solid $primary;
     }
 
 .button-row {
     margin-bottom: 0;
-    margin-top: 1;
-    min-height: 6;
+    margin-top: 0;
+    min-height: 3;
     height: auto;
-    align: center middle;
+    align: right top;
+}
+
+.reset-button-row {
+    height: auto;
+    align: left top;
+    margin-top: 2;
+    margin-bottom: 0;
 }
 
 .adaptive-button-row {
     height: auto;
-    align: center middle;
+    align: right top;
     margin-bottom: 1;
 }
 
-.adaptive-button-row-tight {
-    margin-bottom: 0;
+.adaptive-button-row Button {
+    margin-right: 1;
+    min-width: 16;
 }
 
-.adaptive-button-row Button {
-    margin: 0 1;
-    min-width: 16;
-}    TextArea {
+    TextArea {
         height: 12;
         margin-bottom: 1;
     }
@@ -1144,6 +1151,62 @@ class ConfigMenuApp(App):
         margin: 0 2;
         min-width: 15;
     }
+
+    /* Button color overrides */
+    Button.-primary {
+        background: #e07333;
+        color: white;
+        border: tall #e07333;
+    }
+
+    Button.-primary:hover {
+        background: #c86529;
+        border: tall #c86529;
+    }
+
+    Button.-success {
+        background: #007c6e;
+        color: white;
+        border: tall #007c6e;
+    }
+
+    Button.-success:hover {
+        background: #006558;
+        border: tall #006558;
+    }
+
+    Button.-warning {
+        background: #ffd8b9;
+        color: #1e2a30;
+        border: tall #ffd8b9;
+    }
+
+    Button.-warning:hover {
+        background: #ffc89f;
+        border: tall #ffc89f;
+    }
+
+    Button.-error {
+        background: #ff5555;
+        color: white;
+        border: tall #ff5555;
+    }
+
+    Button.-error:hover {
+        background: #ff3333;
+        border: tall #ff3333;
+    }
+
+    Button.-default {
+        background: #1e2a30;
+        color: #e07333;
+        border: tall #e07333;
+    }
+
+    Button.-default:hover {
+        background: #2a3640;
+        border: tall #e07333;
+    }
     """
 
     BINDINGS = [
@@ -1202,13 +1265,19 @@ class ConfigMenuApp(App):
                                     classes="param-control"
                                 )
                             
+                            yield Static("")
+                            yield Static(
+                                "[bold]Добавленные нейросети[/bold]\n"
+                                "[dim]Выберите какую нейросеть использовать, или добавьте свою[/dim]"
+                            )
                             llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
+                            yield Static("")
                             yield ResponsiveButtonRow(
                                 buttons_data=[
                                     ("Выбрать", "select-llm-btn", "success"),
-                                    ("Добавить", "add-llm-btn", "primary"),
-                                    ("Редактировать", "edit-llm-btn", "default"),
+                                    ("Добавить", "add-llm-btn", "success"),
+                                    ("Изменить", "edit-llm-btn", "success"),
                                     ("Удалить", "delete-llm-btn", "error"),
                                 ],
                                 classes="button-row"
@@ -1221,11 +1290,6 @@ class ConfigMenuApp(App):
                                 "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ[/bold]\n"
                                 "[dim]Дополнительный контекст для всех запросов[/dim]",
                                 classes="tab-header",
-                            )
-                            yield Static(
-                                "Этот контент автоматически добавляется к каждому запросу.\n"
-                                "Используйте для системных промптов и инструкций.",
-                                classes="param-description",
                             )
                             yield TextArea(text=config.user_content, id="content-textarea")
                             with Horizontal(classes="button-row"):
@@ -1379,13 +1443,16 @@ class ConfigMenuApp(App):
                                     )
                             
                             # Reset Settings Button
-                            yield Static("", classes="setting-spacer")
+                            yield Static("")
                             with Horizontal(classes="button-row"):
                                 yield Button(
                                     "Сброс настроек",
                                     id="reset-settings-btn",
                                     variant="error",
                                 )
+                            
+                            # Flexible spacer AFTER button to fill remaining space
+                            yield Static("", classes="flexible-spacer")
 
                     # Tab 5: Interface
 

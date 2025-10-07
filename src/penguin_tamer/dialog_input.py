@@ -47,10 +47,10 @@ class DialogInputFormatter:
         # Используем FilteredFileHistory вместо FileHistory
         self.history = FilteredFileHistory(str(history_file_path))
         self.style = Style.from_dict({
-            "prompt": "bold fg:green",
-            "dot": "fg:gray",        # Серая точка
-            "command": "fg:cyan",    # Светло-синий текст команды
-            "text": "",              # Стандартный цвет консоли
+            "prompt": "bold fg:#e07333",    # Оранжевый основной цвет
+            "dot": "fg:gray",               # Серая точка
+            "command": "fg:#007c6e",        # Бирюзовый для команд после точки
+            "text": "",                     # Стандартный цвет консоли
         })
         
         # Создаем процессор для real-time подсветки
