@@ -4,11 +4,12 @@ Displays animated ASCII art logo before menu launch.
 """
 
 import time
+import sys
 from rich.console import Console
 
 
 def show_intro():
-    """Показывает ASCII-арт интро перед запуском меню."""
+    """Показывает ASCII-арт интро перед запуском меню с построчным удалением."""
     console = Console()
     
     ascii_art = """
@@ -24,16 +25,33 @@ def show_intro():
     ██║    ███████║ ██╔████╔██║ █████╗   ██████╔╝
     ██║    ██╔══██║ ██║╚██╔╝██║ ██╔══╝   ██╔══██╗
     ██║    ██║  ██║ ██║ ╚═╝ ██║ ███████╗ ██║  ██║
-    ╚═╝    ╚═╝  ╚═╝  ╚═╝     ╚═╝ ╚══════╝ ╚═╝  ╚═╝
+    ╚═╝    ╚═╝  ╚═╝ ╚═╝     ╚═╝ ╚══════╝ ╚═╝  ╚═╝
 """
     
     color = "#e07333"
     lines = ascii_art.splitlines()
     
-    # Плавный построчный вывод
+    # Плавный построчный вывод (появление)
     for line in lines:
         console.print(line, style=color)
         time.sleep(0.05)  # задержка между строками
     
-    # Небольшая пауза перед запуском меню
+    # Пауза перед удалением
     time.sleep(0.5)
+    
+    # Построчное удаление снизу вверх
+    for i in range(len(lines)):
+        # Перемещаем курсор на одну строку вверх
+        sys.stdout.write("\033[1A")
+        # Очищаем строку
+        sys.stdout.write("\033[2K")
+        sys.stdout.flush()
+        time.sleep(0.03)  # задержка между удалениями
+    
+    # Дополнительная очистка экрана для полной уверенности
+    console.clear()
+
+
+if __name__ == "__main__":
+    # Для тестирования эффекта затухания
+    show_intro()
