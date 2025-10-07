@@ -48,6 +48,7 @@ from penguin_tamer.arguments import __version__
 from .widgets import DoubleClickDataTable, ResponsiveButtonRow
 from .dialogs import LLMEditDialog, ConfirmDialog
 from .info_panel import InfoPanel
+from .intro_screen import show_intro
 
 
 class ConfigMenuApp(App):
@@ -1249,6 +1250,9 @@ class ConfigMenuApp(App):
 def main_menu():
     """Entry point for running the config menu."""
     try:
+        # Показываем интро перед запуском меню
+        show_intro()
+        
         app = ConfigMenuApp()
         app.run()
     except Exception as e:
