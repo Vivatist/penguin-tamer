@@ -15,6 +15,7 @@ from penguin_tamer.debug import debug_print_messages
 
 # Ленивый импорт только для OpenAI (самый тяжелый модуль - 531ms)
 _openai_client = None
+_openai_exceptions = None
 
 def _get_openai_client():
     """Ленивый импорт OpenAI клиента для быстрого запуска --version, --help"""
@@ -23,6 +24,19 @@ def _get_openai_client():
         from openai import OpenAI
         _openai_client = OpenAI
     return _openai_client
+
+def _get_openai_exceptions():
+    """Ленивый импорт исключений OpenAI SDK"""
+    global _openai_exceptions
+    if _openai_exceptions is None:
+        from openai import APIConnectionError, APIStatusError, RateLimitError, APITimeoutError
+        _openai_exceptions = {
+            'APIConnectionError': APIConnectionError,
+            'APIStatusError': APIStatusError,
+            'RateLimitError': RateLimitError,
+            'APITimeoutError': APITimeoutError
+        }
+    return _openai_exceptions
 
 
 def _create_markdown(text: str, theme_name: str = "default"):
@@ -238,11 +252,24 @@ class OpenRouterClient:
         Raises:
             KeyboardInterrupt: Если установлен флаг прерывания
         """
-        for chunk in stream:
-            if interrupted.is_set():
-                raise KeyboardInterrupt("Stream interrupted")
-            if chunk.choices[0].delta.content:
-                return chunk.choices[0].delta.content
+        try:
+            for chunk in stream:
+                if interrupted.is_set():
+                    raise KeyboardInterrupt("Stream interrupted")
+                
+                # Проверяем корректность структуры ответа
+                if not hasattr(chunk, 'choices') or not chunk.choices:
+                    continue
+                    
+                if not hasattr(chunk.choices[0], 'delta'):
+                    continue
+                    
+                if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
+                    return chunk.choices[0].delta.content
+        except (AttributeError, IndexError) as e:
+            # Некорректная структура ответа
+            return None
+        
         return None
 
     def _process_stream_with_live(
@@ -281,17 +308,29 @@ class OpenRouterClient:
                 live.update(markdown)
             
             # Продолжаем обрабатывать остальные чанки
-            for chunk in stream:
-                if interrupted.is_set():
-                    raise KeyboardInterrupt("Stream interrupted")
-                if chunk.choices[0].delta.content:
-                    text = chunk.choices[0].delta.content
-                    reply_parts.append(text)
-                    # Объединяем все части и обрабатываем как Markdown
-                    full_text = "".join(reply_parts)
-                    markdown = _create_markdown(full_text, theme_name)
-                    live.update(markdown)
-                    time.sleep(sleep_time)
+            try:
+                for chunk in stream:
+                    if interrupted.is_set():
+                        raise KeyboardInterrupt("Stream interrupted")
+                    
+                    # Проверяем корректность структуры ответа
+                    if not hasattr(chunk, 'choices') or not chunk.choices:
+                        continue
+                    
+                    if not hasattr(chunk.choices[0], 'delta'):
+                        continue
+                    
+                    if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
+                        text = chunk.choices[0].delta.content
+                        reply_parts.append(text)
+                        # Объединяем все части и обрабатываем как Markdown
+                        full_text = "".join(reply_parts)
+                        markdown = _create_markdown(full_text, theme_name)
+                        live.update(markdown)
+                        time.sleep(sleep_time)
+            except (AttributeError, IndexError):
+                # Некорректная структура ответа - продолжаем с тем что есть
+                pass
         
         return "".join(reply_parts)
 
@@ -320,6 +359,13 @@ class OpenRouterClient:
         reply_parts = []
         interrupted = threading.Event()
         
+        # Получаем исключения OpenAI SDK для обработки ошибок
+        exceptions = _get_openai_exceptions()
+        APIConnectionError = exceptions['APIConnectionError']
+        APIStatusError = exceptions['APIStatusError']
+        RateLimitError = exceptions['RateLimitError']
+        APITimeoutError = exceptions['APITimeoutError']
+        
         with self._managed_spinner(t('Sending request...')) as status_message:
             try:
                 # Debug: показываем структуру запроса
@@ -337,9 +383,38 @@ class OpenRouterClient:
                 if first_chunk:
                     reply_parts.append(first_chunk)
             
-            except (KeyboardInterrupt, Exception):
+            except APIConnectionError as e:
+                interrupted.set()
+                return t("Connection error: Unable to connect to API. Please check your internet connection.")
+            
+            except APIStatusError as e:
+                interrupted.set()
+                if e.status_code == 401:
+                    return t("Authentication error: Invalid API key.")
+                elif e.status_code == 403:
+                    return t("Access denied: You don't have permission to access this resource.")
+                elif e.status_code == 404:
+                    return t("Not found: The requested model or endpoint was not found.")
+                elif e.status_code >= 500:
+                    return t("Server error: The API server encountered an error. Please try again later.")
+                else:
+                    return t(f"API error ({e.status_code}): {e.message}")
+            
+            except RateLimitError as e:
+                interrupted.set()
+                return t("Rate limit exceeded: Too many requests. Please wait a moment and try again.")
+            
+            except APITimeoutError as e:
+                interrupted.set()
+                return t("Request timeout: The request took too long. Please try again.")
+            
+            except KeyboardInterrupt:
                 interrupted.set()
                 raise
+            
+            except Exception as e:
+                interrupted.set()
+                return t(f"Unexpected error: {str(e)}")
         
         # Спиннер остановлен, начинаем Live отображение
         try:
