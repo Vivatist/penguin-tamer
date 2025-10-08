@@ -353,10 +353,14 @@ class ConfigMenuApp(App):
     def on_mount(self) -> None:
         """Initialize the app."""
         self._initialized = False
+        # Перезагружаем конфигурацию из файла, чтобы подхватить любые внешние изменения
+        config.reload()
         self.update_llm_tables()
         # Set flag after initialization to enable notifications and tab switching
         def finish_init():
             self._initialized = True
+            # Обновляем все поля ввода актуальными значениями из конфига
+            self.update_all_inputs()
             # Show help for first tab
             panel = self.query_one("#info-panel", InfoPanel)
             panel.show_tab_help("tab-general")

@@ -227,7 +227,12 @@ def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> li
         List of code blocks from AI response
     """
     reply = chat_client.ask_stream(prompt)
-    code_blocks = _get_formatter_text()(reply)
+    code_blocks = []
+    
+    # Извлекаем блоки кода только если получен непустой ответ
+    if reply:
+        code_blocks = _get_formatter_text()(reply)
+    
     console.print()
     return code_blocks
 
