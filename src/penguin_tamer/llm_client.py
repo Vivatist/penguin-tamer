@@ -12,10 +12,10 @@ from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
 from penguin_tamer.themes import get_code_theme
 from penguin_tamer.debug import debug_print_messages
+from penguin_tamer.error_handlers import ErrorHandler, ErrorContext, ErrorSeverity
 
 # Ленивый импорт только для OpenAI (самый тяжелый модуль - 531ms)
 _openai_client = None
-_openai_exceptions = None
 
 
 def _get_openai_client():
@@ -25,20 +25,6 @@ def _get_openai_client():
         from openai import OpenAI
         _openai_client = OpenAI
     return _openai_client
-
-
-def _get_openai_exceptions():
-    """Ленивый импорт исключений OpenAI SDK"""
-    global _openai_exceptions
-    if _openai_exceptions is None:
-        from openai import APIConnectionError, APIStatusError, RateLimitError, APITimeoutError
-        _openai_exceptions = {
-            'APIConnectionError': APIConnectionError,
-            'APIStatusError': APIStatusError,
-            'RateLimitError': RateLimitError,
-            'APITimeoutError': APITimeoutError
-        }
-    return _openai_exceptions
 
 
 def _create_markdown(text: str, theme_name: str = "default"):
@@ -238,7 +224,7 @@ class OpenRouterClient:
         Args:
             phase: 'request' или 'response'
         """
-        if config.get("global", "debug_mode", False):
+        if config.get("global", "debug", False):
             debug_print_messages(
                 self.messages,
                 client=self,
@@ -371,24 +357,17 @@ class OpenRouterClient:
 
         Raises:
             KeyboardInterrupt: При прерывании пользователем
-            Exception: При ошибках API
         """
         self.messages.append({"role": "user", "content": user_input})
         reply_parts = []
         interrupted = threading.Event()
 
-        # Получаем исключения OpenAI SDK для обработки ошибок
-        exceptions = _get_openai_exceptions()
-        APIConnectionError = exceptions['APIConnectionError']
-        APIStatusError = exceptions['APIStatusError']
-        RateLimitError = exceptions['RateLimitError']
-        APITimeoutError = exceptions['APITimeoutError']
+        # Create error handler with console and debug mode
+        debug_mode = config.get("global", "debug", False)
+        error_handler = ErrorHandler(console=self.console, debug_mode=debug_mode)
 
         with self._managed_spinner(t('Sending request...')) as status_message:
             try:
-                # Debug: показываем структуру запроса
-                self._debug_print_if_enabled("request")
-
                 # Отправка запроса
                 api_params = self._prepare_api_params()
                 stream = self.client.chat.completions.create(**api_params)
@@ -400,91 +379,21 @@ class OpenRouterClient:
                 first_chunk = self._wait_first_chunk(stream, interrupted)
                 if first_chunk:
                     reply_parts.append(first_chunk)
-                else:
-                    # Если не получили первый чанк, это может быть проблема
-                    # Но не обязательно ошибка - API мог вернуть пустой поток
-                    pass
-
-            except APIConnectionError:
-                interrupted.set()
-                error_msg = t(
-                    "Connection error: Unable to connect to API. "
-                    "Please check your internet connection."
-                )
-                self.console.print(f"[bold red]{error_msg}[/bold red]")
-                return ""
-
-            except APIStatusError as e:
-                interrupted.set()
-                # Добавляем детальный вывод ошибки для отладки
-                error_details = (
-                    f"Status: {e.status_code}, "
-                    f"Response: {getattr(e, 'response', None)}"
-                )
-                if config.get("global", "debug_mode", False):
-                    self.console.print(
-                        f"[dim]Debug - API Error Details: {error_details}[/dim]"
-                    )
-
-                if e.status_code == 401:
-                    error_msg = t("Authentication error: Invalid API key.")
-                elif e.status_code == 403:
-                    error_msg = t(
-                        "Access denied: You don't have permission "
-                        "to access this resource."
-                    )
-                elif e.status_code == 404:
-                    error_msg = t(
-                        "Not found: The requested model or endpoint was not found."
-                    )
-                    # Добавляем детали об ошибке
-                    if hasattr(e, 'response') and e.response:
-                        try:
-                            if hasattr(e.response, 'json'):
-                                error_body = e.response.json()
-                            elif hasattr(e.response, 'text'):
-                                error_body = str(e.response.text)
-                            else:
-                                error_body = str(e.response)
-                            if config.get("global", "debug_mode", False):
-                                self.console.print(f"[dim]Error body: {error_body}[/dim]")
-                        except Exception:
-                            pass
-                elif e.status_code >= 500:
-                    error_msg = t(
-                        "Server error: The API server encountered an error. "
-                        "Please try again later."
-                    )
-                else:
-                    error_msg = t(f"API error ({e.status_code}): {e.message}")
-                self.console.print(f"[bold red]{error_msg}[/bold red]")
-                return ""
-
-            except RateLimitError:
-                interrupted.set()
-                error_msg = t(
-                    "Rate limit exceeded: Too many requests. "
-                    "Please wait a moment and try again."
-                )
-                self.console.print(f"[bold red]{error_msg}[/bold red]")
-                return ""
-
-            except APITimeoutError:
-                interrupted.set()
-                error_msg = t(
-                    "Request timeout: The request took too long. Please try again."
-                )
-                self.console.print(f"[bold red]{error_msg}[/bold red]")
-                return ""
 
             except KeyboardInterrupt:
                 interrupted.set()
                 raise
 
             except Exception as e:
+                # Centralized error handling
                 interrupted.set()
-                error_msg = t(f"Unexpected error: {str(e)}")
-                self.console.print(f"[bold red]{error_msg}[/bold red]")
+                context = ErrorContext(
+                    operation="streaming API request",
+                    severity=ErrorSeverity.ERROR,
+                    recoverable=True
+                )
+                error_message = error_handler.handle(e, context)
+                self.console.print(error_message)
                 return ""
 
         # Спиннер остановлен, начинаем Live отображение

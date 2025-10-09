@@ -101,7 +101,7 @@ def debug_print_messages(
     title = " | ".join(title_parts)
 
     console.print("\n" + "=" * 90)
-    console.print(f"[bold cyan]{title}[/bold cyan]")
+    console.print(f"[cyan]{title}[/cyan]")
     console.print("=" * 90 + "\n")
 
     # Создаём полную структуру API запроса
@@ -133,7 +133,7 @@ def debug_print_messages(
 
     # Разные цвета для request/response
     border_color = "yellow" if phase == "request" else "green"
-    title_color = "bold yellow" if phase == "request" else "bold green"
+    title_color = "yellow" if phase == "request" else "green"
 
     api_panel = Panel(
         api_syntax,
@@ -158,7 +158,7 @@ def debug_print_messages(
     }
 
     # Выводим каждое сообщение как отдельный JSON
-    console.print(f"[bold white]>>> Messages Breakdown ({len(messages)} total):[/bold white]")
+    console.print(f"[white]>>> Messages Breakdown ({len(messages)} total):[/white]")
     console.print()
 
     for idx, msg in enumerate(messages, 1):
@@ -171,8 +171,8 @@ def debug_print_messages(
         content_length = len(content)
 
         # Создаем красиво отформатированное представление сообщения
-        formatted_message = f"[bold {role_color}]Role:[/bold {role_color}] {role}\n"
-        formatted_message += f"[bold {role_color}]Content:[/bold {role_color}]\n"
+        formatted_message = f"[{role_color}]Role:[/{role_color}] {role}\n"
+        formatted_message += f"[{role_color}]Content:[/{role_color}]\n"
 
         # Добавляем содержимое с отступом, сохраняя форматирование
         if content:
@@ -184,7 +184,7 @@ def debug_print_messages(
             formatted_message += "  [dim](empty)[/dim]\n"
 
         # Заголовок с иконкой и ролью
-        title = f"[bold]{role_icon} Message #{idx}: {role.upper()}[/bold]"
+        title = f"{role_icon} Message #{idx}: {role.upper()}"
 
         # Статистика сообщения
         stats = f"[dim]Length: {content_length} chars[/dim]"
