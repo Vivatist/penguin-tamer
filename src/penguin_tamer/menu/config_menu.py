@@ -36,6 +36,7 @@ from textual.widgets import (
 from penguin_tamer.config_manager import config
 from penguin_tamer.i18n import translator
 from penguin_tamer.arguments import __version__
+from penguin_tamer.text_utils import format_api_key_display
 
 # Import modular components
 if __name__ == "__main__":
@@ -91,7 +92,7 @@ class ConfigMenuApp(App):
 
             # Основной акцент (оранжевый)
             "primary": "#e07333",
-            "primary-lighten-1": "#00342d",
+            "primary-lighten-1": "#2f3b41",
             "primary-lighten-2": "#004b41",
             "primary-lighten-3": "#006257",
             "primary-darken-1": "#c86529",
@@ -103,15 +104,15 @@ class ConfigMenuApp(App):
             "secondary-lighten-1": "#239f90",
             "secondary-lighten-2": "#45c2b3",
             "secondary-lighten-3": "#7adcd0",
-            "secondary-darken-1": "#006257",
-            "secondary-darken-2": "#004b41",
-            "secondary-darken-3": "#00342d",
+            # "secondary-darken-1": "#006257",
+            # "secondary-darken-2": "#004b41",
+            # "secondary-darken-3": "#00342d",
             "success": "#007c6e",
             "success-lighten-1": "#239f90",
             "success-darken-1": "#006257",
 
             # Мягкий акцент (песочный)
-            "accent": "#ffd8b9",
+            "accent": "#e07333",
             "accent-lighten-1": "#ffe6cf",
             "accent-lighten-2": "#fff2e4",
             "accent-lighten-3": "#fffaf3",
@@ -136,7 +137,7 @@ class ConfigMenuApp(App):
             "muted": "#a7b4b7",
             "dark": "#1e2a30",
             "scrollbar-background": "#162025",
-            "scrollbar-foreground": "#004b41",
+            "scrollbar-foreground": "#04004b",
             "scrollbar-hover": "#006257",
         }
 
@@ -528,7 +529,7 @@ class ConfigMenuApp(App):
                 pass
 
         llm_table.clear(columns=True)
-        llm_table.add_columns("", "Название", "Модель", "API URL")
+        llm_table.add_columns("", "Название", "Модель", "API URL", "API ключ")
 
         new_cursor_row = 0
         for idx, llm_name in enumerate(llms):
@@ -539,6 +540,7 @@ class ConfigMenuApp(App):
                 llm_name,
                 cfg.get("model", "N/A"),
                 cfg.get("api_url", "N/A"),
+                format_api_key_display(cfg.get("api_key", "")),
             )
             # Запоминаем новую позицию для старой LLM
             if old_llm_name and llm_name == old_llm_name:

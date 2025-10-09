@@ -31,7 +31,7 @@ TabPane {
     padding: 1 2;
     margin-bottom: 2;
     background: $panel;
-    border: solid $primary;
+    border: solid $border;
 }
 
 .section-header {
@@ -101,7 +101,7 @@ DataTable {
     height: auto;
     max-height: 15;
     margin-bottom: 0;
-    border: solid $primary;
+    border: solid $border;
 }
 
 .button-row {
@@ -312,4 +312,18 @@ Button.-default {
 Button.-default:hover {
     background: $surface-lighten-2;
     border: tall $primary;
+}
+
+ScrollBar {
+    background: $scrollbar-background;
+}
+
+ScrollBar > .thumb {
+    background: $scrollbar-foreground;
+}
+
+ScrollBar > .thumb:hover,
+ScrollBar > .thumb.-hover,
+ScrollBar > .thumb:focus {
+    background: $scrollbar-hover;
 }
