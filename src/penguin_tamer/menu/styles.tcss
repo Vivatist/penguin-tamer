@@ -293,14 +293,14 @@ Button.-warning:hover {
 }
 
 Button.-error {
-    background: #ff5555;
+    background: #e07333;
     color: white;
-    border: tall #ff5555;
+    border: tall #e07333;
 }
 
 Button.-error:hover {
-    background: #ff3333;
-    border: tall #ff3333;
+    background: #c86529;
+    border: tall #c86529;
 }
 
 Button.-default {

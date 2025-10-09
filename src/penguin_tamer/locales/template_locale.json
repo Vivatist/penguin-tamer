@@ -52,6 +52,10 @@
   "Please check your API_KEY. See provider docs for obtaining a key. [link={link}]How to get a key?[/link]": "Please check your API_KEY. See provider docs for obtaining a key. [link={link}]How to get a key?[/link]",
   "Unexpected error: {error}": "Unexpected error: {error}",
   "docs_link_get_api_key": "https://github.com/Vivatist/penguin-tamer?tab=readme-ov-file#getting-a-token-api_key-and-connecting-to-a-pre-installed-model",
+  "IF your response contains code blocks, ALWAYS number the code blocks so that the user can link to them. Numbering format: \n[Code #1]\n```bash\necho \"Hello, World!\"\n```\n[Code #2]\n```bash\necho \"Hello, World!\"\n```\netc. Insert the numbering BEFORE the block. If there are multiple code blocks, number them sequentially. In each new reply, start numbering from 1 again. Don't discuss the numbering, don't report it, and don't talk about it; just number it.": "IF your response contains code blocks, ALWAYS number the code blocks so that the user can link to them. Numbering format: \n[Code #1]\n```bash\necho \"Hello, World!\"\n```\n[Code #2]\n```bash\necho \"Hello, World!\"\n```\netc. Insert the numbering BEFORE the block. If there are multiple code blocks, number them sequentially. In each new reply, start numbering from 1 again. Don't discuss the numbering, don't report it, and don't talk about it; just number it.",
+  "Connecting...": "Соединение...",
+  "Ai thinking...": "Ai thinking...",
+  "Warning: Empty response received from API.": "Warning: Empty response received from API.",
   "<i><gray>Number of the code block to execute or the next question... Ctrl+C - exit</gray></i>": "<i><gray>Number of the code block to execute or the next question... Ctrl+C - exit</gray></i>",
   "<i><gray>Your question... Ctrl+C - exit</gray></i>": "<i><gray>Your question... Ctrl+C - exit</gray></i>"
 }

@@ -88,27 +88,10 @@ class ConfigMenuApp(App):
                                 classes="tab-header",
                             )
 
-                            # System Info
-                            if hasattr(config, 'config_path'):
-                                config_dir = Path(config.config_path).parent
-                            else:
-                                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
-                            bin_path = Path(sys.executable).parent
-                            current_llm = config.current_llm or "Не выбрана"
-
-                            yield Static(
-                                f"[bold]Версия ПО:[/bold] {__version__}\n"
-                                f"[bold]Папка конфига:[/bold] {config_dir}\n"
-                                f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
-                                f"[bold]Текущая LLM:[/bold] [green]{current_llm}[/green]",
-                                classes="system-info-panel",
-                                id="system-info-display"
-                            )
-
                             # Language setting
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Language\n[dim]Перезапуск после изменения[/dim]",
+                                    "Language\n[dim]Требуется перезапуск[/dim]",
                                     classes="param-label"
                                 )
                                 current_lang_val = getattr(config, "language", "en")
@@ -119,6 +102,25 @@ class ConfigMenuApp(App):
                                     allow_blank=False,
                                     classes="param-control"
                                 )
+
+                            yield Static("\n")
+
+                            # System Info
+                            if hasattr(config, 'config_path'):
+                                config_dir = Path(config.config_path).parent
+                            else:
+                                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+                            bin_path = Path(sys.executable).parent
+                            current_llm = config.current_llm or "Не выбрана"
+
+                            yield Static(
+                                f"[bold]Penguin Tamer[/bold] {__version__}\n\n"
+                                f"[bold]Папка конфига:[/bold] {config_dir}\n"
+                                f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
+                                f"[bold]Текущая LLM:[/bold] [#007c6e]{current_llm}[/#007c6e]",
+                                classes="system-info-panel",
+                                id="system-info-display"
+                            )
 
                             yield Static("")
                             yield Static(
@@ -323,7 +325,7 @@ class ConfigMenuApp(App):
                             current_theme = getattr(config, "theme", "default")
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Цветовая схема\n[dim]Перезапуск после изменения[/dim]",
+                                    "Цветовая схема\n[dim]Требуется перезапуск[/dim]",
                                     classes="param-label"
                                 )
                                 yield Select(
@@ -554,10 +556,10 @@ class ConfigMenuApp(App):
         bin_path = Path(sys.executable).parent
         system_info_display = self.query_one("#system-info-display", Static)
         system_info_display.update(
-            f"[bold]Версия ПО:[/bold] {__version__}\n"
+            f"[bold]Penguin Tamer[/bold] {__version__}\n\n"
             f"[bold]Папка конфига:[/bold] {config_dir}\n"
             f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
-            f"[bold]Текущая LLM:[/bold] [green]{llm_name}[/green]"
+            f"[bold]Текущая LLM:[/bold] [#007c6e]{llm_name}[/#007c6e]"
         )
 
         self.refresh_status()
@@ -942,10 +944,10 @@ class ConfigMenuApp(App):
 
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
-                f"[bold]Версия ПО:[/bold] {__version__}\n"
+                f"[bold]Penguin Tamer[/bold] {__version__}\n\n"
                 f"[bold]Папка конфига:[/bold] {config_dir}\n"
                 f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
-                f"[bold]Текущая LLM:[/bold] [green]{current_llm}[/green]"
+                f"[bold]Текущая LLM:[/bold] [ #007c6e]{current_llm}[/#007c6e]"
             )
 
         except Exception:

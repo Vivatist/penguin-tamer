@@ -366,7 +366,7 @@ class OpenRouterClient:
         debug_mode = config.get("global", "debug", False)
         error_handler = ErrorHandler(console=self.console, debug_mode=debug_mode)
 
-        with self._managed_spinner(t('Sending request...')) as status_message:
+        with self._managed_spinner(t('Connecting...')) as status_message:
             try:
                 # Отправка запроса
                 api_params = self._prepare_api_params()

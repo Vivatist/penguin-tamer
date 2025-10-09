@@ -52,6 +52,10 @@
   "Please check your API_KEY. See provider docs for obtaining a key. [link={link}]How to get a key?[/link]": "Пожалуйста, проверьте ваш API_KEY. См. документацию провайдера для получения ключа. [link={link}]Как получить ключ?[/link]",
   "Unexpected error: {error}": "Неожиданная ошибка: {error}",
   "docs_link_get_api_key": "https://github.com/Vivatist/penguin-tamer/blob/main/docs/locales/README_ru.md#%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B0-api_key-%D0%B8-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BA-%D0%BF%D1%80%D0%B5%D0%B4%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9-%D0%BC%D0%BE%D0%B4%D0%B5%D0%BB%D0%B8",
+  "IF your response contains code blocks, ALWAYS number the code blocks so that the user can link to them. Numbering format: \n[Code #1]\n```bash\necho \"Hello, World!\"\n```\n[Code #2]\n```bash\necho \"Hello, World!\"\n```\netc. Insert the numbering BEFORE the block. If there are multiple code blocks, number them sequentially. In each new reply, start numbering from 1 again. Don't discuss the numbering, don't report it, and don't talk about it; just number it.": "ЕСЛИ ваш ответ содержит блоки кода, ВСЕГДА нумеруйте блоки кода, чтобы пользователь мог на них ссылаться. Формат нумерации: \n[Code #1]\n```bash\necho \"Hello, World!\"\n```\n[Code #2]\n```bash\necho \"Hello, World!\"\n```\nи т.д. Вставляйте нумерацию ПЕРЕД блоком. Если блоков кода несколько, нумеруйте их последовательно. В каждом новом ответе начинайте нумерацию заново с 1. Не обсуждайте нумерацию, не сообщайте о ней и не говорите о ней; просто нумеруйте.",
+  "Connecting...": "Соединение...",
+  "Ai thinking...": "ИИ думает...",
+  "Warning: Empty response received from API.": "Предупреждение: Получен пустой ответ от API.",
   "<i><gray>Number of the code block to execute or the next question... Ctrl+C - exit</gray></i>": "<i><gray>Номер блока кода для выполнения или следующий вопрос... Ctrl+C - выход</gray></i>",
   "<i><gray>Your question... Ctrl+C - exit</gray></i>": "<i><gray>Ваш вопрос... Ctrl+C - выход</gray></i>"
 }
