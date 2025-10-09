@@ -285,7 +285,7 @@ class TestFormatApiKeyDisplay:
         """Test with short key (10 chars or less)."""
         result = format_api_key_display("short")
         assert result == "short"
-        
+
         result = format_api_key_display("1234567890")
         assert result == "1234567890"
 
