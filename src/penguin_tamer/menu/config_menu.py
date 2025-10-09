@@ -69,8 +69,10 @@ class ConfigMenuApp(App):
         Binding("ctrl+r", "refresh_status", "Обновить"),
     ]
 
-    TITLE = "Penguin Tamer - Конфигурация"
-    SUB_TITLE = "Управление настройками ИИ"
+    ENABLE_COMMAND_PALETTE = False
+
+    TITLE = "Penguin Tamer " + __version__
+    SUB_TITLE = "Конфигурация"
 
     def get_css_variables(self) -> dict[str, str]:
         """Определяем кастомную цветовую палитру для Textual."""
@@ -146,7 +148,7 @@ class ConfigMenuApp(App):
 
     def compose(self) -> ComposeResult:
         """Create the UI layout."""
-        yield Header()
+        yield Header(show_clock=False, icon="")
 
         with Horizontal():
             # Left panel with tabs
@@ -176,7 +178,7 @@ class ConfigMenuApp(App):
                                     classes="param-control"
                                 )
 
-                            yield Static("\n")
+                            yield Static("")
 
                             # System Info
                             if hasattr(config, 'config_path'):
@@ -187,10 +189,9 @@ class ConfigMenuApp(App):
                             current_llm = config.current_llm or "Не выбрана"
 
                             yield Static(
-                                f"[bold]Penguin Tamer[/bold] {__version__}\n\n"
+                                f"[bold]Текущая LLM:[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
                                 f"[bold]Папка конфига:[/bold] {config_dir}\n"
-                                f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
-                                f"[bold]Текущая LLM:[/bold] [#007c6e]{current_llm}[/#007c6e]",
+                                f"[bold]Папка бинарника:[/bold] {bin_path}",
                                 classes="system-info-panel",
                                 id="system-info-display"
                             )
@@ -272,7 +273,7 @@ class ConfigMenuApp(App):
                             # Top P
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Top P\n[dim]Nucleus sampling (0.0-1.0)[/dim]",
+                                    "Top P\n[dim]Ядерная выборка (0.0-1.0)[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -630,10 +631,9 @@ class ConfigMenuApp(App):
         bin_path = Path(sys.executable).parent
         system_info_display = self.query_one("#system-info-display", Static)
         system_info_display.update(
-            f"[bold]Penguin Tamer[/bold] {__version__}\n\n"
+            f"[bold]Текущая LLM:[/bold] [#e07333]{llm_name}[/#e07333]\n\n"
             f"[bold]Папка конфига:[/bold] {config_dir}\n"
-            f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
-            f"[bold]Текущая LLM:[/bold] [#007c6e]{llm_name}[/#007c6e]"
+            f"[bold]Папка бинарника:[/bold] {bin_path}"
         )
 
         self.refresh_status()
@@ -966,7 +966,7 @@ class ConfigMenuApp(App):
             temp_input.value = str(config.temperature)
 
             max_tokens_input = self.query_one("#max-tokens-input", Input)
-            max_tokens_str = str(config.max_tokens) if config.max_tokens else "неограниченно"
+            max_tokens_str = str(config.max_tokens) if config.max_tokens else "null"
             max_tokens_input.value = max_tokens_str
 
             top_p_input = self.query_one("#top-p-input", Input)
@@ -979,7 +979,7 @@ class ConfigMenuApp(App):
             pres_penalty_input.value = str(config.presence_penalty)
 
             seed_input = self.query_one("#seed-input", Input)
-            seed_str = str(config.seed) if config.seed else "случайный"
+            seed_str = str(config.seed) if config.seed else "null"
             seed_input.value = seed_str
 
             # Обновляем системные настройки
@@ -1018,10 +1018,10 @@ class ConfigMenuApp(App):
 
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
-                f"[bold]Penguin Tamer[/bold] {__version__}\n\n"
+                f"[bold]Текущая LLM:[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
                 f"[bold]Папка конфига:[/bold] {config_dir}\n"
-                f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
-                f"[bold]Текущая LLM:[/bold] [#007c6e]{current_llm}[/#007c6e]"
+                f"[bold]Папка бинарника:[/bold] {bin_path}"
+
             )
 
         except Exception:

@@ -67,7 +67,6 @@ TabPane {
 .param-label {
     width: 40%;
     color: $text;
-    text-style: bold;
     padding-right: 2;
 }
 
