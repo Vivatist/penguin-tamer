@@ -71,6 +71,78 @@ class ConfigMenuApp(App):
     TITLE = "Penguin Tamer - Конфигурация"
     SUB_TITLE = "Управление настройками ИИ"
 
+    def get_css_variables(self) -> dict[str, str]:
+        """Определяем кастомную цветовую палитру для Textual."""
+        variables = super().get_css_variables()
+
+        palette = {
+            # Базовые цвета
+            "background": "#1a2429",
+            "surface": "#1e2a30",
+            "surface-lighten-1": "#27353c",
+            "surface-lighten-2": "#303f47",
+            "surface-lighten-3": "#3a4b54",
+            "surface-darken-1": "#162025",
+            "panel": "#27353c",
+            "panel-lighten-1": "#303f47",
+            "panel-darken-1": "#1a2429",
+            "border": "#2f3b41",
+            "shadow": "rgba(0, 0, 0, 0.25)",
+
+            # Основной акцент (оранжевый)
+            "primary": "#e07333",
+            "primary-lighten-1": "#00342d",
+            "primary-lighten-2": "#004b41",
+            "primary-lighten-3": "#006257",
+            "primary-darken-1": "#c86529",
+            "primary-darken-2": "#aa4f1e",
+            "primary-darken-3": "#8c3e15",
+
+            # Успех / основной вторичный цвет (бирюзовый)
+            "secondary": "#007c6e",
+            "secondary-lighten-1": "#239f90",
+            "secondary-lighten-2": "#45c2b3",
+            "secondary-lighten-3": "#7adcd0",
+            "secondary-darken-1": "#006257",
+            "secondary-darken-2": "#004b41",
+            "secondary-darken-3": "#00342d",
+            "success": "#007c6e",
+            "success-lighten-1": "#239f90",
+            "success-darken-1": "#006257",
+
+            # Мягкий акцент (песочный)
+            "accent": "#ffd8b9",
+            "accent-lighten-1": "#ffe6cf",
+            "accent-lighten-2": "#fff2e4",
+            "accent-lighten-3": "#fffaf3",
+            "accent-darken-1": "#f2bf94",
+            "accent-darken-2": "#dba578",
+            "accent-darken-3": "#c1895c",
+            "warning": "#ffd8b9",
+            "warning-darken-1": "#f2bf94",
+
+            # Сообщения об ошибках
+            "error": "#e07333",
+            "error-darken-1": "#c86529",
+
+            # Текстовые цвета
+            "text": "#f4f7f7",
+            "text-muted": "#a7b4b7",
+            "text-disabled": "#6e7a7d",
+
+            # Дополнительные элементы
+            "boost": "#303f47",
+            "foreground": "#f4f7f7",
+            "muted": "#a7b4b7",
+            "dark": "#1e2a30",
+            "scrollbar-background": "#162025",
+            "scrollbar-foreground": "#004b41",
+            "scrollbar-hover": "#006257",
+        }
+
+        variables.update(palette)
+        return variables
+
     def compose(self) -> ComposeResult:
         """Create the UI layout."""
         yield Header()
@@ -947,7 +1019,7 @@ class ConfigMenuApp(App):
                 f"[bold]Penguin Tamer[/bold] {__version__}\n\n"
                 f"[bold]Папка конфига:[/bold] {config_dir}\n"
                 f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
-                f"[bold]Текущая LLM:[/bold] [ #007c6e]{current_llm}[/#007c6e]"
+                f"[bold]Текущая LLM:[/bold] [#007c6e]{current_llm}[/#007c6e]"
             )
 
         except Exception:

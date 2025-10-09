@@ -6,13 +6,13 @@ Screen {
 
 #left-panel {
     width: 65%;
-    border: solid #1e2a30;
+    border: solid $border;
     padding: 1;
 }
 
 #right-panel {
     width: 35%;
-    border: solid #1e2a30;
+    border: solid $border;
     padding: 1;
     margin-left: 1;
 }
@@ -260,56 +260,56 @@ LLMEditDialog {
 
 /* Button color overrides */
 Button.-primary {
-    background: #e07333;
-    color: white;
-    border: tall #e07333;
+    background: $primary;
+    color: $foreground;
+    border: tall $primary;
 }
 
 Button.-primary:hover {
-    background: #c86529;
-    border: tall #c86529;
+    background: $primary-darken-1;
+    border: tall $primary-darken-1;
 }
 
 Button.-success {
-    background: #007c6e;
-    color: white;
-    border: tall #007c6e;
+    background: $success;
+    color: $foreground;
+    border: tall $success;
 }
 
 Button.-success:hover {
-    background: #006558;
-    border: tall #006558;
+    background: $success-darken-1;
+    border: tall $success-darken-1;
 }
 
 Button.-warning {
-    background: #ffd8b9;
-    color: #1e2a30;
-    border: tall #ffd8b9;
+    background: $warning;
+    color: $dark;
+    border: tall $warning;
 }
 
 Button.-warning:hover {
-    background: #ffc89f;
-    border: tall #ffc89f;
+    background: $warning-darken-1;
+    border: tall $warning-darken-1;
 }
 
 Button.-error {
-    background: #e07333;
-    color: white;
-    border: tall #e07333;
+    background: $error;
+    color: $foreground;
+    border: tall $error;
 }
 
 Button.-error:hover {
-    background: #c86529;
-    border: tall #c86529;
+    background: $error-darken-1;
+    border: tall $error-darken-1;
 }
 
 Button.-default {
-    background: #1e2a30;
-    color: #e07333;
-    border: tall #e07333;
+    background: $surface;
+    color: $primary;
+    border: tall $primary;
 }
 
 Button.-default:hover {
-    background: #2a3640;
-    border: tall #e07333;
+    background: $surface-lighten-2;
+    border: tall $primary;
 }
