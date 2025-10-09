@@ -3,13 +3,18 @@
 Демонстрация исправления вывода ошибок команд.
 
 Показывает разницу между старым и новым поведением.
+
+Связанные файлы:
+- test_command_output.py - автоматические тесты для проверки вывода команд
+- TEST_COMMAND_OUTPUT.md - документация по тестам
 """
 
 import sys
 from pathlib import Path
 
 # Добавляем путь к src для импорта модулей
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# tests/demo_error_output.py -> tests/ -> project_root/ -> src/
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from penguin_tamer.command_executor import execute_and_handle_result
 from rich.console import Console

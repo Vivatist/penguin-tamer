@@ -9,8 +9,12 @@ import getpass
 
 from penguin_tamer.i18n import t
 
+
 def get_system_info_text() -> str:
-    """Returns system environment information as readable text / Возвращает информацию о рабочем окружении в виде читаемого текста"""
+    """Returns system environment information as readable text.
+
+    Возвращает информацию о рабочем окружении в виде читаемого текста
+    """
     try:
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
@@ -20,7 +24,7 @@ def get_system_info_text() -> str:
     # Определяем shell без медленных вызовов subprocess
     shell_exec = os.environ.get('SHELL') or os.environ.get('COMSPEC') or os.environ.get('TERMINAL') or ''
     shell_name = os.path.basename(shell_exec) if shell_exec else 'unknown'
-    
+
     # Быстрое определение версии shell без subprocess вызовов
     shell_version = 'unknown'
     if shell_exec and os.path.exists(shell_exec):
@@ -36,20 +40,20 @@ def get_system_info_text() -> str:
         elif 'zsh' in shell_exec.lower():
             shell_version = 'Z shell'
         # Для остальных случаев оставляем 'unknown' чтобы не тратить время на subprocess
-    
+
     # Дополнительная полезная информация (быстрое извлечение)
     system_encoding = sys.getdefaultencoding()
     filesystem_encoding = sys.getfilesystemencoding()
-    
+
     # Локаль системы (безопасно с fallback)
     try:
         system_locale = locale.getdefaultlocale()
         locale_str = f"{system_locale[0] or 'unknown'}, {system_locale[1] or 'unknown'}"
     except Exception:
         locale_str = 'unknown'
-    
+
     temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or os.environ.get('TMPDIR') or '/tmp'
-    
+
     # Определяем виртуальное окружение Python
     in_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
     venv_status = 'Yes (active)' if in_venv else 'No'
@@ -57,7 +61,7 @@ def get_system_info_text() -> str:
         venv_path = sys.prefix
     else:
         venv_path = 'N/A'
-    
+
     cpu_count = os.cpu_count() or 'unknown'
     python_executable = sys.executable
 
@@ -85,6 +89,7 @@ def get_system_info_text() -> str:
 - {t("Shell Version")}: {shell_version}
 """
     return info_text.strip()
+
 
 if __name__ == "__main__":
     print(get_system_info_text())

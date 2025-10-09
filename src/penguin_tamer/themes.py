@@ -25,7 +25,7 @@ CODE_THEMES = {
 }
 
 # Доступные code_theme в Rich:
-# monokai, dracula, nord, solarized-dark, solarized-light, 
+# monokai, dracula, nord, solarized-dark, solarized-light,
 # github-dark, vim, emacs, vs, xcode, paraiso-dark, paraiso-light,
 # fruity, bw (black & white)
 
@@ -42,7 +42,7 @@ THEMES = {
         "markdown.item.bullet": "bright_green",
         "markdown.block_quote": "italic bright_black",
     },
-    
+
     "monokai": {
         "markdown.h1": "bold bright_magenta",
         "markdown.h2": "bold magenta",
@@ -56,7 +56,7 @@ THEMES = {
         "markdown.emphasis": "italic bright_cyan",
         "markdown.strong": "bold bright_red",
     },
-    
+
     "dracula": {
         "markdown.h1": "bold bright_magenta",
         "markdown.h2": "bold magenta",
@@ -71,7 +71,7 @@ THEMES = {
         "markdown.emphasis": "italic bright_magenta",
         "markdown.strong": "bold bright_red",
     },
-    
+
     "nord": {
         "markdown.h1": "bold bright_cyan",
         "markdown.h2": "bold cyan",
@@ -85,7 +85,7 @@ THEMES = {
         "markdown.emphasis": "italic cyan",
         "markdown.strong": "bold bright_white",
     },
-    
+
     "solarized_dark": {
         "markdown.h1": "bold bright_yellow",
         "markdown.h2": "bold yellow",
@@ -99,7 +99,7 @@ THEMES = {
         "markdown.emphasis": "italic cyan",
         "markdown.strong": "bold bright_yellow",
     },
-    
+
     "github": {
         "markdown.h1": "bold blue",
         "markdown.h2": "bold blue",
@@ -113,7 +113,7 @@ THEMES = {
         "markdown.emphasis": "italic",
         "markdown.strong": "bold",
     },
-    
+
     "matrix": {
         "markdown.h1": "bold bright_green",
         "markdown.h2": "bold green",
@@ -128,7 +128,7 @@ THEMES = {
         "markdown.strong": "bold bright_green",
         "markdown.text": "green",
     },
-    
+
     "minimal": {
         "markdown.h1": "bold white",
         "markdown.h2": "bold white",
@@ -148,7 +148,7 @@ THEMES = {
 def get_theme(theme_name: str = "default") -> Theme:
     """
     Возвращает тему Rich для Markdown.
-    
+
     Доступные темы:
     - default: Классическая тема (cyan заголовки, желтый код)
     - monokai: Темная тема в стиле Monokai
@@ -158,34 +158,34 @@ def get_theme(theme_name: str = "default") -> Theme:
     - github: GitHub-стиль (светлая тема)
     - matrix: Зеленая Matrix тема
     - minimal: Минималистичная черно-белая тема
-    
+
     Args:
         theme_name: Название темы
-        
+
     Returns:
         Theme объект Rich
     """
     # Проверяем есть ли тема в кэше
     if theme_name in _markdown_themes_cache:
         return _markdown_themes_cache[theme_name]
-    
+
     # Получаем выбранную тему или дефолтную
     selected_theme = THEMES.get(theme_name, THEMES["default"])
     created_theme = Theme(selected_theme)
-    
+
     # Сохраняем в кэш
     _markdown_themes_cache[theme_name] = created_theme
-    
+
     return created_theme
 
 
 def get_code_theme(theme_name: str = "default") -> str:
     """
     Возвращает название темы для подсветки синтаксиса в блоках кода.
-    
+
     Args:
         theme_name: Название темы
-        
+
     Returns:
         Название темы для Rich Syntax
     """
@@ -195,7 +195,7 @@ def get_code_theme(theme_name: str = "default") -> str:
 def get_available_themes() -> list[str]:
     """
     Возвращает список доступных тем.
-    
+
     Returns:
         Список названий тем
     """

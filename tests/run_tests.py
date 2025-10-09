@@ -35,26 +35,26 @@ def main():
     parser.add_argument('--fast', action='store_true', help='Только быстрые тесты')
     parser.add_argument('--cov', action='store_true', help='С покрытием кода')
     parser.add_argument('--verbose', '-v', action='store_true', help='Подробный вывод')
-    
+
     args = parser.parse_args()
-    
+
     pytest_args = []
-    
+
     if args.fast:
         pytest_args.extend(['-m', 'fast'])
-    
+
     if args.cov:
         pytest_args.extend([
             '--cov=src/penguin_tamer',
             '--cov-report=term',
             '--cov-report=html'
         ])
-    
+
     if args.verbose:
         pytest_args.append('-vv')
     else:
         pytest_args.append('-v')
-    
+
     return run_pytest(pytest_args)
 
 

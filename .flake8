@@ -1,0 +1,54 @@
+[flake8]
+# Максимальная длина строки
+max-line-length = 120
+
+# Игнорируемые правила
+# W504: line break after binary operator (допустимо в современном Python)
+# C901: function is too complex (будет рефакторинг позже)
+ignore = W504
+
+# Игнорируемые ошибки для определённых файлов
+per-file-ignores =
+    # E402: module level import not at top of file
+    # Необходимо для модификации sys.path перед импортом модулей
+    src/penguin_tamer/cli.py: E402
+    src/penguin_tamer/demo_error_output.py: E402
+    tests/demo_error_output.py: E402
+    tests/test_command_executor.py: E402
+    # C901: слишком сложная функция (требует архитектурного рефакторинга)
+    src/penguin_tamer/llm_client.py: C901
+
+# Исключить из проверки
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    htmlcov,
+    .pytest_cache,
+    *.egg-info,
+    dist,
+    build,
+    .tox
+
+# Включить дополнительные проверки
+select =
+    E,  # pycodestyle errors
+    W,  # pycodestyle warnings
+    F,  # pyflakes
+    C,  # mccabe complexity
+    N,  # pep8-naming
+
+# Максимальная сложность функций (цикломатическая сложность)
+max-complexity = 15
+
+# Показывать исходный код ошибки
+show-source = True
+
+# Показывать информацию об ошибке
+show-pep8 = True
+
+# Статистика
+statistics = True
+count = True

@@ -11,6 +11,8 @@ from penguin_tamer.config_manager import config
 
 # Ленивый импорт i18n
 _i18n_initialized = False
+
+
 def _ensure_i18n():
     global _i18n_initialized, t, translator
     if not _i18n_initialized:
@@ -85,6 +87,7 @@ def _get_execute_handler():
         _execute_handler = execute_and_handle_result
     return _execute_handler
 
+
 def _get_formatter_text():
     """Ленивый импорт text_utils"""
     global _formatter_text
@@ -92,6 +95,7 @@ def _get_formatter_text():
         from penguin_tamer.text_utils import extract_labeled_code_blocks
         _formatter_text = extract_labeled_code_blocks
     return _formatter_text
+
 
 # Импортируем только самое необходимое для быстрого старта
 from penguin_tamer.llm_client import OpenRouterClient, LLMConfig
@@ -115,9 +119,11 @@ def _is_exit_command(prompt: str) -> bool:
     return prompt.lower() in ['exit', 'quit', 'q']
 
 
-def _add_command_to_context(chat_client: OpenRouterClient, command: str, result: dict, block_number: int = None) -> None:
+def _add_command_to_context(
+    chat_client: OpenRouterClient, command: str, result: dict, block_number: int = None
+) -> None:
     """Add executed command and its result to chat context.
-    
+
     Args:
         chat_client: LLM client to add context to
         command: Executed command
@@ -129,7 +135,7 @@ def _add_command_to_context(chat_client: OpenRouterClient, command: str, result:
         user_message = t("Execute code block #{number}:").format(number=block_number) + f"\n```\n{command}\n```"
     else:
         user_message = t("Execute command: {command}").format(command=command)
-    
+
     # Формируем системное сообщение с результатом
     if result['interrupted']:
         system_message = t("Command execution was interrupted by user (Ctrl+C).")
@@ -139,7 +145,7 @@ def _add_command_to_context(chat_client: OpenRouterClient, command: str, result:
             output_parts.append(t("Output:") + f"\n{result['stdout']}")
         if result['stderr']:
             output_parts.append(t("Errors:") + f"\n{result['stderr']}")
-        
+
         if output_parts:
             system_message = t("Command executed successfully (exit code: 0).") + "\n" + "\n".join(output_parts)
         else:
@@ -151,7 +157,7 @@ def _add_command_to_context(chat_client: OpenRouterClient, command: str, result:
         if result['stderr']:
             output_parts.append(t("Errors:") + f"\n{result['stderr']}")
         system_message = "\n".join(output_parts)
-    
+
     # Добавляем в контекст диалога
     chat_client.messages.append({"role": "user", "content": user_message})
     chat_client.messages.append({"role": "system", "content": system_message})
@@ -159,93 +165,93 @@ def _add_command_to_context(chat_client: OpenRouterClient, command: str, result:
 
 def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) -> bool:
     """Execute direct shell command (starts with dot) and add to context.
-    
+
     Args:
         console: Rich console for output
         chat_client: LLM client to add command context
         prompt: User input
-    
+
     Returns:
         True if command was handled, False otherwise
     """
     if not prompt.startswith('.'):
         return False
-    
+
     command = prompt[1:].strip()
     if not command:
         console.print(t("[dim]Empty command after '.' - skipping.[/dim]"))
         return True
-    
+
     console.print(t("[dim]>>> Executing command:[/dim] {command}").format(command=command))
-    
+
     # Выполняем команду и получаем результат
     result = _get_execute_handler()(console, command)
     console.print()
-    
+
     # Добавляем команду и результат в контекст
     _add_command_to_context(chat_client, command, result)
-    
+
     return True
 
 
 def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt: str, code_blocks: list) -> bool:
     """Execute code block by number and add to context.
-    
+
     Args:
         console: Rich console for output
         chat_client: LLM client to add command context
         prompt: User input
         code_blocks: List of available code blocks
-    
+
     Returns:
         True if code block was executed, False otherwise
     """
     if not prompt.isdigit():
         return False
-    
+
     block_index = int(prompt)
     if 1 <= block_index <= len(code_blocks):
         code = code_blocks[block_index - 1]
-        
+
         # Выполняем блок кода и получаем результат
         result = _get_script_executor()(console, code_blocks, block_index)
         console.print()
-        
+
         # Добавляем команду и результат в контекст
         _add_command_to_context(chat_client, code, result, block_number=block_index)
-        
+
         return True
-    
+
     console.print(t("[dim]Code block #{number} not found.[/dim]").format(number=prompt))
     return True
 
 
 def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> list:
     """Send query to AI and extract code blocks from response.
-    
+
     Returns:
         List of code blocks from AI response
     """
     reply = chat_client.ask_stream(prompt)
     code_blocks = []
-    
+
     # Извлекаем блоки кода только если получен непустой ответ
     if reply:
         code_blocks = _get_formatter_text()(reply)
-    
+
     console.print()
     return code_blocks
 
 
 def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str) -> list:
     """Process initial user prompt if provided.
-    
+
     Returns:
         List of code blocks from response
     """
     if not prompt:
         return []
-    
+
     try:
         return _process_ai_query(chat_client, console, prompt)
     except Exception as e:
@@ -256,7 +262,7 @@ def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str)
 
 def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode with educational prompt for code block numbering.
-    
+
     Args:
         chat_client: Initialized LLM client
         console: Rich console for output
@@ -265,11 +271,11 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     # Setup
     history_file_path = config.user_config_dir / "cmd_history"
     input_formatter = DialogInputFormatter(history_file_path)
-    
+
     # Initialize dialog mode with educational prompt
     educational_prompt = get_educational_prompt()
     chat_client.init_dialog_mode(educational_prompt)
-    
+
     # Process initial prompt if provided
     last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
 
@@ -278,26 +284,26 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         try:
             # Get user input
             user_prompt = input_formatter.get_input(
-                console, 
-                has_code_blocks=bool(last_code_blocks), 
+                console,
+                has_code_blocks=bool(last_code_blocks),
                 t=t
             )
-            
+
             if not user_prompt:
                 continue
-            
+
             # Check for exit
             if _is_exit_command(user_prompt):
                 break
-            
+
             # Handle direct command execution (with context)
             if _handle_direct_command(console, chat_client, user_prompt):
                 continue
-            
+
             # Handle code block execution (with context)
             if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks):
                 continue
-            
+
             # Process as AI query
             last_code_blocks = _process_ai_query(chat_client, console, user_prompt)
 
@@ -309,12 +315,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
 def _create_chat_client(console):
     """Ленивое создание LLM клиента только когда он действительно нужен"""
-    
+
     # Убеждаемся, что i18n инициализирован перед созданием клиента
     _ensure_i18n()
 
     llm_config = config.get_current_llm_config()
-    
+
     # Создаём полную конфигурацию LLM (подключение + генерация)
     full_llm_config = LLMConfig(
         # Connection parameters
@@ -330,7 +336,7 @@ def _create_chat_client(console):
         stop=config.get("global", "stop", None),
         seed=config.get("global", "seed", None)
     )
-    
+
     # Создаём клиент с единой конфигурацией
     chat_client = OpenRouterClient(
         console=console,

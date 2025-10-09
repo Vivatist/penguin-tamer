@@ -4,9 +4,7 @@ Textual-based configuration menu for Penguin Tamer.
 Provides a modern TUI interface with tabs, tables, and live status updates.
 """
 
-import re
 import sys
-import time
 import traceback
 from pathlib import Path
 
@@ -21,14 +19,12 @@ if __name__ == "__main__":
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
-from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
     DataTable,
     Footer,
     Header,
     Input,
-    Markdown,
     Select,
     Static,
     Switch,
@@ -36,12 +32,9 @@ from textual.widgets import (
     TabPane,
     TextArea,
 )
-from textual.reactive import reactive
-from textual.message import Message
 
 from penguin_tamer.config_manager import config
 from penguin_tamer.i18n import translator
-from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.arguments import __version__
 
 # Import modular components
@@ -61,7 +54,7 @@ else:
 
 class ConfigMenuApp(App):
     """Main Textual configuration application."""
-    
+
     # Flag to prevent notifications during initialization
     _initialized = False
 
@@ -94,12 +87,15 @@ class ConfigMenuApp(App):
                                 "[dim]Системная информация и управление LLM[/dim]",
                                 classes="tab-header",
                             )
-                            
+
                             # System Info
-                            config_dir = Path(config.config_path).parent if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+                            if hasattr(config, 'config_path'):
+                                config_dir = Path(config.config_path).parent
+                            else:
+                                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
                             bin_path = Path(sys.executable).parent
                             current_llm = config.current_llm or "Не выбрана"
-                            
+
                             yield Static(
                                 f"[bold]Версия ПО:[/bold] {__version__}\n"
                                 f"[bold]Папка конфига:[/bold] {config_dir}\n"
@@ -108,7 +104,7 @@ class ConfigMenuApp(App):
                                 classes="system-info-panel",
                                 id="system-info-display"
                             )
-                            
+
                             # Language setting
                             with Horizontal(classes="setting-row"):
                                 yield Static(
@@ -123,7 +119,7 @@ class ConfigMenuApp(App):
                                     allow_blank=False,
                                     classes="param-control"
                                 )
-                            
+
                             yield Static("")
                             yield Static(
                                 "[bold]Добавленные нейросети[/bold]\n"
@@ -174,7 +170,7 @@ class ConfigMenuApp(App):
                                     classes="param-label"
                                 )
                                 yield Input(
-                                    value=str(config.temperature), 
+                                    value=str(config.temperature),
                                     id="temp-input",
                                     placeholder="0.0-2.0",
                                     classes="param-control"
@@ -192,7 +188,7 @@ class ConfigMenuApp(App):
                                     classes="param-label"
                                 )
                                 yield Input(
-                                    value=max_tokens_str, 
+                                    value=max_tokens_str,
                                     id="max-tokens-input",
                                     placeholder="число или 'null'",
                                     classes="param-control"
@@ -205,7 +201,7 @@ class ConfigMenuApp(App):
                                     classes="param-label"
                                 )
                                 yield Input(
-                                    value=str(config.top_p), 
+                                    value=str(config.top_p),
                                     id="top-p-input",
                                     placeholder="0.0-1.0",
                                     classes="param-control"
@@ -245,7 +241,7 @@ class ConfigMenuApp(App):
                                     classes="param-label"
                                 )
                                 yield Input(
-                                    value=seed_str, 
+                                    value=seed_str,
                                     id="seed-input",
                                     placeholder="число или 'null'",
                                     classes="param-control"
@@ -269,7 +265,7 @@ class ConfigMenuApp(App):
                                     classes="param-label"
                                 )
                                 yield Input(
-                                    value=str(stream_delay), 
+                                    value=str(stream_delay),
                                     id="stream-delay-input",
                                     placeholder="0.001-0.1",
                                     classes="param-control"
@@ -283,7 +279,7 @@ class ConfigMenuApp(App):
                                     classes="param-label"
                                 )
                                 yield Input(
-                                    value=str(refresh_rate), 
+                                    value=str(refresh_rate),
                                     id="refresh-rate-input",
                                     placeholder="1-60",
                                     classes="param-control"
@@ -300,7 +296,7 @@ class ConfigMenuApp(App):
                                         value=getattr(config, "debug", False),
                                         id="debug-switch"
                                     )
-                            
+
                             # Reset Settings Button
                             yield Static("")
                             with Horizontal(classes="button-row"):
@@ -309,7 +305,7 @@ class ConfigMenuApp(App):
                                     id="reset-settings-btn",
                                     variant="error",
                                 )
-                            
+
                             # Flexible spacer AFTER button to fill remaining space
                             yield Static("", classes="flexible-spacer")
 
@@ -357,6 +353,7 @@ class ConfigMenuApp(App):
         config.reload()
         self.update_llm_tables()
         # Set flag after initialization to enable notifications and tab switching
+
         def finish_init():
             self._initialized = True
             # Обновляем все поля ввода актуальными значениями из конфига
@@ -364,20 +361,20 @@ class ConfigMenuApp(App):
             # Show help for first tab
             panel = self.query_one("#info-panel", InfoPanel)
             panel.show_tab_help("tab-general")
-        
+
         self.set_timer(0.2, finish_init)
-    
+
     def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
         """Handle tab change to update info panel."""
         # Ensure we're initialized
         if not getattr(self, '_initialized', False):
             return
-            
+
         try:
             panel = self.query_one("#info-panel", InfoPanel)
             # Extract actual tab ID from the event
             raw_id = event.tab.id
-            
+
             # Format is "--content-tab-tab-system", we need "tab-system"
             # Remove "--content-" prefix first
             if raw_id and raw_id.startswith("--content-"):
@@ -387,31 +384,31 @@ class ConfigMenuApp(App):
                     tab_id = tab_id[4:]  # Remove one "tab-"
             else:
                 tab_id = raw_id
-            
+
             panel.show_tab_help(tab_id)
         except Exception as e:
             self.notify(f"Ошибка: {e}", severity="error")
-    
+
     def on_focus(self, event) -> None:
         """Show help when any widget gets focus."""
         widget = event.widget
         widget_id = getattr(widget, 'id', None)
-        
+
         if widget_id and isinstance(widget, (Input, Select, Switch)):
             panel = self.query_one(InfoPanel)
             panel.show_help(widget_id)
-    
+
     def on_blur(self, event) -> None:
         """Restore config when widget loses focus."""
         widget = event.widget
-        
+
         if isinstance(widget, (Input, Select, Switch)):
             # Get current tab and show its help
             tabs = self.query_one(TabbedContent)
             current_tab = tabs.active
             panel = self.query_one(InfoPanel)
             panel.show_tab_help(current_tab)
-    
+
     def on_switch_changed(self, event: Switch.Changed) -> None:
         """Handle switch state changes."""
         if event.switch.id == "debug-switch":
@@ -420,15 +417,15 @@ class ConfigMenuApp(App):
             self.refresh_status()
             status = "включен" if event.value else "выключен"
             self.notify(f"Режим отладки {status}", severity="information")
-    
+
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle select changes."""
         # Skip notifications during initialization
         if not self._initialized:
             return
-            
+
         select_id = event.select.id
-        
+
         if select_id == "language-select" and event.value != Select.BLANK:
             self.set_language(str(event.value))
         elif select_id == "theme-select" and event.value != Select.BLANK:
@@ -436,7 +433,7 @@ class ConfigMenuApp(App):
 
     def update_llm_tables(self, keep_cursor_position: bool = False) -> None:
         """Update LLM table with current data.
-        
+
         Args:
             keep_cursor_position: If True, try to keep cursor on the same row
         """
@@ -445,7 +442,7 @@ class ConfigMenuApp(App):
 
         # Update unified LLM table
         llm_table = self.query_one("#llm-table", DataTable)
-        
+
         # Save cursor position
         old_cursor_row = llm_table.cursor_row if keep_cursor_position else -1
         old_llm_name = None
@@ -453,12 +450,12 @@ class ConfigMenuApp(App):
             try:
                 row = llm_table.get_row_at(old_cursor_row)
                 old_llm_name = str(row[1])  # Название LLM
-            except:
+            except Exception:
                 pass
-        
+
         llm_table.clear(columns=True)
         llm_table.add_columns("", "Название", "Модель", "API URL")
-        
+
         new_cursor_row = 0
         for idx, llm_name in enumerate(llms):
             cfg = config.get_llm_config(llm_name) or {}
@@ -472,23 +469,23 @@ class ConfigMenuApp(App):
             # Запоминаем новую позицию для старой LLM
             if old_llm_name and llm_name == old_llm_name:
                 new_cursor_row = idx
-        
+
         # Восстанавливаем позицию курсора и highlight
         if keep_cursor_position and old_llm_name and len(llms) > 0:
             try:
                 # Устанавливаем cursor_coordinate для правильного highlight
                 llm_table.cursor_coordinate = (new_cursor_row, 0)
-            except:
+            except Exception:
                 try:
                     # Альтернативный способ
                     llm_table.move_cursor(row=new_cursor_row, animate=False)
-                except:
+                except Exception:
                     pass
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle Enter key in input fields."""
         input_id = event.input.id
-        
+
         # Parameters
         if input_id == "temp-input":
             self.set_temperature()
@@ -531,7 +528,7 @@ class ConfigMenuApp(App):
         # User Content
         elif btn_id == "save-content-btn":
             self.save_user_content()
-    
+
     def on_double_click_data_table_double_clicked(self, event: DoubleClickDataTable.DoubleClicked) -> None:
         """Handle double-click on DataTable."""
         self.select_current_llm()
@@ -548,9 +545,12 @@ class ConfigMenuApp(App):
         config.current_llm = llm_name
         config.save()
         self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
-        
+
         # Update system info panel with new current LLM
-        config_dir = Path(config.config_path).parent if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+        if hasattr(config, 'config_path'):
+            config_dir = Path(config.config_path).parent
+        else:
+            config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
         bin_path = Path(sys.executable).parent
         system_info_display = self.query_one("#system-info-display", Static)
         system_info_display.update(
@@ -559,7 +559,7 @@ class ConfigMenuApp(App):
             f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
             f"[bold]Текущая LLM:[/bold] [green]{llm_name}[/green]"
         )
-        
+
         self.refresh_status()
         self.notify(f"Текущая LLM: {llm_name}", severity="information")
 
@@ -568,9 +568,9 @@ class ConfigMenuApp(App):
         def handle_result(result):
             if result:
                 config.add_llm(
-                    result["name"], 
-                    result["model"], 
-                    result["api_url"], 
+                    result["name"],
+                    result["model"],
+                    result["api_url"],
                     result["api_key"]
                 )
                 self.update_llm_tables()
@@ -830,7 +830,7 @@ class ConfigMenuApp(App):
         """Refresh status action."""
         self.refresh_status()
         self.notify("Статус обновлён", severity="information")
-    
+
     def action_reset_settings(self) -> None:
         """Сброс настроек к значениям по умолчанию."""
         message = (
@@ -838,100 +838,108 @@ class ConfigMenuApp(App):
             "будут сброшены к настройкам по умолчанию.\n\n"
             "Продолжить?"
         )
-        
+
         def handle_confirm(result):
             if result:
                 try:
                     # Загружаем default_config.yaml
                     default_config_path = Path(__file__).parent / "default_config.yaml"
-                    
+
                     if not default_config_path.exists():
                         self.notify("Файл default_config.yaml не найден", severity="error")
                         return
-                    
+
                     # Читаем содержимое default_config.yaml
                     with open(default_config_path, 'r', encoding='utf-8') as f:
                         default_content = f.read()
-                    
+
                     # Записываем в пользовательский конфиг
-                    config_path = Path(config.config_path) if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer" / "config.yaml"
-                    
+                    if hasattr(config, 'config_path'):
+                        config_path = Path(config.config_path)
+                    else:
+                        config_path = (
+                            Path.home() / ".config" / "penguin-tamer" / "penguin-tamer" / "config.yaml"
+                        )
+
                     # Создаем директорию если не существует
                     config_path.parent.mkdir(parents=True, exist_ok=True)
-                    
+
                     # Записываем default конфиг
                     with open(config_path, 'w', encoding='utf-8') as f:
                         f.write(default_content)
-                    
+
                     # Перезагружаем конфигурацию
                     config.reload()
-                    
+
                     # Обновляем все отображаемые значения
                     self.update_all_inputs()
                     self.update_llm_tables()
-                    
+
                     self.notify("Настройки успешно сброшены к значениям по умолчанию", severity="information")
-                    
+
                 except Exception as e:
                     self.notify(f"Ошибка при сбросе настроек: {e}", severity="error")
-        
+
         self.push_screen(ConfirmDialog(message, "Сброс настроек"), handle_confirm)
-    
+
     def update_all_inputs(self) -> None:
         """Обновляет все поля ввода значениями из конфига."""
         try:
             # Обновляем параметры генерации
             temp_input = self.query_one("#temp-input", Input)
             temp_input.value = str(config.temperature)
-            
+
             max_tokens_input = self.query_one("#max-tokens-input", Input)
             max_tokens_str = str(config.max_tokens) if config.max_tokens else "неограниченно"
             max_tokens_input.value = max_tokens_str
-            
+
             top_p_input = self.query_one("#top-p-input", Input)
             top_p_input.value = str(config.top_p)
-            
+
             freq_penalty_input = self.query_one("#freq-penalty-input", Input)
             freq_penalty_input.value = str(config.frequency_penalty)
-            
+
             pres_penalty_input = self.query_one("#pres-penalty-input", Input)
             pres_penalty_input.value = str(config.presence_penalty)
-            
+
             seed_input = self.query_one("#seed-input", Input)
             seed_str = str(config.seed) if config.seed else "случайный"
             seed_input.value = seed_str
-            
+
             # Обновляем системные настройки
             stream_delay_input = self.query_one("#stream-delay-input", Input)
             stream_delay = config.get("global", "sleep_time", 0.01)
             stream_delay_input.value = str(stream_delay)
-            
+
             refresh_rate_input = self.query_one("#refresh-rate-input", Input)
             refresh_rate = config.get("global", "refresh_per_second", 10)
             refresh_rate_input.value = str(refresh_rate)
-            
+
             debug_switch = self.query_one("#debug-switch", Switch)
             debug_switch.value = getattr(config, "debug", False)
-            
+
             # Обновляем контент
             content_textarea = self.query_one("#content-textarea", TextArea)
             content_textarea.text = config.user_content
-            
+
             # Обновляем язык
             language_select = self.query_one("#language-select", Select)
             current_lang = getattr(config, "language", "en")
             language_select.value = current_lang
-            
+
             # Обновляем тему
             theme_select = self.query_one("#theme-select", Select)
             current_theme = getattr(config, "theme", "default")
             theme_select.value = current_theme
-            
+
             # Обновляем панель с системной информацией и текущей LLM
-            config_dir = Path(config.config_path).parent if hasattr(config, 'config_path') else Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+            if hasattr(config, 'config_path'):
+                config_dir = Path(config.config_path).parent
+            else:
+                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
             bin_path = Path(sys.executable).parent
             current_llm = config.current_llm or "Не выбрана"
-            
+
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
                 f"[bold]Версия ПО:[/bold] {__version__}\n"
@@ -939,8 +947,8 @@ class ConfigMenuApp(App):
                 f"[bold]Папка бинарника:[/bold] {bin_path}\n\n"
                 f"[bold]Текущая LLM:[/bold] [green]{current_llm}[/green]"
             )
-            
-        except Exception as e:
+
+        except Exception:
             # Некоторые виджеты могут быть не найдены, это нормально
             pass
 
@@ -950,7 +958,7 @@ def main_menu():
     try:
         # Показываем интро перед запуском меню
         show_intro()
-        
+
         app = ConfigMenuApp()
         app.run()
     except Exception as e:

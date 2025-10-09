@@ -10,18 +10,18 @@ from penguin_tamer.i18n import t
 def get_system_prompt() -> List[dict[str, str]]:
     """
     Construct the system prompt for LLM.
-    
+
     Returns:
         List[dict]: List containing system message in OpenAI format
     """
     user_prompt = config.get("global", "user_content", "")
-    
+
     base_prompt = t(
         "Your name is Penguin Tamer, a sysadmin assistant. "
         "You and the user always work in a terminal. "
         "Respond based on the user's environment and commands."
     )
-    
+
     # Получаем актуальную информацию о системе
     system_info = get_system_info_text()
     system_info_prompt = t("The current system information is as follows:") + f"\n{system_info}\n"
@@ -30,17 +30,17 @@ def get_system_prompt() -> List[dict[str, str]]:
         system_prompt = f"{user_prompt} {base_prompt} {system_info_prompt}".strip()
     else:
         system_prompt = f"{base_prompt} {system_info_prompt}".strip()
-    
+
     return [{"role": "system", "content": system_prompt}]
 
 
 def get_educational_prompt() -> List[dict[str, str]]:
     """
     Get educational prompt for teaching LLM to number code blocks.
-    
+
     This prompt is sent once at the beginning of a conversation to instruct
     the model to automatically number all code blocks for easy reference.
-    
+
     Returns:
         List[dict]: List containing educational messages in OpenAI format
     """

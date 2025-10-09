@@ -17,6 +17,7 @@ from penguin_tamer.debug import debug_print_messages
 _openai_client = None
 _openai_exceptions = None
 
+
 def _get_openai_client():
     """Ленивый импорт OpenAI клиента для быстрого запуска --version, --help"""
     global _openai_client
@@ -24,6 +25,7 @@ def _get_openai_client():
         from openai import OpenAI
         _openai_client = OpenAI
     return _openai_client
+
 
 def _get_openai_exceptions():
     """Ленивый импорт исключений OpenAI SDK"""
@@ -42,11 +44,11 @@ def _get_openai_exceptions():
 def _create_markdown(text: str, theme_name: str = "default"):
     """
     Создаёт Markdown объект с правильной темой для блоков кода.
-    
+
     Args:
         text: Текст в формате Markdown
         theme_name: Название темы
-    
+
     Returns:
         Markdown объект с применённой темой
     """
@@ -61,7 +63,7 @@ class LLMConfig:
     api_key: str
     api_url: str
     model: str
-    
+
     # Generation parameters
     temperature: float = 0.7
     max_tokens: Optional[int] = None
@@ -75,31 +77,31 @@ class LLMConfig:
 @dataclass
 class OpenRouterClient:
     """OpenAI-compatible streaming LLM client with Rich UI integration."""
-    
+
     # Core parameters
     console: object
     system_message: List[Dict[str, str]]
     llm_config: LLMConfig
-    
+
     # Internal state (not part of constructor)
     messages: List[Dict[str, str]] = field(init=False)
     _client: Optional[object] = field(default=None, init=False)
-    
+
     def __post_init__(self):
         """Initialize internal state after dataclass construction."""
         self.messages = self.system_message.copy()
-    
+
     def init_dialog_mode(self, educational_prompt: List[Dict[str, str]]) -> None:
         """Initialize dialog mode by adding educational prompt to messages.
-        
+
         Should be called once at the start of dialog mode to teach the model
         to number code blocks automatically.
-        
+
         Args:
             educational_prompt: Educational messages to add
         """
         self.messages.extend(educational_prompt)
-    
+
     @classmethod
     def create(cls, console, api_key: str, api_url: str, model: str,
                system_message: List[Dict[str, str]], **llm_params):
@@ -115,44 +117,44 @@ class OpenRouterClient:
             system_message=system_message,
             llm_config=llm_config
         )
-    
+
     # Properties for easy access to all LLM parameters
     @property
     def api_key(self) -> str:
         return self.llm_config.api_key
-    
+
     @property
     def api_url(self) -> str:
         return self.llm_config.api_url
-    
+
     @property
     def model(self) -> str:
         return self.llm_config.model
-    
+
     @property
     def temperature(self) -> float:
         return self.llm_config.temperature
-    
+
     @property
     def max_tokens(self) -> Optional[int]:
         return self.llm_config.max_tokens
-    
+
     @property
     def top_p(self) -> float:
         return self.llm_config.top_p
-    
+
     @property
     def frequency_penalty(self) -> float:
         return self.llm_config.frequency_penalty
-    
+
     @property
     def presence_penalty(self) -> float:
         return self.llm_config.presence_penalty
-    
+
     @property
     def stop(self) -> Optional[List[str]]:
         return self.llm_config.stop
-    
+
     @property
     def seed(self) -> Optional[int]:
         return self.llm_config.seed
@@ -162,7 +164,11 @@ class OpenRouterClient:
         status_message - словарь с ключом 'text' для обновления сообщения.
         """
         try:
-            with self.console.status("[dim]" + status_message.get('text', t('Ai thinking...')) + "[/dim]", spinner="dots", spinner_style="dim") as status:
+            with self.console.status(
+                "[dim]" + status_message.get('text', t('Ai thinking...')) + "[/dim]",
+                spinner="dots",
+                spinner_style="dim"
+            ) as status:
                 while not stop_spinner.is_set():
                     # Обновляем статус, если он изменился
                     current_text = status_message.get('text', t('Ai thinking...'))
@@ -174,22 +180,22 @@ class OpenRouterClient:
     @contextmanager
     def _managed_spinner(self, initial_message: str):
         """Context manager для управления спиннером с автоматической очисткой.
-        
+
         Args:
             initial_message: Начальное сообщение для спиннера
-            
+
         Yields:
             dict: Словарь с ключом 'text' для обновления сообщения спиннера
         """
         stop_spinner = threading.Event()
         status_message = {'text': initial_message}
         spinner_thread = threading.Thread(
-            target=self._spinner, 
-            args=(stop_spinner, status_message), 
+            target=self._spinner,
+            args=(stop_spinner, status_message),
             daemon=True
         )
         spinner_thread.start()
-        
+
         try:
             yield status_message
         finally:
@@ -199,7 +205,7 @@ class OpenRouterClient:
 
     def _prepare_api_params(self) -> dict:
         """Подготовка параметров для API запроса.
-        
+
         Returns:
             dict: Параметры для chat.completions.create()
         """
@@ -209,7 +215,7 @@ class OpenRouterClient:
             "temperature": self.temperature,
             "stream": True
         }
-        
+
         # Добавляем опциональные параметры только если они заданы
         if self.max_tokens is not None:
             api_params["max_tokens"] = self.max_tokens
@@ -223,12 +229,12 @@ class OpenRouterClient:
             api_params["stop"] = self.stop
         if self.seed is not None:
             api_params["seed"] = self.seed
-            
+
         return api_params
 
     def _debug_print_if_enabled(self, phase: str) -> None:
         """Печать debug информации если режим отладки включён.
-        
+
         Args:
             phase: 'request' или 'response'
         """
@@ -241,14 +247,14 @@ class OpenRouterClient:
 
     def _wait_first_chunk(self, stream, interrupted: threading.Event) -> Optional[str]:
         """Ожидание первого чанка с контентом.
-        
+
         Args:
             stream: Поток ответов от API
             interrupted: Флаг прерывания
-            
+
         Returns:
             str или None: Первый чанк контента или None если не найден
-            
+
         Raises:
             KeyboardInterrupt: Если установлен флаг прерывания
         """
@@ -256,70 +262,71 @@ class OpenRouterClient:
             for chunk in stream:
                 if interrupted.is_set():
                     raise KeyboardInterrupt("Stream interrupted")
-                
+
                 # Проверяем корректность структуры ответа
                 if not hasattr(chunk, 'choices') or not chunk.choices:
                     continue
-                    
+
                 if not hasattr(chunk.choices[0], 'delta'):
                     continue
-                    
-                if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
-                    return chunk.choices[0].delta.content
-        except (AttributeError, IndexError) as e:
+
+                delta = chunk.choices[0].delta
+                if hasattr(delta, 'content') and delta.content:
+                    return delta.content
+        except (AttributeError, IndexError):
             # Некорректная структура ответа
             return None
-        
+
         return None
 
     def _process_stream_with_live(
-        self, 
-        stream, 
+        self,
+        stream,
         interrupted: threading.Event,
         first_chunk: str,
         reply_parts: List[str]
     ) -> str:
         """Обработка потока с Live отображением Markdown.
-        
+
         Args:
             stream: Поток ответов от API
             interrupted: Флаг прерывания
             first_chunk: Первый чанк контента
             reply_parts: Список для накопления частей ответа
-            
+
         Returns:
             str: Полный ответ
-            
+
         Raises:
             KeyboardInterrupt: Если установлен флаг прерывания
         """
         sleep_time = config.get("global", "sleep_time", 0.01)
         refresh_per_second = config.get("global", "refresh_per_second", 10)
         theme_name = config.get("global", "markdown_theme", "default")
-        
+
         with Live(
-            console=self.console, 
-            refresh_per_second=refresh_per_second, 
+            console=self.console,
+            refresh_per_second=refresh_per_second,
             auto_refresh=True
         ) as live:
             # Показываем первый чанк
             if first_chunk:
                 markdown = _create_markdown(first_chunk, theme_name)
                 live.update(markdown)
-            
+
             # Продолжаем обрабатывать остальные чанки
             try:
                 for chunk in stream:
                     if interrupted.is_set():
                         raise KeyboardInterrupt("Stream interrupted")
-                    
+
                     # Проверяем корректность структуры ответа
                     if not hasattr(chunk, 'choices') or not chunk.choices:
                         continue
-                    
+
                     if not hasattr(chunk.choices[0], 'delta'):
                         continue
-                    
+
                     if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
                         reply_parts.append(text)
@@ -331,7 +338,7 @@ class OpenRouterClient:
             except (AttributeError, IndexError):
                 # Некорректная структура ответа - продолжаем с тем что есть
                 pass
-        
+
         return "".join(reply_parts)
 
     @property
@@ -345,24 +352,23 @@ class OpenRouterClient:
                     "HTTP-Referer": "https://github.com/Vivatist/penguin-tamer",
                     "X-Title": "Penguin Tamer"
                 }
-            
+
             self._client = _get_openai_client()(
-                api_key=self.api_key, 
+                api_key=self.api_key,
                 base_url=self.api_url,
                 default_headers=default_headers
             )
         return self._client
 
-
     def ask_stream(self, user_input: str) -> str:
         """Потоковый режим с сохранением контекста и обработкой Markdown в реальном времени.
-        
+
         Args:
             user_input: User's message text
-            
+
         Returns:
             Complete AI response text
-            
+
         Raises:
             KeyboardInterrupt: При прерывании пользователем
             Exception: При ошибках API
@@ -370,26 +376,26 @@ class OpenRouterClient:
         self.messages.append({"role": "user", "content": user_input})
         reply_parts = []
         interrupted = threading.Event()
-        
+
         # Получаем исключения OpenAI SDK для обработки ошибок
         exceptions = _get_openai_exceptions()
         APIConnectionError = exceptions['APIConnectionError']
         APIStatusError = exceptions['APIStatusError']
         RateLimitError = exceptions['RateLimitError']
         APITimeoutError = exceptions['APITimeoutError']
-        
+
         with self._managed_spinner(t('Sending request...')) as status_message:
             try:
                 # Debug: показываем структуру запроса
                 self._debug_print_if_enabled("request")
-                
+
                 # Отправка запроса
                 api_params = self._prepare_api_params()
                 stream = self.client.chat.completions.create(**api_params)
-                
+
                 # Ожидание ответа от модели
                 status_message['text'] = t('Ai thinking...')
-                
+
                 # Ждем первый чанк с контентом
                 first_chunk = self._wait_first_chunk(stream, interrupted)
                 if first_chunk:
@@ -398,89 +404,114 @@ class OpenRouterClient:
                     # Если не получили первый чанк, это может быть проблема
                     # Но не обязательно ошибка - API мог вернуть пустой поток
                     pass
-            
-            except APIConnectionError as e:
+
+            except APIConnectionError:
                 interrupted.set()
-                error_msg = t("Connection error: Unable to connect to API. Please check your internet connection.")
+                error_msg = t(
+                    "Connection error: Unable to connect to API. "
+                    "Please check your internet connection."
+                )
                 self.console.print(f"[bold red]{error_msg}[/bold red]")
                 return ""
-            
+
             except APIStatusError as e:
                 interrupted.set()
                 # Добавляем детальный вывод ошибки для отладки
-                error_details = f"Status: {e.status_code}, Response: {getattr(e, 'response', None)}"
+                error_details = (
+                    f"Status: {e.status_code}, "
+                    f"Response: {getattr(e, 'response', None)}"
+                )
                 if config.get("global", "debug_mode", False):
-                    self.console.print(f"[dim]Debug - API Error Details: {error_details}[/dim]")
-                
+                    self.console.print(
+                        f"[dim]Debug - API Error Details: {error_details}[/dim]"
+                    )
+
                 if e.status_code == 401:
                     error_msg = t("Authentication error: Invalid API key.")
                 elif e.status_code == 403:
-                    error_msg = t("Access denied: You don't have permission to access this resource.")
+                    error_msg = t(
+                        "Access denied: You don't have permission "
+                        "to access this resource."
+                    )
                 elif e.status_code == 404:
-                    error_msg = t("Not found: The requested model or endpoint was not found.")
+                    error_msg = t(
+                        "Not found: The requested model or endpoint was not found."
+                    )
                     # Добавляем детали об ошибке
                     if hasattr(e, 'response') and e.response:
                         try:
-                            error_body = e.response.json() if hasattr(e.response, 'json') else str(e.response.text if hasattr(e.response, 'text') else e.response)
+                            if hasattr(e.response, 'json'):
+                                error_body = e.response.json()
+                            elif hasattr(e.response, 'text'):
+                                error_body = str(e.response.text)
+                            else:
+                                error_body = str(e.response)
                             if config.get("global", "debug_mode", False):
                                 self.console.print(f"[dim]Error body: {error_body}[/dim]")
-                        except:
+                        except Exception:
                             pass
                 elif e.status_code >= 500:
-                    error_msg = t("Server error: The API server encountered an error. Please try again later.")
+                    error_msg = t(
+                        "Server error: The API server encountered an error. "
+                        "Please try again later."
+                    )
                 else:
                     error_msg = t(f"API error ({e.status_code}): {e.message}")
                 self.console.print(f"[bold red]{error_msg}[/bold red]")
                 return ""
-            
-            except RateLimitError as e:
+
+            except RateLimitError:
                 interrupted.set()
-                error_msg = t("Rate limit exceeded: Too many requests. Please wait a moment and try again.")
+                error_msg = t(
+                    "Rate limit exceeded: Too many requests. "
+                    "Please wait a moment and try again."
+                )
                 self.console.print(f"[bold red]{error_msg}[/bold red]")
                 return ""
-            
-            except APITimeoutError as e:
+
+            except APITimeoutError:
                 interrupted.set()
-                error_msg = t("Request timeout: The request took too long. Please try again.")
+                error_msg = t(
+                    "Request timeout: The request took too long. Please try again."
+                )
                 self.console.print(f"[bold red]{error_msg}[/bold red]")
                 return ""
-            
+
             except KeyboardInterrupt:
                 interrupted.set()
                 raise
-            
+
             except Exception as e:
                 interrupted.set()
                 error_msg = t(f"Unexpected error: {str(e)}")
                 self.console.print(f"[bold red]{error_msg}[/bold red]")
                 return ""
-        
+
         # Спиннер остановлен, начинаем Live отображение
         try:
             reply = self._process_stream_with_live(
-                stream, 
+                stream,
                 interrupted,
                 first_chunk,
                 reply_parts
             )
-            
+
             # Проверяем, что ответ не пустой
             if not reply or not reply.strip():
-                self.console.print(f"[bold yellow]{t('Warning: Empty response received from API.')}[/bold yellow]")
+                warning = t('Warning: Empty response received from API.')
+                self.console.print(f"[bold yellow]{warning}[/bold yellow]")
                 return ""
-            
+
             self.messages.append({"role": "assistant", "content": reply})
-            
+
             # Debug: показываем структуру ответа
             self._debug_print_if_enabled("response")
-            
+
             return reply
-            
+
         except KeyboardInterrupt:
             interrupted.set()
             raise
-  
-
 
     def __str__(self) -> str:
         """Человекочитаемое представление клиента со всеми полями.
@@ -507,7 +538,8 @@ class OpenRouterClient:
                     'stop': v.stop,
                     'seed': v.seed
                 }
-                items[k] = f"LLMConfig({', '.join(f'{key}={val!r}' for key, val in config_dict.items())})"
+                config_repr = ', '.join(f'{key}={val!r}' for key, val in config_dict.items())
+                items[k] = f"LLMConfig({config_repr})"
             else:
                 try:
                     items[k] = v

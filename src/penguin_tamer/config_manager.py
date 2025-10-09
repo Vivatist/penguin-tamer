@@ -38,7 +38,7 @@ import yaml
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from platformdirs import user_config_dir
 
 # Добавляем путь к модулю для прямого запуска
@@ -93,7 +93,10 @@ class ConfigManager:
                         sys_lang = detect_system_language(["en", "ru"]) or "en"
                         cfg["language"] = sys_lang
                         with open(self.user_config_path, 'w', encoding='utf-8') as f:
-                            yaml.safe_dump(cfg, f, indent=2, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                            yaml.safe_dump(
+                                cfg, f, indent=2, allow_unicode=True,
+                                default_flow_style=False, sort_keys=False
+                            )
                     except Exception:
                         pass
                 except Exception as e:
@@ -466,7 +469,7 @@ if __name__ == "__main__":
     # Показываем конфигурацию текущей LLM
     current_llm_config = config.get_current_llm_config()
     print(f"Конфигурация текущей LLM: {current_llm_config}")
-    
+
     # Показываем пути
     print(f"\nПуть к конфигурации: {config.config_path}")
 

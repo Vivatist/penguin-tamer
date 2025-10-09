@@ -38,20 +38,20 @@ class LLMEditDialog(ModalScreen):
             Container(
                 Static("Название LLM:", classes="llm-field-label"),
                 Input(
-                    value=self.default_name, 
+                    value=self.default_name,
                     id="llm-name-input",
                     disabled=not self.name_editable,
                     placeholder="Любое, например: GPT-4, Claude, Gemini"
                 ),
                 Static("Модель:", classes="llm-field-label"),
                 Input(
-                    value=self.default_model, 
+                    value=self.default_model,
                     id="llm-model-input",
                     placeholder="Например: gpt-4-turbo-preview"
                 ),
                 Static("API URL:", classes="llm-field-label"),
                 Input(
-                    value=self.default_api_url, 
+                    value=self.default_api_url,
                     id="llm-url-input",
                     placeholder="Например: https://api.openai.com/v1"
                 ),
@@ -59,7 +59,11 @@ class LLMEditDialog(ModalScreen):
                 Input(
                     value="",  # Оставляем пустым при редактировании
                     id="llm-key-input",
-                    placeholder=f"Текущий: {format_api_key_display(self.default_api_key)}" if self.default_api_key else "Оставьте пустым, если не требуется"
+                    placeholder=(
+                        f"Текущий: {format_api_key_display(self.default_api_key)}"
+                        if self.default_api_key
+                        else "Оставьте пустым, если не требуется"
+                    )
                 ),
                 classes="llm-fields-container"
             ),
@@ -77,12 +81,12 @@ class LLMEditDialog(ModalScreen):
             model_input = self.query_one("#llm-model-input", Input)
             url_input = self.query_one("#llm-url-input", Input)
             key_input = self.query_one("#llm-key-input", Input)
-            
+
             name = name_input.value.strip()
             model = model_input.value.strip()
             api_url = url_input.value.strip()
             api_key = key_input.value.strip()
-            
+
             # Validation
             if not name:
                 self.notify("Название LLM обязательно", severity="error")
@@ -96,7 +100,7 @@ class LLMEditDialog(ModalScreen):
                 self.notify("API URL обязателен", severity="error")
                 url_input.focus()
                 return
-            
+
             self.result = {
                 "name": name,
                 "model": model,
@@ -108,13 +112,13 @@ class LLMEditDialog(ModalScreen):
 
 class ConfirmDialog(ModalScreen):
     """Диалог подтверждения действия."""
-    
+
     def __init__(self, message: str, title: str = "Подтверждение") -> None:
         super().__init__()
         self.message = message
         self.title = title
         self.result = False
-    
+
     def compose(self) -> ComposeResult:
         yield Container(
             Static(self.title, classes="input-dialog-title"),
@@ -126,7 +130,7 @@ class ConfirmDialog(ModalScreen):
             ),
             classes="input-dialog-container",
         )
-    
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "confirm-yes-btn":
             self.result = True

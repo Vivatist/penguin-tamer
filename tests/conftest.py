@@ -3,7 +3,6 @@
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Добавляем src в Python path

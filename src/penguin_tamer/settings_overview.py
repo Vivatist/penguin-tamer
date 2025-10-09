@@ -70,10 +70,10 @@ def _plain_overview_print():
     # Пути
     print("\n" + t("Paths") + ":")
     print(f"  {t('Config file')}: {config.config_path}")
-    
+
     import sys
     print(f"  {t('Python executable')}: {sys.executable}")
-    
+
     print("=" * 60)
 
 
@@ -87,7 +87,6 @@ def print_settings_overview(console: Optional[object] = None) -> None:
         from rich.console import Console
         from rich.table import Table
         from rich.panel import Panel
-        from rich.text import Text
     except Exception:
         _plain_overview_print()
         return
@@ -117,16 +116,17 @@ def print_settings_overview(console: Optional[object] = None) -> None:
     if content:
         for line in str(content).splitlines() or [content]:
             content_lines.append(f"  {line}")
-    
+
     # Параметры генерации
     content_lines.append(f"\n[bold]{t('Generation parameters')}:[/bold]")
     content_lines.append(f"{t('Temperature')}: [cyan]{config.temperature}[/cyan]")
-    content_lines.append(f"{t('Max tokens')}: [cyan]{config.max_tokens if config.max_tokens is not None else t('unlimited')}[/cyan]")
+    max_tokens_display = config.max_tokens if config.max_tokens is not None else t('unlimited')
+    content_lines.append(f"{t('Max tokens')}: [cyan]{max_tokens_display}[/cyan]")
     content_lines.append(f"Top P: [cyan]{config.top_p}[/cyan]")
     content_lines.append(f"{t('Frequency penalty')}: [cyan]{config.frequency_penalty}[/cyan]")
     content_lines.append(f"{t('Presence penalty')}: [cyan]{config.presence_penalty}[/cyan]")
     content_lines.append(f"Seed: [cyan]{config.seed if config.seed is not None else t('random')}[/cyan]")
-    
+
     console.print(Panel.fit("\n".join(content_lines), title=t("Content & Generation")))
 
     # Все LLM в таблице
@@ -141,7 +141,7 @@ def print_settings_overview(console: Optional[object] = None) -> None:
         for name in llms:
             cfg = config.get_llm_config(name) or {}
             is_current = name == current_llm
-            
+
             # Выделяем текущую LLM зеленым цветом
             if is_current:
                 name_display = f"[green]{name}[/green]"
@@ -153,7 +153,7 @@ def print_settings_overview(console: Optional[object] = None) -> None:
                 model_display = cfg.get('model', '') or ''
                 url_display = cfg.get('api_url', '') or ''
                 key_display = format_api_key_display(cfg.get('api_key', '') or '')
-            
+
             table.add_row(
                 name_display,
                 model_display,
@@ -171,7 +171,7 @@ def print_settings_overview(console: Optional[object] = None) -> None:
     paths_info.append(f"  [cyan]{config.config_path}[/cyan]")
     paths_info.append(f"{t('Python executable')}:")
     paths_info.append(f"  [cyan]{sys.executable}[/cyan]")
-    
+
     console.print(Panel.fit("\n".join(paths_info), title=t("Paths")))
 
     console.rule()

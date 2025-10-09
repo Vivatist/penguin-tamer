@@ -1,5 +1,4 @@
 import re
-import platform
 from penguin_tamer.i18n import t
 
 
