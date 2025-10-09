@@ -102,6 +102,7 @@ class ErrorHandler:
         """
         self.console = console
         self.debug_mode = debug_mode
+        self.link_url = t("docs_link_get_api_key")
         self._handlers = {}
         self._register_default_handlers()
 
@@ -198,14 +199,10 @@ class ErrorHandler:
         context: Optional[ErrorContext] = None
     ) -> str:
         """Handle authentication errors."""
-        link_url = (
-            "https://github.com/jwplatta/penguin-tamer/blob/main/docs/locales/"
-            "README_ru.md#получение-токена-api_key-и-подключение-к-предустановленной-нейросети"
-        )
         message = t(
             "Error 401: Authentication failed. Check your API_KEY. "
             "[link={link}]How to get a key?[/link]"
-        ).format(link=link_url)
+        ).format(link=self.link_url)
         technical = f"AuthenticationError: {str(error)}"
         return self._format_message(message, ErrorSeverity.CRITICAL, technical)
 
@@ -340,14 +337,10 @@ class ErrorHandler:
         context: Optional[ErrorContext] = None
     ) -> str:
         """Handle generic OpenAI errors."""
-        link_url = (
-            "https://github.com/jwplatta/penguin-tamer/blob/main/docs/locales/"
-            "README_ru.md#получение-токена-api_key-и-подключение-к-предустановленной-нейросети"
-        )
         message = t(
             "Please check your API_KEY. See provider docs for obtaining a key. "
             "[link={link}]How to get a key?[/link]"
-        ).format(link=link_url)
+        ).format(link=self.link_url)
         technical = f"OpenAIError: {str(error)}"
         return self._format_message(message, ErrorSeverity.ERROR, technical)
 
