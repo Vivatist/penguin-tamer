@@ -1,4 +1,4 @@
-![Penguin Tamer](docs\img\logo.png)
+![Penguin Tamer](docs/img/logo.png)
 Penguin Tamer
 
 # 🐧 Penguin Tamer
