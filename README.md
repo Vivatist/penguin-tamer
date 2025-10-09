@@ -1,9 +1,14 @@
+![Penguin Tamer](docs\img\logo.png)
+Penguin Tamer
+
 # 🐧 Penguin Tamer
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Version](https://img.shields.io/pypi/v/penguin-tamer.svg)](https://pypi.org/project/penguin-tamer/)
 [![GitHub Stars](https://img.shields.io/github/stars/Vivatist/penguin-tamer.svg)](https://github.com/Vivatist/penguin-tamer/stargazers)
+
+
 
 > **🐧 Tame your Linux terminal with AI power!** Ask questions to ***ChatGPT***, ***Deep Seek***, ***Grok*** and many other large language models (LLM). Execute scripts and commands suggested by the neural network directly from the command line. Perfect for beginners in Linux and Windows administration.
 
@@ -208,7 +213,7 @@ rm %APPDATA%\penguin-tamer\config.yaml
 I’ll be glad for any help!
 
 ### Areas for Contribution
- 
+
 - 🌍 **Localization** — Adding support for new languages ([template](https://github.com/Vivatist/penguin-tamer/blob/main/src/penguin_tamer/locales/template_locale.json)), including [README.md](https://github.com/Vivatist/penguin-tamer/blob/main/README.md)
 - 🤖 **AI Providers** — Integrating new AI providers
 - 🎨 **UI/UX** — Improving the configuration manager interface (yes, it’s not perfect)
