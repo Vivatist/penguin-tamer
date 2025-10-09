@@ -170,8 +170,6 @@ done
 # 6. Verify installation
 echo "[*] Verifying installation..."
 if command_exists pt; then
-    echo "[+] Penguin Tamer installed successfully!"
-    
     # Try to get version from pt --version command first
     PT_VERSION=$(pt --version 2>/dev/null | cut -d' ' -f2 2>/dev/null || echo "")
     
@@ -187,10 +185,16 @@ if command_exists pt; then
     
     # Final fallback
     if [ -z "$PT_VERSION" ]; then
-        PT_VERSION="installed"
+        PT_VERSION="unknown"
     fi
     
-    echo ">>> Version: $PT_VERSION"
+    # Colors (ANSI escape codes)
+    ORANGE='\033[1;38;5;208m'    # Bold Orange (#e07333)
+    TEAL='\033[1;38;5;30m'       # Bold Teal (#007c6e)
+    RESET='\033[0m'              # Reset formatting
+    
+    # Print colorful success message
+    echo -e "${ORANGE}Penguin Tamer${RESET} ${TEAL}${PT_VERSION}${RESET} installed successfully!"
     echo ">>> Location: $(which pt)"
 else
     echo "[!] Installation completed, but 'pt' command not found in current PATH."
