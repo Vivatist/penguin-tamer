@@ -43,7 +43,7 @@ echo "[+] Found $($PYTHON_CMD --version)"
 echo "[*] Checking pipx installation..."
 if ! command_exists pipx; then
     echo "[+] Installing pipx and dependencies..."
-    
+
     # Install pipx based on OS
     if command_exists apt-get; then
         echo ">>> Using apt-get (Debian/Ubuntu)..."
@@ -66,14 +66,14 @@ if ! command_exists pipx; then
         echo ">>> Installing via pip..."
         $PYTHON_CMD -m pip install --user pipx
     fi
-    
+
     # Verify pipx installation
     if ! command_exists pipx && ! $PYTHON_CMD -m pipx --version >/dev/null 2>&1; then
         echo "[!] Failed to install pipx."
         echo ">>> Please install manually: sudo apt install pipx"
         exit 1
     fi
-    
+
     echo "[+] pipx installed successfully."
 else
     echo "[+] pipx is already installed."
@@ -117,7 +117,7 @@ if command_exists pipx; then
     INSTALL_EXIT=$?
     INSTALL_OUTPUT=$(cat /tmp/pt_install.log)
     rm -f /tmp/pt_install.log
-    
+
     if [ $INSTALL_EXIT -ne 0 ]; then
         echo "[!] Installation failed. Output:"
         echo "$INSTALL_OUTPUT"
@@ -131,7 +131,7 @@ elif $PYTHON_CMD -m pipx --version >/dev/null 2>&1; then
     INSTALL_EXIT=$?
     INSTALL_OUTPUT=$(cat /tmp/pt_install.log)
     rm -f /tmp/pt_install.log
-    
+
     if [ $INSTALL_EXIT -ne 0 ]; then
         echo "[!] Installation failed. Output:"
         echo "$INSTALL_OUTPUT"
@@ -172,27 +172,27 @@ echo "[*] Verifying installation..."
 if command_exists pt; then
     # Try to get version from pt --version command first
     PT_VERSION=$(pt --version 2>/dev/null | cut -d' ' -f2 2>/dev/null || echo "")
-    
+
     # If that fails, use version from installation output
     if [ -z "$PT_VERSION" ] && [ -n "$INSTALLED_VERSION" ]; then
         PT_VERSION="$INSTALLED_VERSION"
     fi
-    
+
     # Try pipx list as another fallback
     if [ -z "$PT_VERSION" ] && command_exists pipx; then
         PT_VERSION=$(pipx list 2>/dev/null | grep "penguin-tamer" | sed -n 's/.*penguin-tamer \([0-9][^,)]*\).*/\1/p' || echo "")
     fi
-    
+
     # Final fallback
     if [ -z "$PT_VERSION" ]; then
         PT_VERSION="unknown"
     fi
-    
+
     # Colors (ANSI escape codes)
     ORANGE='\033[1;38;5;208m'    # Bold Orange (#e07333)
     TEAL='\033[1;38;5;30m'       # Bold Teal (#007c6e)
     RESET='\033[0m'              # Reset formatting
-    
+
     # Print colorful success message
     echo -e "${ORANGE}Penguin Tamer${RESET} ${TEAL}${PT_VERSION}${RESET} installed successfully!"
     echo ">>> Location: $(which pt)"
