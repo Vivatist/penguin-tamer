@@ -41,8 +41,8 @@ def create_mock_response(status_code: int):
     return response
 
 
-def test_all_errors(console: Console, lang: str):
-    """Test all error types for a given language."""
+def display_all_errors(console: Console, lang: str):
+    """Display all error types for a given language."""
     # Set language
     translator.set_language(lang)
 
@@ -200,7 +200,7 @@ def main():
         console.print(f"[bold green]Testing Error Messages - Language: {lang.upper()}[/bold green]")
         console.print("[bold green]" + "=" * 80 + "[/bold green]")
 
-        test_all_errors(console, lang)
+        display_all_errors(console, lang)
 
     console.print("\n[bold green]" + "=" * 80 + "[/bold green]")
     console.print("[bold green]TEST COMPLETE[/bold green]")
