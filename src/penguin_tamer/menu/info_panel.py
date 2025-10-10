@@ -8,7 +8,7 @@ from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Markdown
 
-from .help_content import TAB_HELP, WIDGET_HELP
+from .help_content_ru import TAB_HELP, WIDGET_HELP
 
 
 class InfoPanel(VerticalScroll):

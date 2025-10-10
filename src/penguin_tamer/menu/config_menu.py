@@ -242,7 +242,7 @@ class ConfigMenuApp(App):
                             # Temperature
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Температура\n[dim]Креативность (0.0-2.0)[/dim]",
+                                    "Temperature\n[dim]Креативность (0.0-2.0)[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -260,7 +260,7 @@ class ConfigMenuApp(App):
                             )
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Максимум токенов\n[dim]Длина ответа[/dim]",
+                                    "Max Tokens\n[dim]Длина ответа[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -273,7 +273,7 @@ class ConfigMenuApp(App):
                             # Top P
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Top P\n[dim]Ядерная выборка (0.0-1.0)[/dim]",
+                                    "Top P\n[dim]Nucleus Sampling (0.0-1.0)[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -286,7 +286,7 @@ class ConfigMenuApp(App):
                             # Frequency Penalty
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Штраф частоты\n[dim]Снижает повторения (-2.0 до 2.0)[/dim]",
+                                    "Frequency Penalty\n[dim]Снижает повторения (-2.0 до 2.0)[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -299,7 +299,7 @@ class ConfigMenuApp(App):
                             # Presence Penalty
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Штраф присутствия\n[dim]Разнообразие тем (-2.0 до 2.0)[/dim]",
+                                    "Presence Penalty\n[dim]Разнообразие тем (-2.0 до 2.0)[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -337,7 +337,7 @@ class ConfigMenuApp(App):
                             stream_delay = config.get("global", "sleep_time", 0.01)
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Задержка стрима\n[dim]Пауза между частями (0.001-0.1)[/dim]",
+                                    "Задержка потока\n[dim]Пауза между отображением новых чанков (0.001-0.1)[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -351,7 +351,7 @@ class ConfigMenuApp(App):
                             refresh_rate = config.get("global", "refresh_per_second", 10)
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Частота обновлений\n[dim]Обновление интерфейса (1-60 Гц)[/dim]",
+                                    "Частота обновлений\n[dim]Обновление терминала во время генерации (1-60 Гц)[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -364,7 +364,7 @@ class ConfigMenuApp(App):
                             # Debug Mode
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Режим отладки\n[dim]Подробная информация о запросах[/dim]",
+                                    "Режим отладки\n[dim]Подробная информация о запросах к LLM[/dim]",
                                     classes="param-label"
                                 )
                                 with Container(classes="param-control"):
@@ -399,7 +399,7 @@ class ConfigMenuApp(App):
                             current_theme = config.get("global", "markdown_theme", "default")
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Тема оформления диалога\n[dim]Требуется перезапуск[/dim]",
+                                    "Тема оформления ответов нейросети\n[dim]Требуется перезапуск[/dim]",
                                     classes="param-label"
                                 )
                                 yield Select(
