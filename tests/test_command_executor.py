@@ -234,7 +234,14 @@ class TestOutputHandling:
 
         assert result['exit_code'] != 0
         # Ошибка может быть в stdout или stderr в зависимости от перенаправления
-        has_error = bool(result['stderr']) or 'не найден' in result['stdout'].lower()
+        # Проверяем на русском и английском языках
+        output_lower = result['stdout'].lower()
+        has_error = (
+            bool(result['stderr']) or
+            'не найден' in output_lower or
+            'file not found' in output_lower or
+            'cannot find' in output_lower
+        )
         assert has_error
 
     def test_empty_command_output(self, console):

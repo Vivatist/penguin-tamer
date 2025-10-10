@@ -408,7 +408,7 @@ class OpenRouterClient:
             # Проверяем, что ответ не пустой
             if not reply or not reply.strip():
                 warning = t('Warning: Empty response received from API.')
-                self.console.print(f"[bold yellow]{warning}[/bold yellow]")
+                self.console.print(f"[dim italic]{warning}[/dim italic]")
                 return ""
 
             self.messages.append({"role": "assistant", "content": reply})

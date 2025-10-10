@@ -265,8 +265,8 @@ def execute_and_handle_result(console: Console, code: str) -> dict:
 
             # Показываем stderr если есть
             if process.stderr:
-                console.print(t("[yellow]>>> Error:[/yellow]"))
-                console.print(process.stderr)
+                console.print(t("[dim italic]>>> Error:[/dim italic]"))
+                console.print(f"[dim italic]{process.stderr}[/dim italic]")
 
         except KeyboardInterrupt:
             # Перехватываем Ctrl+C во время выполнения команды
