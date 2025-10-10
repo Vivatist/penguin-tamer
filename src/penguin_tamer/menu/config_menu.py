@@ -218,8 +218,8 @@ class ConfigMenuApp(App):
                     with TabPane("Контент", id="tab-content"):
                         with VerticalScroll():
                             yield Static(
-                                "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ[/bold]\n"
-                                "[dim]Дополнительный контекст для всех запросов[/dim]",
+                                "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕКСТ[/bold]\n"
+                                "[dim]Сформируйте характер искуственного интеллекта и форму общения[/dim]",
                                 classes="tab-header",
                             )
                             yield TextArea(text=config.user_content, id="content-textarea")
@@ -396,10 +396,10 @@ class ConfigMenuApp(App):
                             )
 
                             # Theme
-                            current_theme = getattr(config, "theme", "default")
+                            current_theme = config.get("global", "markdown_theme", "default")
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Цветовая схема\n[dim]Требуется перезапуск[/dim]",
+                                    "Тема оформления диалога\n[dim]Требуется перезапуск[/dim]",
                                     classes="param-label"
                                 )
                                 yield Select(
@@ -408,6 +408,10 @@ class ConfigMenuApp(App):
                                         ("Monokai", "monokai"),
                                         ("Dracula", "dracula"),
                                         ("Nord", "nord"),
+                                        ("Solarized Dark", "solarized_dark"),
+                                        ("GitHub Dark", "github"),
+                                        ("Matrix", "matrix"),
+                                        ("Minimal", "minimal"),
                                     ],
                                     value=current_theme,
                                     id="theme-select",
@@ -870,15 +874,19 @@ class ConfigMenuApp(App):
         self.notify(f"Язык: {lang_name}", severity="information")
 
     def set_theme(self, theme: str) -> None:
-        """Set interface theme."""
-        setattr(config, "theme", theme)
-        config.save()
+        """Set interface theme for Rich Markdown output."""
+        # Сохраняем тему для Rich Markdown (используется в llm_client.py)
+        config.set("global", "markdown_theme", theme)
         self.refresh_status()
         theme_names = {
             "default": "Классический",
             "monokai": "Monokai",
             "dracula": "Dracula",
             "nord": "Nord",
+            "solarized_dark": "Solarized Dark",
+            "github": "GitHub Dark",
+            "matrix": "Matrix",
+            "minimal": "Minimal",
         }
         theme_name = theme_names.get(theme, theme)
         self.notify(f"Тема: {theme_name}", severity="information")
@@ -1005,7 +1013,7 @@ class ConfigMenuApp(App):
 
             # Обновляем тему
             theme_select = self.query_one("#theme-select", Select)
-            current_theme = getattr(config, "theme", "default")
+            current_theme = config.get("global", "markdown_theme", "default")
             theme_select.value = current_theme
 
             # Обновляем панель с системной информацией и текущей LLM
