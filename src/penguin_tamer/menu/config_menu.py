@@ -214,12 +214,12 @@ class ConfigMenuApp(App):
                                 classes="button-row"
                             )
 
-                    # Tab 2: User Content
-                    with TabPane("Контент", id="tab-content"):
+                    # Tab 2: User Context
+                    with TabPane("Контекст", id="tab-content"):
                         with VerticalScroll():
                             yield Static(
                                 "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕКСТ[/bold]\n"
-                                "[dim]Сформируйте характер искуственного интеллекта и форму общения[/dim]",
+                                "[dim]Сформируйте характер ассистента и форму его общения[/dim]",
                                 classes="tab-header",
                             )
                             yield TextArea(text=config.user_content, id="content-textarea")
@@ -534,7 +534,7 @@ class ConfigMenuApp(App):
                 pass
 
         llm_table.clear(columns=True)
-        llm_table.add_columns("", "Название", "Модель", "API URL", "API ключ")
+        llm_table.add_columns("", "Название", "Model ID", "API_URL", "API_KEY")
 
         new_cursor_row = 0
         for idx, llm_name in enumerate(llms):
@@ -832,7 +832,7 @@ class ConfigMenuApp(App):
         config.user_content = text_area.text
         config.save()
         self.refresh_status()
-        self.notify("Контент сохранён", severity="information")
+        self.notify("Контекст сохранён", severity="information")
 
     # System Settings Methods
     def set_stream_delay(self) -> None:

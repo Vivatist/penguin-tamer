@@ -43,19 +43,19 @@ class LLMEditDialog(ModalScreen):
                     disabled=not self.name_editable,
                     placeholder="Любое, например: GPT-4, Claude, Gemini"
                 ),
-                Static("Модель:", classes="llm-field-label"),
+                Static("Model ID:", classes="llm-field-label"),
                 Input(
                     value=self.default_model,
                     id="llm-model-input",
                     placeholder="Например: gpt-4-turbo-preview"
                 ),
-                Static("API URL:", classes="llm-field-label"),
+                Static("API_URL:", classes="llm-field-label"),
                 Input(
                     value=self.default_api_url,
                     id="llm-url-input",
                     placeholder="Например: https://api.openai.com/v1"
                 ),
-                Static("API ключ (необязательно):", classes="llm-field-label"),
+                Static("API_KEY (необязательно):", classes="llm-field-label"),
                 Input(
                     value="",  # Оставляем пустым при редактировании
                     id="llm-key-input",
