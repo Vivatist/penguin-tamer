@@ -198,8 +198,8 @@ class ConfigMenuApp(App):
 
                             yield Static("")
                             yield Static(
-                                "[bold]Добавленные нейросети[/bold]\n"
-                                "[dim]Выберите какую нейросеть использовать, или добавьте свою[/dim]"
+                                "[bold]Настройка нейросетей[/bold]\n"
+                                "[dim]Выберите используемую нейросеть, или добавьте собственную[/dim]"
                             )
                             llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
