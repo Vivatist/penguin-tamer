@@ -1,3 +1,4 @@
+# flake8: noqa: E501
 """
 Internationalization system for configuration menu.
 
@@ -91,15 +92,15 @@ class MenuTranslator:
 
         # Load from appropriate module
         if self._lang == "en":
-            from . import menu_content
-            result = (menu_content.TAB_HELP, menu_content.WIDGET_HELP)
+            from . import help_content_en
+            result = (help_content_en.TAB_HELP, help_content_en.WIDGET_HELP)
         elif self._lang == "ru":
             from . import help_content_ru
             result = (help_content_ru.TAB_HELP, help_content_ru.WIDGET_HELP)
         else:
             # Fallback to English for unsupported languages
-            from . import menu_content
-            result = (menu_content.TAB_HELP, menu_content.WIDGET_HELP)
+            from . import help_content_en
+            result = (help_content_en.TAB_HELP, help_content_en.WIDGET_HELP)
 
         # Cache the result
         self._help_content_cache[cache_key] = result

@@ -11,7 +11,7 @@ from pathlib import Path
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
-from penguin_tamer.menu.locales.menu_i18n import menu_translator, t
+from penguin_tamer.menu.locales.menu_i18n import menu_translator, t  # noqa: E402
 
 
 def test_translations():

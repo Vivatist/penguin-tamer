@@ -53,8 +53,6 @@ else:
     from .info_panel import InfoPanel
     from .intro_screen import show_intro
     from .locales.menu_i18n import menu_translator, t
-    from .info_panel import InfoPanel
-    from .intro_screen import show_intro
 
 # Initialize menu translator with current language BEFORE class definition
 current_lang = getattr(config, "language", "en")

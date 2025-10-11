@@ -1,3 +1,4 @@
+# flake8: noqa: E501
 """
 Help content and documentation texts for the configuration menu.
 """
