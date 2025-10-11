@@ -45,12 +45,20 @@ if __name__ == "__main__":
     from penguin_tamer.menu.dialogs import LLMEditDialog, ConfirmDialog
     from penguin_tamer.menu.info_panel import InfoPanel
     from penguin_tamer.menu.intro_screen import show_intro
+    from penguin_tamer.menu.locales.menu_i18n import menu_translator, t
 else:
     # При импорте как модуль используем относительные импорты
     from .widgets import DoubleClickDataTable, ResponsiveButtonRow
     from .dialogs import LLMEditDialog, ConfirmDialog
     from .info_panel import InfoPanel
     from .intro_screen import show_intro
+    from .locales.menu_i18n import menu_translator, t
+    from .info_panel import InfoPanel
+    from .intro_screen import show_intro
+
+# Initialize menu translator with current language BEFORE class definition
+current_lang = getattr(config, "language", "en")
+menu_translator.set_language(current_lang)
 
 
 class ConfigMenuApp(App):
@@ -62,17 +70,21 @@ class ConfigMenuApp(App):
     # Load CSS from external file
     CSS_PATH = Path(__file__).parent / "styles.tcss"
 
-    BINDINGS = [
-        Binding("q", "quit", "Выход", priority=True),
-        Binding("ctrl+c", "quit", "Выход"),
-        Binding("f1", "help", "Помощь"),
-        Binding("ctrl+r", "refresh_status", "Обновить"),
-    ]
-
     ENABLE_COMMAND_PALETTE = False
 
     TITLE = "Penguin Tamer " + __version__
-    SUB_TITLE = "Конфигурация"
+    SUB_TITLE = t("Configuration")
+
+    BINDINGS = [
+        Binding("q", "quit", t("Exit"), priority=True),
+        Binding("ctrl+c", "quit", t("Exit")),
+        Binding("f1", "help", t("Help")),
+        Binding("ctrl+r", "refresh_status", t("Refresh")),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        """Initialize app."""
+        super().__init__(*args, **kwargs)
 
     def get_css_variables(self) -> dict[str, str]:
         """Определяем кастомную цветовую палитру для Textual."""
@@ -155,18 +167,18 @@ class ConfigMenuApp(App):
             with Vertical(id="left-panel"):
                 with TabbedContent():
                     # Tab 1: General Settings (Общие)
-                    with TabPane("Общие", id="tab-general"):
+                    with TabPane(t("General"), id="tab-general"):
                         with VerticalScroll():
                             yield Static(
-                                "[bold]ОБЩИЕ НАСТРОЙКИ[/bold]\n"
-                                "[dim]Системная информация и управление LLM[/dim]",
+                                f"[bold]{t('GENERAL SETTINGS')}[/bold]\n"
+                                f"[dim]{t('System information and LLM management')}[/dim]",
                                 classes="tab-header",
                             )
 
                             # Language setting
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Language\n[dim]Требуется перезапуск[/dim]",
+                                    f"{t('Language')}\n[dim]{t('Restart required')}[/dim]",
                                     classes="param-label"
                                 )
                                 current_lang_val = getattr(config, "language", "en")
@@ -186,63 +198,63 @@ class ConfigMenuApp(App):
                             else:
                                 config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
                             bin_path = Path(sys.executable).parent
-                            current_llm = config.current_llm or "Не выбрана"
+                            current_llm = config.current_llm or t("Not selected")
 
                             yield Static(
-                                f"[bold]Текущая LLM:[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
-                                f"[bold]Папка конфига:[/bold] {config_dir}\n"
-                                f"[bold]Папка бинарника:[/bold] {bin_path}",
+                                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
+                                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
+                                f"[bold]{t('Binary folder:')}[/bold] {bin_path}",
                                 classes="system-info-panel",
                                 id="system-info-display"
                             )
 
                             yield Static("")
                             yield Static(
-                                "[bold]Настройка нейросетей[/bold]\n"
-                                "[dim]Выберите используемую нейросеть, или добавьте собственную[/dim]"
+                                f"[bold]{t('Neural network setup')}[/bold]\n"
+                                f"[dim]{t('Select the used neural network or add your own')}[/dim]"
                             )
                             llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
                             yield Static("")
                             yield ResponsiveButtonRow(
                                 buttons_data=[
-                                    ("Выбрать", "select-llm-btn", "success"),
-                                    ("Добавить", "add-llm-btn", "success"),
-                                    ("Изменить", "edit-llm-btn", "success"),
-                                    ("Удалить", "delete-llm-btn", "error"),
+                                    (t("Select"), "select-llm-btn", "success"),
+                                    (t("Add"), "add-llm-btn", "success"),
+                                    (t("Edit"), "edit-llm-btn", "success"),
+                                    (t("Delete"), "delete-llm-btn", "error"),
                                 ],
                                 classes="button-row"
                             )
 
                     # Tab 2: User Context
-                    with TabPane("Контекст", id="tab-content"):
+                    with TabPane(t("Context"), id="tab-content"):
                         with VerticalScroll():
                             yield Static(
-                                "[bold]ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕКСТ[/bold]\n"
-                                "[dim]Сформируйте характер ассистента и форму его общения[/dim]",
+                                f"[bold]{t('USER CONTEXT')}[/bold]\n"
+                                f"[dim]{t('Shape the assistant character and communication style')}[/dim]",
                                 classes="tab-header",
                             )
                             yield TextArea(text=config.user_content, id="content-textarea")
                             with Horizontal(classes="button-row"):
                                 yield Button(
-                                    "Сохранить",
+                                    t("Save"),
                                     id="save-content-btn",
                                     variant="success",
                                 )
 
                     # Tab 3: Generation Parameters
-                    with TabPane("Генерация", id="tab-params"):
+                    with TabPane(t("Generation"), id="tab-params"):
                         with VerticalScroll():
                             yield Static(
-                                "[bold]ПАРАМЕТРЫ ГЕНЕРАЦИИ[/bold]\n"
-                                "[dim]Настройка поведения ИИ (нажмите Enter для сохранения)[/dim]",
+                                f"[bold]{t('GENERATION PARAMETERS')}[/bold]\n"
+                                f"[dim]{t('AI behavior settings (press Enter to save)')}[/dim]",
                                 classes="tab-header",
                             )
 
                             # Temperature
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Temperature\n[dim]Креативность (0.0-2.0)[/dim]",
+                                    f"{t('Temperature')}\n[dim]{t('Creativity (0.0-2.0)')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -256,24 +268,24 @@ class ConfigMenuApp(App):
                             max_tokens_str = (
                                 str(config.max_tokens)
                                 if config.max_tokens
-                                else "неограниченно"
+                                else t("unlimited")
                             )
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Max Tokens\n[dim]Длина ответа[/dim]",
+                                    f"{t('Max Tokens')}\n[dim]{t('Response length')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
                                     value=max_tokens_str,
                                     id="max-tokens-input",
-                                    placeholder="число или 'null'",
+                                    placeholder=t("number or 'null'"),
                                     classes="param-control"
                                 )
 
                             # Top P
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Top P\n[dim]Nucleus Sampling (0.0-1.0)[/dim]",
+                                    f"{t('Top P')}\n[dim]{t('Nucleus Sampling (0.0-1.0)')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -286,50 +298,50 @@ class ConfigMenuApp(App):
                             # Frequency Penalty
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Frequency Penalty\n[dim]Снижает повторения (-2.0 до 2.0)[/dim]",
+                                    f"{t('Frequency Penalty')}\n[dim]{t('Reduces repetitions (-2.0 to 2.0)')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
                                     value=str(config.frequency_penalty),
                                     id="freq-penalty-input",
-                                    placeholder="-2.0 до 2.0",
+                                    placeholder=t("-2.0 to 2.0"),
                                     classes="param-control"
                                 )
 
                             # Presence Penalty
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Presence Penalty\n[dim]Разнообразие тем (-2.0 до 2.0)[/dim]",
+                                    f"{t('Presence Penalty')}\n[dim]{t('Topic diversity (-2.0 to 2.0)')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
                                     value=str(config.presence_penalty),
                                     id="pres-penalty-input",
-                                    placeholder="-2.0 до 2.0",
+                                    placeholder=t("-2.0 to 2.0"),
                                     classes="param-control"
                                 )
 
                             # Seed
-                            seed_str = str(config.seed) if config.seed else "случайный"
+                            seed_str = str(config.seed) if config.seed else t("random")
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Seed\n[dim]Для воспроизводимости[/dim]",
+                                    f"{t('Seed')}\n[dim]{t('For reproducibility')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
                                     value=seed_str,
                                     id="seed-input",
-                                    placeholder="число или 'null'",
+                                    placeholder=t("number or 'null'"),
                                     classes="param-control"
                                 )
 
                     # Tab 4: System Settings
 
-                    with TabPane("Система", id="tab-system"):
+                    with TabPane(t("System"), id="tab-system"):
                         with VerticalScroll():
                             yield Static(
-                                "[bold]СИСТЕМНЫЕ НАСТРОЙКИ[/bold]\n"
-                                "[dim]Поведение приложения (нажмите Enter для сохранения)[/dim]",
+                                f"[bold]{t('SYSTEM SETTINGS')}[/bold]\n"
+                                f"[dim]{t('Application behavior (press Enter to save)')}[/dim]",
                                 classes="tab-header",
                             )
 
@@ -337,7 +349,8 @@ class ConfigMenuApp(App):
                             stream_delay = config.get("global", "sleep_time", 0.01)
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Задержка потока\n[dim]Пауза между отображением новых чанков (0.001-0.1)[/dim]",
+                                    f"{t('Stream delay')}\n"
+                                    f"[dim]{t('Pause between displaying new chunks (0.001-0.1)')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -351,7 +364,8 @@ class ConfigMenuApp(App):
                             refresh_rate = config.get("global", "refresh_per_second", 10)
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Частота обновлений\n[dim]Обновление терминала во время генерации (1-60 Гц)[/dim]",
+                                    f"{t('Refresh rate')}\n"
+                                    f"[dim]{t('Terminal update during generation (1-60 Hz)')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Input(
@@ -364,7 +378,7 @@ class ConfigMenuApp(App):
                             # Debug Mode
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Режим отладки\n[dim]Подробная информация о запросах к LLM[/dim]",
+                                    f"{t('Debug mode')}\n[dim]{t('Detailed information about LLM requests')}[/dim]",
                                     classes="param-label"
                                 )
                                 with Container(classes="param-control"):
@@ -377,7 +391,7 @@ class ConfigMenuApp(App):
                             yield Static("")
                             with Horizontal(classes="button-row"):
                                 yield Button(
-                                    "Сброс настроек",
+                                    t("Reset settings"),
                                     id="reset-settings-btn",
                                     variant="error",
                                 )
@@ -387,11 +401,11 @@ class ConfigMenuApp(App):
 
                     # Tab 5: Interface
 
-                    with TabPane("Интерфейс", id="tab-appearance"):
+                    with TabPane(t("Interface"), id="tab-appearance"):
                         with VerticalScroll():
                             yield Static(
-                                "[bold]НАСТРОЙКИ ИНТЕРФЕЙСА[/bold]\n"
-                                "[dim]Внешний вид приложения (изменения сохраняются автоматически)[/dim]",
+                                f"[bold]{t('INTERFACE SETTINGS')}[/bold]\n"
+                                f"[dim]{t('Application appearance (changes save automatically)')}[/dim]",
                                 classes="tab-header",
                             )
 
@@ -399,12 +413,12 @@ class ConfigMenuApp(App):
                             current_theme = config.get("global", "markdown_theme", "default")
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    "Тема оформления ответов нейросети\n[dim]Требуется перезапуск[/dim]",
+                                    f"{t('Color scheme')}\n[dim]{t('Restart required')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Select(
                                     [
-                                        ("Классический", "default"),
+                                        (t("Classic"), "default"),
                                         ("Monokai", "monokai"),
                                         ("Dracula", "dracula"),
                                         ("Nord", "nord"),
@@ -467,7 +481,7 @@ class ConfigMenuApp(App):
 
             panel.show_tab_help(tab_id)
         except Exception as e:
-            self.notify(f"Ошибка: {e}", severity="error")
+            self.notify(t("Error: {error}", error=str(e)), severity="error")
 
     def on_focus(self, event) -> None:
         """Show help when any widget gets focus."""
@@ -495,8 +509,8 @@ class ConfigMenuApp(App):
             config.debug = event.value
             config.save()
             self.refresh_status()
-            status = "включен" if event.value else "выключен"
-            self.notify(f"Режим отладки {status}", severity="information")
+            status = t("enabled") if event.value else t("disabled")
+            self.notify(t("Debug mode {status}", status=status), severity="information")
 
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle select changes."""
@@ -534,7 +548,7 @@ class ConfigMenuApp(App):
                 pass
 
         llm_table.clear(columns=True)
-        llm_table.add_columns("", "Название", "Model ID", "API_URL", "API_KEY")
+        llm_table.add_columns(t(""), t("Name"), t("Model ID"), t("API URL"), t("API Key"))
 
         new_cursor_row = 0
         for idx, llm_name in enumerate(llms):
@@ -619,7 +633,7 @@ class ConfigMenuApp(App):
         """Select current LLM from table."""
         table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
-            self.notify("Выберите LLM из списка", severity="warning")
+            self.notify(t("Select LLM from the list"), severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
         llm_name = str(row[1])  # Название во втором столбце (после галочки)
@@ -635,13 +649,13 @@ class ConfigMenuApp(App):
         bin_path = Path(sys.executable).parent
         system_info_display = self.query_one("#system-info-display", Static)
         system_info_display.update(
-            f"[bold]Текущая LLM:[/bold] [#e07333]{llm_name}[/#e07333]\n\n"
-            f"[bold]Папка конфига:[/bold] {config_dir}\n"
-            f"[bold]Папка бинарника:[/bold] {bin_path}"
+            f"[bold]{t('Current LLM:')}[/bold] [#e07333]{llm_name}[/#e07333]\n\n"
+            f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
+            f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
         )
 
         self.refresh_status()
-        self.notify(f"Текущая LLM: {llm_name}", severity="information")
+        self.notify(t("Current LLM: {name}", name=llm_name), severity="information")
 
     def add_llm(self) -> None:
         """Add new LLM."""
@@ -655,10 +669,10 @@ class ConfigMenuApp(App):
                 )
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(f"LLM '{result['name']}' добавлена", severity="information")
+                self.notify(t("LLM '{name}' added", name=result['name']), severity="information")
 
         self.push_screen(
-            LLMEditDialog(title="Добавление LLM"),
+            LLMEditDialog(title=t("Add LLM")),
             handle_result
         )
 
@@ -666,7 +680,7 @@ class ConfigMenuApp(App):
         """Edit selected LLM."""
         table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
-            self.notify("Выберите LLM для редактирования", severity="warning")
+            self.notify(t("Select LLM to edit"), severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
         llm_name = str(row[1])  # Название во втором столбце (после галочки)
@@ -684,11 +698,11 @@ class ConfigMenuApp(App):
                 )
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(f"LLM '{llm_name}' обновлена", severity="information")
+                self.notify(t("LLM '{name}' updated", name=llm_name), severity="information")
 
         self.push_screen(
             LLMEditDialog(
-                title=f"Редактирование {llm_name}",
+                title=t("Edit {name}", name=llm_name),
                 name=llm_name,
                 model=cfg.get("model", ""),
                 api_url=cfg.get("api_url", ""),
@@ -702,13 +716,13 @@ class ConfigMenuApp(App):
         """Delete selected LLM."""
         table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
-            self.notify("Выберите LLM для удаления", severity="warning")
+            self.notify(t("Select LLM to delete"), severity="warning")
             return
         row = table.get_row_at(table.cursor_row)
         llm_name = str(row[1])  # Название во втором столбце (после галочки)
 
         if llm_name == config.current_llm:
-            self.notify("Нельзя удалить текущую LLM", severity="error")
+            self.notify(t("Cannot delete current LLM"), severity="error")
             return
 
         def handle_confirm(confirm):
@@ -716,10 +730,10 @@ class ConfigMenuApp(App):
                 config.remove_llm(llm_name)
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(f"LLM '{llm_name}' удалена", severity="information")
+                self.notify(t("LLM '{name}' deleted", name=llm_name), severity="information")
 
         self.push_screen(
-            ConfirmDialog(f"Удалить LLM '{llm_name}'?", title="Подтверждение"),
+            ConfirmDialog(t("Delete LLM '{name}'?", name=llm_name), title=t("Confirmation")),
             handle_confirm,
         )
 
@@ -733,11 +747,11 @@ class ConfigMenuApp(App):
                 config.temperature = value
                 config.save()
                 self.refresh_status()
-                self.notify(f"Температура: {value}", severity="information")
+                self.notify(t("Temperature set to {value}", value=value), severity="information")
             else:
-                self.notify("Температура должна быть от 0.0 до 2.0", severity="error")
+                self.notify(t("Error: Temperature must be between 0.0 and 2.0"), severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify(t("Error: Invalid number format"), severity="error")
 
     def set_max_tokens(self) -> None:
         """Set max tokens parameter."""
@@ -747,7 +761,7 @@ class ConfigMenuApp(App):
             config.max_tokens = None
             config.save()
             self.refresh_status()
-            self.notify("Максимум токенов: без ограничений", severity="information")
+            self.notify(t("Max tokens set to unlimited"), severity="information")
         else:
             try:
                 num_value = int(value)
@@ -755,11 +769,11 @@ class ConfigMenuApp(App):
                     config.max_tokens = num_value
                     config.save()
                     self.refresh_status()
-                    self.notify(f"Максимум токенов: {num_value}", severity="information")
+                    self.notify(t("Max tokens set to {value}", value=num_value), severity="information")
                 else:
-                    self.notify("Должно быть положительным", severity="error")
+                    self.notify(t("Error: Must be positive"), severity="error")
             except ValueError:
-                self.notify("Неверный числовой формат", severity="error")
+                self.notify(t("Error: Invalid number format"), severity="error")
 
     def set_top_p(self) -> None:
         """Set top_p parameter."""
@@ -770,11 +784,11 @@ class ConfigMenuApp(App):
                 config.top_p = value
                 config.save()
                 self.refresh_status()
-                self.notify(f"Top P: {value}", severity="information")
+                self.notify(t("Top P set to {value}", value=value), severity="information")
             else:
-                self.notify("Top P должен быть от 0.0 до 1.0", severity="error")
+                self.notify(t("Error: Top P must be between 0.0 and 1.0"), severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify(t("Error: Invalid number format"), severity="error")
 
     def set_frequency_penalty(self) -> None:
         """Сет frequency penalty."""
@@ -785,11 +799,11 @@ class ConfigMenuApp(App):
                 config.frequency_penalty = value
                 config.save()
                 self.refresh_status()
-                self.notify(f"Штраф частоты: {value}", severity="information")
+                self.notify(t("Frequency penalty set to {value}", value=value), severity="information")
             else:
-                self.notify("Должно быть от -2.0 до 2.0", severity="error")
+                self.notify(t("Error: Must be between -2.0 and 2.0"), severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify(t("Error: Invalid number format"), severity="error")
 
     def set_presence_penalty(self) -> None:
         """Set presence penalty."""
@@ -800,11 +814,11 @@ class ConfigMenuApp(App):
                 config.presence_penalty = value
                 config.save()
                 self.refresh_status()
-                self.notify(f"Штраф присутствия: {value}", severity="information")
+                self.notify(t("Presence penalty set to {value}", value=value), severity="information")
             else:
-                self.notify("Должно быть от -2.0 до 2.0", severity="error")
+                self.notify(t("Error: Must be between -2.0 and 2.0"), severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify(t("Error: Invalid number format"), severity="error")
 
     def set_seed(self) -> None:
         """Set seed parameter."""
@@ -814,16 +828,16 @@ class ConfigMenuApp(App):
             config.seed = None
             config.save()
             self.refresh_status()
-            self.notify("Seed: случайный", severity="information")
+            self.notify(t("Seed set to random"), severity="information")
         else:
             try:
                 num_value = int(value)
                 config.seed = num_value
                 config.save()
                 self.refresh_status()
-                self.notify(f"Seed: {num_value}", severity="information")
+                self.notify(t("Seed set to {value}", value=num_value), severity="information")
             except ValueError:
-                self.notify("Неверный числовой формат", severity="error")
+                self.notify(t("Error: Invalid number format"), severity="error")
 
     # User Content Methods
     def save_user_content(self) -> None:
@@ -832,7 +846,7 @@ class ConfigMenuApp(App):
         config.user_content = text_area.text
         config.save()
         self.refresh_status()
-        self.notify("Контекст сохранён", severity="information")
+        self.notify(t("User context saved"), severity="information")
 
     # System Settings Methods
     def set_stream_delay(self) -> None:
@@ -843,11 +857,11 @@ class ConfigMenuApp(App):
             if 0.001 <= value <= 0.1:
                 config.set("global", "sleep_time", value)
                 self.refresh_status()
-                self.notify(f"Задержка стрима: {value} сек", severity="information")
+                self.notify(t("Stream delay set to {value} sec", value=value), severity="information")
             else:
-                self.notify("Должно быть от 0.001 до 0.1", severity="error")
+                self.notify(t("Error: Must be between 0.001 and 0.1"), severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify(t("Error: Invalid number format"), severity="error")
 
     def set_refresh_rate(self) -> None:
         """Set refresh rate."""
@@ -857,21 +871,23 @@ class ConfigMenuApp(App):
             if 1 <= value <= 60:
                 config.set("global", "refresh_per_second", value)
                 self.refresh_status()
-                self.notify(f"Частота обновлений: {value} Гц", severity="information")
+                self.notify(t("Refresh rate set to {value} Hz", value=value), severity="information")
             else:
-                self.notify("Должно быть от 1 до 60", severity="error")
+                self.notify(t("Error: Must be between 1 and 60"), severity="error")
         except ValueError:
-            self.notify("Неверный числовой формат", severity="error")
+            self.notify(t("Error: Invalid number format"), severity="error")
 
     # Language & Theme Methods
     def set_language(self, lang: str) -> None:
         """Set interface language."""
         setattr(config, "language", lang)
         config.save()
+        # Sync both translators
         translator.set_language(lang)
+        menu_translator.set_language(lang)
         self.refresh_status()
-        lang_name = "English" if lang == "en" else "Русский"
-        self.notify(f"Язык: {lang_name}", severity="information")
+        lang_name = t("English") if lang == "en" else t("Русский")
+        self.notify(t("Language set to {lang}. Restart required.", lang=lang_name), severity="information")
 
     def set_theme(self, theme: str) -> None:
         """Set interface theme for Rich Markdown output."""
@@ -879,7 +895,7 @@ class ConfigMenuApp(App):
         config.set("global", "markdown_theme", theme)
         self.refresh_status()
         theme_names = {
-            "default": "Классический",
+            "default": t("Classic"),
             "monokai": "Monokai",
             "dracula": "Dracula",
             "nord": "Nord",
@@ -889,7 +905,7 @@ class ConfigMenuApp(App):
             "minimal": "Minimal",
         }
         theme_name = theme_names.get(theme, theme)
-        self.notify(f"Тема: {theme_name}", severity="information")
+        self.notify(t("Theme set to {theme}", theme=theme_name), severity="information")
 
     # Utility Methods
     def refresh_status(self) -> None:
@@ -902,26 +918,19 @@ class ConfigMenuApp(App):
     def action_help(self) -> None:
         """Show help."""
         self.notify(
-            "Q или Ctrl+C - выход\n"
-            "F1 - помощь\n"
-            "Ctrl+R - обновить статус\n"
-            "Все изменения сохраняются автоматически",
-            title="Помощь",
+            t("Help: Q or Ctrl+C to exit, F1 for help, Ctrl+R to refresh. All changes save automatically."),
+            title=t("Help"),
             severity="information",
         )
 
     def action_refresh_status(self) -> None:
         """Refresh status action."""
         self.refresh_status()
-        self.notify("Статус обновлён", severity="information")
+        self.notify(t("Status refreshed"), severity="information")
 
     def action_reset_settings(self) -> None:
         """Сброс настроек к значениям по умолчанию."""
-        message = (
-            "Внимание! Все настройки, включая API ключи,\n"
-            "будут сброшены к настройкам по умолчанию.\n\n"
-            "Продолжить?"
-        )
+        message = t("Warning! All settings, including API keys, will be reset to defaults. Continue?")
 
         def handle_confirm(result):
             if result:
@@ -930,7 +939,7 @@ class ConfigMenuApp(App):
                     default_config_path = Path(__file__).parent / "default_config.yaml"
 
                     if not default_config_path.exists():
-                        self.notify("Файл default_config.yaml не найден", severity="error")
+                        self.notify(t("Error: default_config.yaml not found"), severity="error")
                         return
 
                     # Читаем содержимое default_config.yaml
@@ -959,12 +968,12 @@ class ConfigMenuApp(App):
                     self.update_all_inputs()
                     self.update_llm_tables()
 
-                    self.notify("Настройки успешно сброшены к значениям по умолчанию", severity="information")
+                    self.notify(t("Settings successfully reset to defaults"), severity="information")
 
                 except Exception as e:
-                    self.notify(f"Ошибка при сбросе настроек: {e}", severity="error")
+                    self.notify(t("Error resetting settings: {error}", error=str(e)), severity="error")
 
-        self.push_screen(ConfirmDialog(message, "Сброс настроек"), handle_confirm)
+        self.push_screen(ConfirmDialog(message, t("Reset Settings")), handle_confirm)
 
     def update_all_inputs(self) -> None:
         """Обновляет все поля ввода значениями из конфига."""
@@ -1022,13 +1031,13 @@ class ConfigMenuApp(App):
             else:
                 config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
             bin_path = Path(sys.executable).parent
-            current_llm = config.current_llm or "Не выбрана"
+            current_llm = config.current_llm or t("Not selected")
 
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
-                f"[bold]Текущая LLM:[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
-                f"[bold]Папка конфига:[/bold] {config_dir}\n"
-                f"[bold]Папка бинарника:[/bold] {bin_path}"
+                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
+                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
+                f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
 
             )
 
@@ -1046,7 +1055,7 @@ def main_menu():
         app = ConfigMenuApp()
         app.run()
     except Exception as e:
-        print(f"Ошибка при запуске меню настроек: {e}", file=sys.stderr)
+        print(f"Error starting settings menu: {e}", file=sys.stderr)
         traceback.print_exc()
         sys.exit(1)
 

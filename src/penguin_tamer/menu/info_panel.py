@@ -8,7 +8,7 @@ from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Markdown
 
-from .help_content_ru import TAB_HELP, WIDGET_HELP
+from .locales.menu_i18n import menu_translator
 
 
 class InfoPanel(VerticalScroll):
@@ -47,16 +47,18 @@ class InfoPanel(VerticalScroll):
 
     def show_tab_help(self, tab_id: str) -> None:
         """Show general help for a tab."""
-        content = TAB_HELP.get(
+        tab_help, _ = menu_translator.get_help_content()
+        content = tab_help.get(
             tab_id,
-            f"# Справка для {tab_id}\n\nСправка не найдена."
+            f"# Help for {tab_id}\n\nHelp not found."
         )
         self.content_text = content
 
     def show_help(self, widget_id: str) -> None:
         """Show detailed help for specific widget."""
-        content = WIDGET_HELP.get(
+        _, widget_help = menu_translator.get_help_content()
+        content = widget_help.get(
             widget_id,
-            f"[bold yellow]Подсказка для {widget_id} не найдена[/bold yellow]"
+            f"[bold yellow]Help for {widget_id} not found[/bold yellow]"
         )
         self.content_text = content
