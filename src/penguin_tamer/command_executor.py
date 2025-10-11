@@ -4,6 +4,7 @@ import tempfile
 import os
 import threading
 from abc import ABC, abstractmethod
+from typing import Union
 from rich.console import Console
 from penguin_tamer.i18n import t
 
@@ -185,7 +186,7 @@ class LinuxCommandExecutor(BaseCommandExecutor):
             text=True  # Текстовый режим для автоматического декодирования
         )
 
-    def _decode_line(self, line: bytes | str) -> str:
+    def _decode_line(self, line: Union[bytes, str]) -> str:
         """Декодирует строку в Linux (простая логика)."""
         if isinstance(line, str):
             return line.rstrip('\n')
@@ -220,7 +221,7 @@ class WindowsCommandExecutor(BaseCommandExecutor):
             creationflags=subprocess.CREATE_NO_WINDOW
         )
 
-    def _decode_line(self, line: bytes) -> str:
+    def _decode_line(self, line: Union[bytes, str]) -> str:
         """Декодирует строку в Windows с учетом множества кодировок."""
         if isinstance(line, str):
             return line.strip()
