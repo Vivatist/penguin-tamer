@@ -33,6 +33,7 @@
   "Select": "Выбрать",
   "Add": "Добавить",
   "Edit": "Изменить",
+  "Settings": "Настройка",
   "Delete": "Удалить",
   "Save": "Сохранить",
 
@@ -76,6 +77,7 @@
   "API Key": "API Key",
 
   "LLM '{name}' selected": "LLM '{name}' выбрана",
+  "LLM '{name}' selected. Warning: API key is missing!": "LLM '{name}' выбрана. Предупреждение: отсутствует API ключ!",
   "LLM '{name}' added": "LLM '{name}' добавлена",
   "LLM '{name}' updated": "LLM '{name}' обновлена",
   "LLM '{name}' deleted": "LLM '{name}' удалена",

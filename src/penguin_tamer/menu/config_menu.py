@@ -136,7 +136,7 @@ class ConfigMenuApp(App):
             "accent-darken-1": "#f2bf94",
             "accent-darken-2": "#dba578",
             "accent-darken-3": "#c1895c",
-            "warning": "#ffd8b9",
+            "warning": "#ff0909",
             "warning-darken-1": "#f2bf94",
 
             # Сообщения об ошибках
@@ -221,9 +221,8 @@ class ConfigMenuApp(App):
                             yield Static("")
                             yield ResponsiveButtonRow(
                                 buttons_data=[
-                                    (t("Select"), "select-llm-btn", "success"),
                                     (t("Add"), "add-llm-btn", "success"),
-                                    (t("Edit"), "edit-llm-btn", "success"),
+                                    (t("Settings"), "edit-llm-btn", "success"),
                                     (t("Delete"), "delete-llm-btn", "error"),
                                 ],
                                 classes="button-row"
@@ -555,7 +554,7 @@ class ConfigMenuApp(App):
                 pass
 
         llm_table.clear(columns=True)
-        llm_table.add_columns(t(""), t("Name"), t("Model ID"), t("API URL"), t("API Key"))
+        llm_table.add_columns(t(""), t("Name"), t("Model ID"), t("API Key"), t("API URL"))
 
         new_cursor_row = 0
         for idx, llm_name in enumerate(llms):
@@ -565,15 +564,18 @@ class ConfigMenuApp(App):
                 is_current,
                 llm_name,
                 cfg.get("model", "N/A"),
-                cfg.get("api_url", "N/A"),
                 format_api_key_display(cfg.get("api_key", "")),
+                cfg.get("api_url", "N/A"),
             )
-            # Запоминаем новую позицию для старой LLM
-            if old_llm_name and llm_name == old_llm_name:
+            # Запоминаем позицию для текущей LLM или старой LLM
+            if keep_cursor_position and old_llm_name and llm_name == old_llm_name:
+                new_cursor_row = idx
+            elif not keep_cursor_position and llm_name == current:
+                # При первой загрузке устанавливаем курсор на текущую LLM
                 new_cursor_row = idx
 
-        # Восстанавливаем позицию курсора и highlight
-        if keep_cursor_position and old_llm_name and len(llms) > 0:
+        # Устанавливаем позицию курсора
+        if len(llms) > 0:
             try:
                 # Устанавливаем cursor_coordinate для правильного highlight
                 llm_table.cursor_coordinate = (new_cursor_row, 0)
@@ -616,10 +618,6 @@ class ConfigMenuApp(App):
             self.action_reset_settings()
 
         # LLM Management
-        elif btn_id == "select-llm-btn":
-            self.select_current_llm()
-
-        # LLM Management
         elif btn_id == "add-llm-btn":
             self.add_llm()
         elif btn_id == "edit-llm-btn":
@@ -632,37 +630,76 @@ class ConfigMenuApp(App):
             self.save_user_content()
 
     def on_double_click_data_table_double_clicked(self, event: DoubleClickDataTable.DoubleClicked) -> None:
-        """Handle double-click on DataTable."""
+        """Handle double-click on DataTable - open edit dialog."""
+        self.edit_llm()
+
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Handle row highlight in DataTable - auto-select LLM."""
+        # Only handle LLM table
+        if event.data_table.id != "llm-table":
+            return
+
+        # Skip if not initialized to avoid notifications during setup
+        if not self._initialized:
+            return
+
         self.select_current_llm()
 
     # LLM Methods
     def select_current_llm(self) -> None:
-        """Select current LLM from table."""
+        """Select current LLM from table (called automatically on cursor move)."""
         table = self.query_one("#llm-table", DataTable)
         if table.cursor_row < 0:
-            self.notify(t("Select LLM from the list"), severity="warning")
             return
-        row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])  # Название во втором столбце (после галочки)
-        config.current_llm = llm_name
-        config.save()
-        self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
 
-        # Update system info panel with new current LLM
-        if hasattr(config, 'config_path'):
-            config_dir = Path(config.config_path).parent
-        else:
-            config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
-        bin_path = Path(sys.executable).parent
-        system_info_display = self.query_one("#system-info-display", Static)
-        system_info_display.update(
-            f"[bold]{t('Current LLM:')}[/bold] [#e07333]{llm_name}[/#e07333]\n\n"
-            f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
-            f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
-        )
+        try:
+            row = table.get_row_at(table.cursor_row)
+            llm_name = str(row[1])  # Название во втором столбце (после галочки)
 
-        self.refresh_status()
-        self.notify(t("Current LLM: {name}", name=llm_name), severity="information")
+            # Only update if it's a different LLM
+            if llm_name == config.current_llm:
+                return
+
+            config.current_llm = llm_name
+            config.save()
+            self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
+
+            # Update system info panel with new current LLM
+            if hasattr(config, 'config_path'):
+                config_dir = Path(config.config_path).parent
+            else:
+                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+            bin_path = Path(sys.executable).parent
+            system_info_display = self.query_one("#system-info-display", Static)
+            system_info_display.update(
+                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{llm_name}[/#e07333]\n\n"
+                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
+                f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
+            )
+
+            self.refresh_status()
+
+            # Check if API key exists and show appropriate notification
+            llm_config = config.get_llm_config(llm_name)
+            api_key = llm_config.get("api_key", "").strip() if llm_config else ""
+
+            if not api_key:
+                # Warning: No API key
+                self.notify(
+                    t("LLM '{name}' selected. Warning: API key is missing!", name=llm_name),
+                    severity="warning",
+                    timeout=5
+                )
+            else:
+                # Success: LLM selected with API key
+                self.notify(
+                    t("LLM '{name}' selected", name=llm_name),
+                    severity="information",
+                    timeout=3
+                )
+        except Exception:
+            # Ignore errors during cursor movement
+            pass
 
     def add_llm(self) -> None:
         """Add new LLM."""
