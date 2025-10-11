@@ -162,7 +162,7 @@ Demo Mode allows you to record and replay interactions with penguin-tamer. Perfe
 ### Available Modes
 
 - **record** - Records all interactions to a file
-- **play** - Replays recorded interactions from a file  
+- **play** - Replays recorded interactions from a file
 - **robot** - Fully automated playback with human-like typing simulation
 - **off** - Demo mode disabled (default)
 

@@ -293,20 +293,34 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                 if player:
                     action = player.get_next_user_action()
                     if action:
-                        # Пауза перед вводом (кроме самого первого действия)
-                        if robot_action_count > 0:
+                        robot_action_count += 1
+                        user_prompt = action['value']
+                        
+                        # Красивое приглашение как в обычном режиме (сразу)
+                        console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+                        
+                        # Пауза перед началом печати (кроме самого первого действия)
+                        if robot_action_count > 1:
                             import time
                             import random
                             pause = random.uniform(3.0, 4.0)
                             time.sleep(pause)
                         
-                        robot_action_count += 1
-                        user_prompt = action['value']
-                        console.print("[dim]>[/dim] ", end='')
-                        
                         # Импортируем функцию эмуляции печати
                         from penguin_tamer.demo_recorder import _simulate_human_typing
-                        _simulate_human_typing(user_prompt, console)
+                        
+                        # Проверяем, начинается ли команда с точки для подсветки
+                        if user_prompt.startswith('.'):
+                            # Печатаем точку серым цветом
+                            _simulate_human_typing('.', console, style='dim')
+                            # Печатаем команду бирюзовым цветом
+                            _simulate_human_typing(user_prompt[1:], console, style='#007c6e')
+                        else:
+                            # Обычный текст без стиля
+                            _simulate_human_typing(user_prompt, console)
+                        
+                        # Перевод строки после ввода
+                        console.print()
                         
                         # Небольшая пауза после "нажатия Enter"
                         import time

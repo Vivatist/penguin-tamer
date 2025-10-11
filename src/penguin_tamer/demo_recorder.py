@@ -15,22 +15,26 @@ from datetime import datetime
 from platformdirs import user_config_dir
 
 
-def _simulate_human_typing(text: str, console=None) -> None:
+def _simulate_human_typing(text: str, console=None, style: str = None) -> None:
     """
     Эмулирует печать текста человеком с реалистичными задержками.
-    
+
     Args:
         text: Текст для печати
         console: Rich console для вывода (опционально)
+        style: Стиль Rich для текста (например, 'bold', 'dim', '#007c6e')
     """
     import random
-    
+
     for char in text:
         if console:
-            console.print(char, end='', highlight=False)
+            if style:
+                console.print(f"[{style}]{char}[/{style}]", end='', highlight=False)
+            else:
+                console.print(char, end='', highlight=False)
         else:
             print(char, end='', flush=True)
-        
+
         # Неравномерные задержки, имитирующие быструю печать человека
         if char == ' ':
             # Пробелы печатаются быстрее
@@ -44,17 +48,12 @@ def _simulate_human_typing(text: str, console=None) -> None:
         else:
             # Обычные символы
             delay = random.uniform(0.05, 0.12)
-        
+
         # Редкие "заминки" (как будто человек задумался)
         if random.random() < 0.05:  # 5% шанс
             delay += random.uniform(0.2, 0.5)
-        
+
         time.sleep(delay)
-    
-    if console:
-        console.print()  # Перевод строки
-    else:
-        print()  # Перевод строки
 
 
 def _add_sequence_number_to_filename(filepath: Path) -> Path:
@@ -369,17 +368,17 @@ class DemoPlayer:
         Получает следующее действие пользователя из текущей или следующих записей.
         Используется в режиме robot для автоматического ввода.
         Отслеживает позицию в списке user_actions для возврата всех действий.
-        
+
         Returns:
             Словарь с типом и значением действия, или None если действий больше нет
         """
         # Ищем следующее действие, начиная с текущей позиции
         response_idx = self.current_index
         action_idx = self.current_action_index
-        
+
         while response_idx < len(self.responses):
             response = self.responses[response_idx]
-            
+
             if response.user_actions:
                 # Ищем действие начиная с action_idx
                 while action_idx < len(response.user_actions):
@@ -387,19 +386,19 @@ class DemoPlayer:
                     if action['type'] in ('command', 'code_block', 'query'):
                         # Нашли действие - обновляем позицию для следующего вызова
                         action_idx += 1
-                        
+
                         # Обновляем позицию в объекте
                         self.current_index = response_idx
                         self.current_action_index = action_idx
-                        
+
                         return action
-                    
+
                     action_idx += 1
-            
+
             # Переходим к следующей записи
             response_idx += 1
             action_idx = 0  # Начинаем с первого действия в новой записи
-        
+
         return None
 
 
