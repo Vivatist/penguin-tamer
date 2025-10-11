@@ -56,7 +56,14 @@ class TestDemoResponse:
 
     def test_resolve_demo_path_absolute(self):
         """Абсолютный путь должен оставаться без изменений."""
-        abs_path = Path("C:/temp/demo.json")
+        import platform
+        
+        # Используем платформо-зависимый абсолютный путь
+        if platform.system() == 'Windows':
+            abs_path = Path("C:/temp/demo.json")
+        else:
+            abs_path = Path("/tmp/demo.json")
+        
         result = _resolve_demo_path(str(abs_path))
 
         assert result == abs_path
