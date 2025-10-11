@@ -287,17 +287,30 @@ class DemoPlayer:
         """
         Получает следующий записанный ответ.
 
+        В robot mode НЕ увеличивает current_index, так как это делает get_next_user_action().
+        Возвращает ответ для текущего current_index, если он еще не был воспроизведен.
+
         Args:
             user_query: Запрос пользователя (игнорируется, но принимается для совместимости)
 
         Returns:
-            DemoResponse или None если ответы закончились
+            DemoResponse или None если ответы закончились или ответ пустой
         """
         if not self.has_more_responses():
             return None
 
         response = self.responses[self.current_index]
-        self.current_index += 1
+
+        # Возвращаем None для записей с action_only=true (нет ответа для воспроизведения)
+        if response.metadata.get('action_only'):
+            return None
+
+        # Проверяем, есть ли реальный ответ для воспроизведения
+        if not response.response or not response.chunks:
+            return None
+
+        # Возвращаем ответ БЕЗ увеличения current_index
+        # Индекс будет увеличен в get_next_user_action() при переходе к следующей записи
         return response
 
     def create_chunk_generator(
