@@ -1,3 +1,4 @@
+# flake8: noqa: E501
 """
 Help content and documentation texts for the configuration menu.
 English version.
@@ -7,14 +8,20 @@ English version.
 TAB_HELP = {
     "tab-general": """# PENGUIN TAMER GENERAL SETTINGS
 ---
-`Penguin Tamer` can work with any compatible neural network. You need to specify
-**Model ID**, **API_URL** and **API_KEY**.
+`Penguin Tamer` comes with several free models from OpenRouter pre-installed. To use them, obtain an API_KEY from your OpenRouter account.
+## Getting **API_KEY** from OpenRouter
+- In your account go to "Keys" section [https://openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)
+- Click "Create Key" and copy the created `API_KEY`
+- In `Penguin Tamer` settings, open the LLM edit dialog and paste the copied `API_KEY` in the corresponding field.
+---
 
-List of compatible free models on OpenRouter website (51 models) -
-[https://openrouter.ai/models/?q=free](https://openrouter.ai/models/?q=free)
+`Penguin Tamer` can work with any compatible neural network. To do this, you need to specify **Model ID**, **API_URL** and **API_KEY**.
 
-`Penguin Tamer` comes with several free models from OpenRouter pre-installed,
-but you need to obtain a personal API_KEY to use them (see step 3).
+List of compatible free models on OpenRouter website (51 models) - [https://openrouter.ai/models/?q=free](https://openrouter.ai/models/?q=free)
+
+---
+
+Connecting any LLM in `Penguin Tamer` consists of three steps:
 
 # Getting **Model ID**, **API_URL** and **API_KEY** using OpenRouter provider as example
 
@@ -33,8 +40,7 @@ Register on **OpenRouter** [openrouter.ai](https://openrouter.ai)
 - In your account go to "Keys" section [https://openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)
 - Click "Create Key" and copy the created `API_KEY`
 
-> 💡 **Tip:** Save the obtained `API_KEY` — it won't be available in your account later.
-> This is a security policy of most LLM providers""",
+> 💡 **Tip:** Save the obtained `API_KEY` — it won't be available in your account later. This is a security policy of most LLM providers""",
 
     "tab-params": """# GENERATION PARAMETERS
 

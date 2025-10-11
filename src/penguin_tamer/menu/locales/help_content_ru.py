@@ -7,11 +7,20 @@ Help content and documentation texts for the configuration menu.
 TAB_HELP = {
     "tab-general": """# ОСНОВНЫЕ НАСТРОЙКИ Penguin Tamer
 ---
+В `Penguin Tamer` предустановлено несколько бесплатных моделей от OpenRouter. Для их использования получите API_KEY в личном кабинете на сайте OpenRouter.
+## Получение **API_KEY** от OpenRouter
+- В личном кабинете перейдите в раздел "Keys" [https://openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)
+- Нажмите "Create Key" и скопируйте созданный `API_KEY`
+- В настройках `Penguin Tamer` откройте диалог изменения LLM и вставьте скопированный `API_KEY` в соответствующее поле.
+---
+
 `Penguin Tamer` может работать с любой совместимой нейросетью. Для этого нужно указать **Model ID**, **API_URL** и **API_KEY**.
 
 Список совместимых бесплатных моделей на сайте OpenRouter (51 модель) - [https://openrouter.ai/models/?q=free](https://openrouter.ai/models/?q=free)
 
-В `Penguin Tamer` уже предустановлено несколько бесплатных моделей от OpenRouter, но для их использования требуется получить личный API_KEY (см. п. 3).
+---
+
+Подключение любой LLM в `Penguin Tamer` состоит из трёх шагов:
 
 # Получение **Model ID**, **API_URL** и **API_KEY** на примере провайдера OpenRouter
 
