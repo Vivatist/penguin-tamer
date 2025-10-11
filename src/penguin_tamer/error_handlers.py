@@ -99,7 +99,7 @@ class ErrorHandler:
         self.console = console
         self.debug_mode = debug_mode
         self.link_url = t("docs_link_get_api_key")
-        
+
         # Configuration dictionary: exception name -> (message template, severity, extractor)
         # extractor is optional function to extract additional data from error
         self._error_configs = {
@@ -153,7 +153,7 @@ class ErrorHandler:
                 None
             ),
         }
-        
+
         self._handlers = {}
         self._register_handlers()
 
@@ -168,7 +168,7 @@ class ErrorHandler:
     def _register_handlers(self):
         """Register handlers from configuration dictionary."""
         exceptions = get_openai_exceptions()
-        
+
         for exc_name, (msg_template, severity, extractor) in self._error_configs.items():
             exc_class = exceptions.get(exc_name)
             if exc_class:
@@ -177,9 +177,9 @@ class ErrorHandler:
                     def handler(error, context):
                         return self._generic_handler(error, context, template, sev, extract_fn)
                     return handler
-                
+
                 self._handlers[exc_class] = make_handler(msg_template, severity, extractor)
-        
+
         # Special handler for APIStatusError (needs custom logic)
         if 'APIStatusError' in exceptions:
             self._handlers[exceptions['APIStatusError']] = self._handle_api_status_error
@@ -235,14 +235,14 @@ class ErrorHandler:
         extractor: Optional[Callable] = None
     ) -> str:
         """Universal handler for all error types using configuration.
-        
+
         Args:
             error: The exception
             context: Error context
             msg_template: Message template with placeholders
             severity: Error severity level
             extractor: Optional function to extract data from error
-            
+
         Returns:
             Formatted error message
         """
@@ -250,11 +250,11 @@ class ErrorHandler:
         data = {'link': self.link_url}
         if extractor:
             data.update(extractor(error))
-        
+
         # Format message
         message = t(msg_template).format(**data)
         technical = f"{type(error).__name__}: {str(error)}"
-        
+
         return self._format_message(message, severity, technical)
 
     def _handle_api_status_error(
@@ -263,7 +263,7 @@ class ErrorHandler:
         context: Optional[ErrorContext] = None
     ) -> str:
         """Handle API status errors with detailed information.
-        
+
         This handler requires special logic for different status codes.
         """
         status_code = getattr(error, 'status_code', 'unknown')

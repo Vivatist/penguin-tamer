@@ -41,51 +41,51 @@ def _create_markdown(text: str, theme_name: str = "default"):
 
 class StreamProcessor:
     """Processor for handling streaming LLM responses.
-    
+
     Encapsulates the logic of processing streaming responses from LLM API,
     including error handling, chunk processing, and live display management.
     """
-    
+
     def __init__(self, client: 'OpenRouterClient'):
         """Initialize stream processor.
-        
+
         Args:
             client: Parent OpenRouterClient instance
         """
         self.client = client
         self.interrupted = threading.Event()
         self.reply_parts: List[str] = []
-        
+
     def process(self, user_input: str) -> str:
         """Process user input and return AI response.
-        
+
         Args:
             user_input: User's message text
-            
+
         Returns:
             Complete AI response text
         """
         self.client.messages.append({"role": "user", "content": user_input})
-        
+
         # Create error handler
         debug_mode = config.get("global", "debug", False)
         error_handler = ErrorHandler(console=self.client.console, debug_mode=debug_mode)
-        
+
         # Phase 1: Connect and wait for first chunk
         stream, first_chunk = self._connect_and_wait(error_handler)
         if stream is None:
             return ""
-        
+
         # Phase 2: Process stream with live display
         try:
             reply = self._stream_with_live_display(stream, first_chunk)
         except KeyboardInterrupt:
             self.interrupted.set()
             raise
-        
+
         # Phase 3: Finalize
         return self._finalize_response(reply)
-    
+
     @contextmanager
     def _managed_spinner(self, initial_message: str):
         """Context manager для управления спиннером."""
@@ -97,17 +97,17 @@ class StreamProcessor:
             daemon=True
         )
         spinner_thread.start()
-        
+
         try:
             yield status_message
         finally:
             stop_spinner.set()
             if spinner_thread.is_alive():
                 spinner_thread.join(timeout=0.3)
-    
+
     def _connect_and_wait(self, error_handler: ErrorHandler) -> tuple:
         """Connect to API and wait for first chunk.
-        
+
         Returns:
             Tuple of (stream, first_chunk) or (None, None) on error
         """
@@ -116,16 +116,16 @@ class StreamProcessor:
                 # Send API request
                 api_params = self.client._prepare_api_params()
                 stream = self.client.client.chat.completions.create(**api_params)
-                
+
                 # Wait for first chunk
                 status_message['text'] = t('Ai thinking...')
                 first_chunk = self._wait_first_chunk(stream)
-                
+
                 if first_chunk:
                     self.reply_parts.append(first_chunk)
-                
+
                 return stream, first_chunk
-                
+
             except KeyboardInterrupt:
                 self.interrupted.set()
                 raise
@@ -139,7 +139,7 @@ class StreamProcessor:
                 error_message = error_handler.handle(e, context)
                 self.client.console.print(error_message)
                 return None, None
-    
+
     def _wait_first_chunk(self, stream) -> Optional[str]:
         """Ожидание первого чанка с контентом."""
         try:
@@ -158,14 +158,14 @@ class StreamProcessor:
         except (AttributeError, IndexError):
             return None
         return None
-    
+
     def _stream_with_live_display(self, stream, first_chunk: str) -> str:
         """Process stream with live markdown display.
-        
+
         Args:
             stream: API response stream
             first_chunk: First chunk of content
-            
+
         Returns:
             Complete response text
         """
@@ -205,13 +205,13 @@ class StreamProcessor:
                 pass
 
         return "".join(self.reply_parts)
-    
+
     def _finalize_response(self, reply: str) -> str:
         """Finalize response and update messages.
-        
+
         Args:
             reply: Complete response text
-            
+
         Returns:
             Final response text
         """
@@ -220,13 +220,13 @@ class StreamProcessor:
             warning = t('Warning: Empty response received from API.')
             self.client.console.print(f"[dim italic]{warning}[/dim italic]")
             return ""
-        
+
         # Add to message history
         self.client.messages.append({"role": "assistant", "content": reply})
-        
+
         # Debug output if enabled
         self.client._debug_print_if_enabled("response")
-        
+
         return reply
 
 
