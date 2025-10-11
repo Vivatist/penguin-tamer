@@ -54,7 +54,7 @@ pt "your prompt here"
 python -m penguin_tamer "your prompt here"
 
 # Dialog mode
-pt -d
+pt
 
 # Settings menu
 pt -s

@@ -133,12 +133,15 @@ ai kernel update script
 
 ### Dialog Mode
 
-To start a dialog, use the `-d` key or simply type `pt` and press `Enter`.
-In dialog mode, penguin-tamer preserves the conversation context throughout the session.
+Penguin Tamer always works in dialog mode, preserving the conversation context throughout the session.
+
+You can start a dialog with an initial question:
 
 ```bash
-pt -d what python version is installed?
+pt what python version is installed?
 ```
+
+Or without a question to begin an interactive session:
 
 ```bash
 pt  # Enter
@@ -146,7 +149,7 @@ pt  # Enter
 
 ### Running Code from AI Response
 
-When **in dialog mode**, if the response contains code blocks — they are numbered. To run code, simply enter the block number in the console.
+If the response contains code blocks — they are numbered. To run code, simply enter the block number in the console.
 
 ![dialog mode](/docs/img/en_img2.gif)
 

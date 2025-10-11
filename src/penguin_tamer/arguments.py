@@ -30,14 +30,6 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
-    "-d",
-    "--dialog",
-    action="store_true",
-    help=t("Dialog mode with ability to execute code blocks from the answer. "
-           "Type the block number and press Enter. Exit: exit, quit or Ctrl+C."),
-)
-
-parser.add_argument(
     "-s",
     "--settings",
     action="store_true",

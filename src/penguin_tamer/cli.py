@@ -391,18 +391,12 @@ def main() -> None:
         console = _create_console()
         chat_client = _create_chat_client(console)
 
-        # Determine execution mode
-        dialog_mode: bool = args.dialog
+        # Always run in dialog mode
         prompt_parts: list = args.prompt or []
         prompt: str = " ".join(prompt_parts).strip()
 
-        if dialog_mode or not prompt:
-            # Dialog mode
-            run_dialog_mode(chat_client, console, prompt if prompt else None)
-        else:
-            # Single query mode
-
-            run_single_query(chat_client, prompt, console)
+        # Dialog mode with optional initial prompt
+        run_dialog_mode(chat_client, console, prompt if prompt else None)
 
     except KeyboardInterrupt:
         return 130
