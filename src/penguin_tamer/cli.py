@@ -448,6 +448,9 @@ def _create_console():
     Console = get_console_class()
     theme_name = config.get("global", "markdown_theme", "default")
     markdown_theme = get_theme()(theme_name)
+    if markdown_theme is None:
+        # Use default theme if unknown theme name
+        markdown_theme = get_theme()("default")
     return Console(theme=markdown_theme)
 
 
