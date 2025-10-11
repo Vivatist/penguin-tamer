@@ -96,34 +96,70 @@ def test_robot_mode():
     console.print("\n[bold cyan]--- Начало эмуляции robot mode ---[/bold cyan]\n")
 
     action_count = 0
-    
+
     while True:
         action = player.get_next_user_action()
         if not action:
             break
-        
+
         action_count += 1
+
         console.print(f"\n[bold yellow]Действие {action_count}:[/bold yellow] {action['type']}")
         console.print("[bold #e07333]>>> [/bold #e07333]", end='')
-        
-        # Пауза перед началом печати (кроме первого)
-        if action_count > 1:
+
+        # Показываем плейсхолдер (как в DialogInputFormatter)
+        if action['type'] == 'code_block':
+            placeholder = "Number of the code block to execute or the next question... Ctrl+C - exit"
+        else:
+            placeholder = "Your question... Ctrl+C - exit"
+
+        from rich.text import Text
+        placeholder_obj = Text(placeholder, style="dim italic")
+        console.print(placeholder_obj, end='')
+
+        # Возвращаем курсор к началу строки (сразу после >>>)
+        import sys
+        sys.stdout.write('\r')
+        sys.stdout.flush()
+        # Перемещаем курсор на 4 символа вправо (длина ">>> ")
+        sys.stdout.write('\033[4C')
+        sys.stdout.flush()
+
+        # Пауза перед началом печати
+        # Для первого действия - 1 секунда, для остальных - 3-4 секунды
+        if action_count == 1:
+            time.sleep(1.0)
+        else:
             import random
             pause = random.uniform(3.0, 4.0)
             console.print(f"[dim](пауза {pause:.2f} сек)[/dim] ", end='')
             time.sleep(pause)
-        
+
+        # Очищаем плейсхолдер перед началом печати (как в cli.py)
+        # Используем ANSI escape последовательности
+        import sys
+        sys.stdout.write('\r\033[K')
+        sys.stdout.flush()
+        console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+
         # Эмулируем печать с подсветкой команд
         if action['value'].startswith('.'):
             _simulate_human_typing('.', console, style='dim')
             _simulate_human_typing(action['value'][1:], console, style='#007c6e')
         else:
-            _simulate_human_typing(action['value'], console)        # Перевод строки
+            _simulate_human_typing(action['value'], console)
+
+        # Пауза перед "нажатием Enter" для блоков кода
+        # Если это блок кода, делаем паузу 1.5 сек, чтобы успеть увидеть номер
+        if action['type'] == 'code_block':
+            time.sleep(1.5)
+
+        # Перевод строки (нажатие Enter)
         console.print()
-        
-        # Небольшая пауза после "нажатия Enter"
+
+        # Небольшая пауза после "нажатия Enter" для всех действий
         time.sleep(0.3)
-    
+
     console.print(f"\n[bold green]✓ Обработано действий: {action_count}[/bold green]")
     console.print("\n[bold cyan]--- Конец эмуляции robot mode ---[/bold cyan]\n")
 

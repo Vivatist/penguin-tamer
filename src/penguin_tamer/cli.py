@@ -295,20 +295,57 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                     if action:
                         robot_action_count += 1
                         user_prompt = action['value']
-                        
+
                         # Красивое приглашение как в обычном режиме (сразу)
                         console.print("[bold #e07333]>>> [/bold #e07333]", end='')
-                        
-                        # Пауза перед началом печати (кроме самого первого действия)
-                        if robot_action_count > 1:
-                            import time
+
+                        # Показываем placeholder в зависимости от наличия блоков кода
+                        # (как в DialogInputFormatter)
+                        if last_code_blocks:
+                            placeholder_text = t(
+                                "Number of the code block to execute or "
+                                "the next question... Ctrl+C - exit"
+                            )
+                        else:
+                            placeholder_text = t("Your question... Ctrl+C - exit")
+
+                        # Выводим placeholder серым курсивом (используем низкоуровневый вывод)
+                        import sys
+                        from rich.text import Text
+                        placeholder_obj = Text(placeholder_text, style="dim italic")
+                        console.print(placeholder_obj, end='')
+
+                        # Возвращаем курсор к началу строки (сразу после >>>)
+                        # Это создаёт эффект как в prompt_toolkit, где placeholder "за" текстом
+                        sys.stdout.write('\r')
+                        sys.stdout.flush()
+                        # Перемещаем курсор на 4 символа вправо (длина ">>> ")
+                        sys.stdout.write('\033[4C')
+                        sys.stdout.flush()
+
+                        # Пауза перед началом печати
+                        # Для первого действия - 1 секунда, для остальных - 3-4 секунды
+                        import time
+                        if robot_action_count == 1:
+                            time.sleep(1.0)
+                        else:
                             import random
                             pause = random.uniform(3.0, 4.0)
                             time.sleep(pause)
-                        
+
+                        # Очищаем placeholder перед началом печати
+                        # Используем ANSI escape последовательности для очистки
+                        # \r - возврат каретки в начало строки
+                        # \033[K - очистка от курсора до конца строки
+                        sys.stdout.write('\r\033[K')
+                        sys.stdout.flush()
+
+                        # Выводим prompt заново
+                        console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+
                         # Импортируем функцию эмуляции печати
                         from penguin_tamer.demo_recorder import _simulate_human_typing
-                        
+
                         # Проверяем, начинается ли команда с точки для подсветки
                         if user_prompt.startswith('.'):
                             # Печатаем точку серым цветом
@@ -318,12 +355,17 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                         else:
                             # Обычный текст без стиля
                             _simulate_human_typing(user_prompt, console)
-                        
-                        # Перевод строки после ввода
-                        console.print()
-                        
-                        # Небольшая пауза после "нажатия Enter"
+
+                        # Пауза перед "нажатием Enter" для блоков кода
+                        # Если это блок кода, делаем паузу 1.5 сек, чтобы успеть увидеть номер
                         import time
+                        if action.get('type') == 'code_block':
+                            time.sleep(1.5)
+
+                        # Перевод строки после ввода (нажатие Enter)
+                        console.print()
+
+                        # Небольшая пауза после "нажатия Enter" для всех действий
                         time.sleep(0.3)
                     else:
                         # Нет больше действий - переходим в обычный режим
