@@ -13,6 +13,30 @@ from dataclasses import dataclass
 from enum import Enum
 
 from penguin_tamer.i18n import t
+from penguin_tamer.utils.lazy_import import lazy_import
+
+
+# Ленивый импорт исключений OpenAI
+@lazy_import
+def get_openai_exceptions():
+    """Lazy import of OpenAI exceptions."""
+    from openai import (
+        RateLimitError, APIError as OpenAIAPIError, OpenAIError,
+        AuthenticationError, APIConnectionError, PermissionDeniedError,
+        NotFoundError, BadRequestError, APIStatusError, APITimeoutError
+    )
+    return {
+        'RateLimitError': RateLimitError,
+        'APIError': OpenAIAPIError,
+        'OpenAIError': OpenAIError,
+        'AuthenticationError': AuthenticationError,
+        'APIConnectionError': APIConnectionError,
+        'PermissionDeniedError': PermissionDeniedError,
+        'NotFoundError': NotFoundError,
+        'BadRequestError': BadRequestError,
+        'APIStatusError': APIStatusError,
+        'APITimeoutError': APITimeoutError
+    }
 
 
 class ErrorSeverity(Enum):
@@ -62,36 +86,8 @@ class ValidationError(PenguinTamerError):
     pass
 
 
-# Lazy import of OpenAI exceptions
-_openai_exceptions = None
-
-
-def _get_openai_exceptions():
-    """Lazy import of OpenAI exceptions."""
-    global _openai_exceptions
-    if _openai_exceptions is None:
-        from openai import (
-            RateLimitError, APIError as OpenAIAPIError, OpenAIError,
-            AuthenticationError, APIConnectionError, PermissionDeniedError,
-            NotFoundError, BadRequestError, APIStatusError, APITimeoutError
-        )
-        _openai_exceptions = {
-            'RateLimitError': RateLimitError,
-            'APIError': OpenAIAPIError,
-            'OpenAIError': OpenAIError,
-            'AuthenticationError': AuthenticationError,
-            'APIConnectionError': APIConnectionError,
-            'PermissionDeniedError': PermissionDeniedError,
-            'NotFoundError': NotFoundError,
-            'BadRequestError': BadRequestError,
-            'APIStatusError': APIStatusError,
-            'APITimeoutError': APITimeoutError
-        }
-    return _openai_exceptions
-
-
 class ErrorHandler:
-    """Centralized error handler with strategy pattern."""
+    """Centralized error handler with strategy pattern using configuration dictionary."""
 
     def __init__(self, console=None, debug_mode: bool = False):
         """Initialize error handler.
@@ -103,40 +99,90 @@ class ErrorHandler:
         self.console = console
         self.debug_mode = debug_mode
         self.link_url = t("docs_link_get_api_key")
+        
+        # Configuration dictionary: exception name -> (message template, severity, extractor)
+        # extractor is optional function to extract additional data from error
+        self._error_configs = {
+            'APIConnectionError': (
+                "Connection error: Unable to connect to API. Please check your internet connection.",
+                ErrorSeverity.ERROR,
+                None
+            ),
+            'AuthenticationError': (
+                "Error 401: Authentication failed. Check your API_KEY. "
+                "[link={link}]How to get a key?[/link]",
+                ErrorSeverity.CRITICAL,
+                None
+            ),
+            'RateLimitError': (
+                "Error 429: Exceeding the quota. Message from the provider: {body_msg}. "
+                "You can change LLM in settings: 'pt -s'",
+                ErrorSeverity.WARNING,
+                lambda e: {'body_msg': self._extract_body_message(e)}
+            ),
+            'APITimeoutError': (
+                "Request timeout: The request took too long. Please try again.",
+                ErrorSeverity.WARNING,
+                None
+            ),
+            'BadRequestError': (
+                "Error 400: {body_msg}. Check model name.",
+                ErrorSeverity.ERROR,
+                lambda e: {'body_msg': self._extract_body_message(e)}
+            ),
+            'PermissionDeniedError': (
+                "Error 403: Your region is not supported. Use VPN or change the LLM. "
+                "You can change LLM in settings: 'pt -s'",
+                ErrorSeverity.ERROR,
+                None
+            ),
+            'NotFoundError': (
+                "Error 404: Resource not found. Check API_URL and Model in settings.",
+                ErrorSeverity.ERROR,
+                None
+            ),
+            'APIError': (
+                "Error API: {error}. Check the LLM settings, there may be an incorrect API_URL",
+                ErrorSeverity.ERROR,
+                lambda e: {'error': str(e)}
+            ),
+            'OpenAIError': (
+                "Please check your API_KEY. See provider docs for obtaining a key. "
+                "[link={link}]How to get a key?[/link]",
+                ErrorSeverity.ERROR,
+                None
+            ),
+        }
+        
         self._handlers = {}
-        self._register_default_handlers()
+        self._register_handlers()
 
-    def _register_default_handlers(self):
-        """Register default error handlers for known exception types."""
-        exceptions = _get_openai_exceptions()
+    def _extract_body_message(self, error: Exception) -> str:
+        """Extract message from error body."""
+        try:
+            body = getattr(error, 'body', None)
+            return body.get('message') if isinstance(body, dict) else str(error)
+        except Exception:
+            return str(error)
 
-        # API Connection Errors
-        self._handlers[exceptions['APIConnectionError']] = self._handle_connection_error
-
-        # Authentication Errors
-        self._handlers[exceptions['AuthenticationError']] = self._handle_auth_error
-
-        # Rate Limit Errors
-        self._handlers[exceptions['RateLimitError']] = self._handle_rate_limit_error
-
-        # API Status Errors
-        self._handlers[exceptions['APIStatusError']] = self._handle_api_status_error
-
-        # Timeout Errors
-        self._handlers[exceptions['APITimeoutError']] = self._handle_timeout_error
-
-        # Bad Request Errors
-        self._handlers[exceptions['BadRequestError']] = self._handle_bad_request_error
-
-        # Permission Errors
-        self._handlers[exceptions['PermissionDeniedError']] = self._handle_permission_error
-
-        # Not Found Errors
-        self._handlers[exceptions['NotFoundError']] = self._handle_not_found_error
-
-        # Generic API Errors
-        self._handlers[exceptions['APIError']] = self._handle_api_error
-        self._handlers[exceptions['OpenAIError']] = self._handle_openai_error
+    def _register_handlers(self):
+        """Register handlers from configuration dictionary."""
+        exceptions = get_openai_exceptions()
+        
+        for exc_name, (msg_template, severity, extractor) in self._error_configs.items():
+            exc_class = exceptions.get(exc_name)
+            if exc_class:
+                # Create handler with closure capturing config
+                def make_handler(template, sev, extract_fn):
+                    def handler(error, context):
+                        return self._generic_handler(error, context, template, sev, extract_fn)
+                    return handler
+                
+                self._handlers[exc_class] = make_handler(msg_template, severity, extractor)
+        
+        # Special handler for APIStatusError (needs custom logic)
+        if 'APIStatusError' in exceptions:
+            self._handlers[exceptions['APIStatusError']] = self._handle_api_status_error
 
     def handle(self, error: Exception, context: Optional[ErrorContext] = None) -> str:
         """Handle an exception and return user-friendly message.
@@ -180,71 +226,63 @@ class ErrorHandler:
 
         return formatted
 
-    def _handle_connection_error(
+    def _generic_handler(
         self,
         error: Exception,
-        context: Optional[ErrorContext] = None
+        context: Optional[ErrorContext],
+        msg_template: str,
+        severity: ErrorSeverity,
+        extractor: Optional[Callable] = None
     ) -> str:
-        """Handle API connection errors."""
-        message = t(
-            "Connection error: Unable to connect to API. "
-            "Please check your internet connection."
-        )
-        technical = f"APIConnectionError: {str(error)}"
-        return self._format_message(message, ErrorSeverity.ERROR, technical)
-
-    def _handle_auth_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle authentication errors."""
-        message = t(
-            "Error 401: Authentication failed. Check your API_KEY. "
-            "[link={link}]How to get a key?[/link]"
-        ).format(link=self.link_url)
-        technical = f"AuthenticationError: {str(error)}"
-        return self._format_message(message, ErrorSeverity.CRITICAL, technical)
-
-    def _handle_rate_limit_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle rate limit errors."""
-        try:
-            body = getattr(error, 'body', None)
-            msg = body.get('message') if isinstance(body, dict) else str(error)
-        except Exception:
-            msg = str(error)
-
-        message = t(
-            "Error 429: Exceeding the quota. Message from the provider: {message}. "
-            "You can change LLM in settings: 'pt -s'"
-        ).format(message=msg)
-        technical = f"RateLimitError: {msg}"
-        return self._format_message(message, ErrorSeverity.WARNING, technical)
+        """Universal handler for all error types using configuration.
+        
+        Args:
+            error: The exception
+            context: Error context
+            msg_template: Message template with placeholders
+            severity: Error severity level
+            extractor: Optional function to extract data from error
+            
+        Returns:
+            Formatted error message
+        """
+        # Extract additional data if extractor provided
+        data = {'link': self.link_url}
+        if extractor:
+            data.update(extractor(error))
+        
+        # Format message
+        message = t(msg_template).format(**data)
+        technical = f"{type(error).__name__}: {str(error)}"
+        
+        return self._format_message(message, severity, technical)
 
     def _handle_api_status_error(
         self,
         error: Exception,
         context: Optional[ErrorContext] = None
     ) -> str:
-        """Handle API status errors with detailed information."""
+        """Handle API status errors with detailed information.
+        
+        This handler requires special logic for different status codes.
+        """
         status_code = getattr(error, 'status_code', 'unknown')
         response = getattr(error, 'response', None)
-
         technical = f"Status: {status_code}, Response: {response}"
 
+        # Delegate to simpler handlers for known codes
         if status_code == 401:
-            return self._handle_auth_error(error, context)
-        elif status_code == 403:
-            message = t(
-                "Access denied: You don't have permission to access this resource."
+            return self._generic_handler(
+                error, context,
+                "Error 401: Authentication failed. Check your API_KEY. "
+                "[link={link}]How to get a key?[/link]",
+                ErrorSeverity.CRITICAL,
+                None
             )
+        elif status_code == 403:
+            message = t("Access denied: You don't have permission to access this resource.")
         elif status_code == 404:
             message = t("Not found: The requested model or endpoint was not found.")
-            # Add detailed error body if available
             if response and self.debug_mode:
                 try:
                     if hasattr(response, 'json'):
@@ -257,91 +295,13 @@ class ErrorHandler:
                 except Exception:
                     pass
         elif status_code >= 500:
-            message = t(
-                "Server error: The API server encountered an error. "
-                "Please try again later."
-            )
+            message = t("Server error: The API server encountered an error. Please try again later.")
         else:
             message = t("API error ({code}): {msg}").format(
                 code=status_code,
                 msg=getattr(error, 'message', str(error))
             )
 
-        return self._format_message(message, ErrorSeverity.ERROR, technical)
-
-    def _handle_timeout_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle timeout errors."""
-        message = t("Request timeout: The request took too long. Please try again.")
-        technical = f"APITimeoutError: {str(error)}"
-        return self._format_message(message, ErrorSeverity.WARNING, technical)
-
-    def _handle_bad_request_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle bad request errors."""
-        try:
-            body = getattr(error, 'body', None)
-            msg = body.get('message') if isinstance(body, dict) else str(error)
-        except Exception:
-            msg = str(error)
-
-        message = t("Error 400: {message}. Check model name.").format(message=msg)
-        technical = f"BadRequestError: {msg}"
-        return self._format_message(message, ErrorSeverity.ERROR, technical)
-
-    def _handle_permission_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle permission denied errors."""
-        message = t(
-            "Error 403: Your region is not supported. Use VPN or change the LLM. "
-            "You can change LLM in settings: 'pt -s'"
-        )
-        technical = f"PermissionDeniedError: {str(error)}"
-        return self._format_message(message, ErrorSeverity.ERROR, technical)
-
-    def _handle_not_found_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle not found errors."""
-        message = t("Error 404: Resource not found. Check API_URL and Model in settings.")
-        technical = f"NotFoundError: {str(error)}"
-        return self._format_message(message, ErrorSeverity.ERROR, technical)
-
-    def _handle_api_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle generic API errors."""
-        message = t(
-            "Error API: {error}. Check the LLM settings, "
-            "there may be an incorrect API_URL"
-        ).format(error=error)
-        technical = f"APIError: {str(error)}"
-        return self._format_message(message, ErrorSeverity.ERROR, technical)
-
-    def _handle_openai_error(
-        self,
-        error: Exception,
-        context: Optional[ErrorContext] = None
-    ) -> str:
-        """Handle generic OpenAI errors."""
-        message = t(
-            "Please check your API_KEY. See provider docs for obtaining a key. "
-            "[link={link}]How to get a key?[/link]"
-        ).format(link=self.link_url)
-        technical = f"OpenAIError: {str(error)}"
         return self._format_message(message, ErrorSeverity.ERROR, technical)
 
     def _handle_generic_error(

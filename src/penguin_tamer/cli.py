@@ -8,8 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # Сначала импортируем настройки
 from penguin_tamer.config_manager import config
+from penguin_tamer.utils.lazy_import import lazy_import
 
-# Ленивый импорт i18n
+# Ленивый импорт i18n с инициализацией
 _i18n_initialized = False
 
 
@@ -34,67 +35,49 @@ def t_lazy(text, **kwargs):
 # Используем t_lazy вместо t для отложенной инициализации
 t = t_lazy
 
-# Ленивые импорты (только для действительно редких операций)
-_script_executor = None
-_formatter_text = None
-_execute_handler = None
-_console_class = None
-_markdown_class = None
-_get_theme_func = None
 
+# === Ленивые импорты через декоратор ===
 
-def _get_theme():
+@lazy_import
+def get_theme():
     """Ленивый импорт get_theme"""
-    global _get_theme_func
-    if _get_theme_func is None:
-        from penguin_tamer.themes import get_theme
-        _get_theme_func = get_theme
-    return _get_theme_func
+    from penguin_tamer.themes import get_theme
+    return get_theme
 
 
-def _get_console_class():
+@lazy_import
+def get_console_class():
     """Ленивый импорт Console"""
-    global _console_class
-    if _console_class is None:
-        from rich.console import Console
-        _console_class = Console
-    return _console_class
+    from rich.console import Console
+    return Console
 
 
-def _get_markdown_class():
+@lazy_import
+def get_markdown_class():
     """Ленивый импорт Markdown"""
-    global _markdown_class
-    if _markdown_class is None:
-        from rich.markdown import Markdown
-        _markdown_class = Markdown
-    return _markdown_class
+    from rich.markdown import Markdown
+    return Markdown
 
 
-def _get_script_executor():
+@lazy_import
+def get_script_executor():
     """Ленивый импорт command_executor"""
-    global _script_executor
-    if _script_executor is None:
-        from penguin_tamer.command_executor import run_code_block
-        _script_executor = run_code_block
-    return _script_executor
+    from penguin_tamer.command_executor import run_code_block
+    return run_code_block
 
 
-def _get_execute_handler():
+@lazy_import
+def get_execute_handler():
     """Ленивый импорт execute_and_handle_result для выполнения команд"""
-    global _execute_handler
-    if '_execute_handler' not in globals() or _execute_handler is None:
-        from penguin_tamer.command_executor import execute_and_handle_result
-        _execute_handler = execute_and_handle_result
-    return _execute_handler
+    from penguin_tamer.command_executor import execute_and_handle_result
+    return execute_and_handle_result
 
 
-def _get_formatter_text():
+@lazy_import
+def get_formatter_text():
     """Ленивый импорт text_utils"""
-    global _formatter_text
-    if _formatter_text is None:
-        from penguin_tamer.text_utils import extract_labeled_code_blocks
-        _formatter_text = extract_labeled_code_blocks
-    return _formatter_text
+    from penguin_tamer.text_utils import extract_labeled_code_blocks
+    return extract_labeled_code_blocks
 
 
 # Импортируем только самое необходимое для быстрого старта
@@ -185,7 +168,7 @@ def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) 
     console.print(t("[dim]>>> Executing command:[/dim] {command}").format(command=command))
 
     # Выполняем команду и получаем результат
-    result = _get_execute_handler()(console, command)
+    result = get_execute_handler()(console, command)
     console.print()
 
     # Добавляем команду и результат в контекст
@@ -214,7 +197,7 @@ def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt:
         code = code_blocks[block_index - 1]
 
         # Выполняем блок кода и получаем результат
-        result = _get_script_executor()(console, code_blocks, block_index)
+        result = get_script_executor()(console, code_blocks, block_index)
         console.print()
 
         # Добавляем команду и результат в контекст
@@ -237,7 +220,7 @@ def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> li
 
     # Извлекаем блоки кода только если получен непустой ответ
     if reply:
-        code_blocks = _get_formatter_text()(reply)
+        code_blocks = get_formatter_text()(reply)
 
     console.print()
     return code_blocks
@@ -348,9 +331,9 @@ def _create_chat_client(console):
 
 def _create_console():
     """Создание Rich Console с темой из конфига."""
-    Console = _get_console_class()
+    Console = get_console_class()
     theme_name = config.get("global", "markdown_theme", "default")
-    markdown_theme = _get_theme()(theme_name)
+    markdown_theme = get_theme()(theme_name)
     return Console(theme=markdown_theme)
 
 

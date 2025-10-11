@@ -5,6 +5,7 @@ from typing import Dict, Optional
 import platform
 from logging.handlers import RotatingFileHandler
 from platformdirs import user_config_dir
+from penguin_tamer.utils.lazy_import import lazy_import
 
 # Константы
 APP_NAME = "penguin-tamer"
@@ -14,37 +15,33 @@ log_dir.mkdir(parents=True, exist_ok=True)
 # Заглушка для логгера по умолчанию (будет заменен)
 logger = logging.getLogger('penguin-tamer')
 
-# Ленивые импорты Rich для ускорения загрузки
-_rich_handler = None
-_rich_console = None
-_rich_installed = False
 
-
-def _get_rich_handler():
+# Ленивые импорты Rich через декоратор
+@lazy_import
+def get_rich_handler():
     """Ленивый импорт RichHandler"""
-    global _rich_handler
-    if _rich_handler is None:
-        from rich.logging import RichHandler
-        _rich_handler = RichHandler
-    return _rich_handler
+    from rich.logging import RichHandler
+    return RichHandler
 
 
-def _get_rich_console():
+@lazy_import
+def get_rich_console():
     """Ленивый импорт Rich Console"""
-    global _rich_console
-    if _rich_console is None:
-        from rich.console import Console
-        _rich_console = Console
-    return _rich_console
+    from rich.console import Console
+    return Console
 
 
-def _ensure_rich_traceback():
+# Одиночная переменная для отслеживания инициализации
+_rich_traceback_installed = False
+
+
+def ensure_rich_traceback():
     """Ленивая установка Rich traceback"""
-    global _rich_installed
-    if not _rich_installed:
+    global _rich_traceback_installed
+    if not _rich_traceback_installed:
         from rich.traceback import install
         install(show_locals=True)
-        _rich_installed = True
+        _rich_traceback_installed = True
 
 # Преобразование строковых уровней в константы logging
 
@@ -95,8 +92,8 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
         logger.handlers.clear()
 
     # Консольный вывод с ленивой загрузкой Rich
-    console = _get_rich_console()()
-    RichHandler = _get_rich_handler()
+    console = get_rich_console()()
+    RichHandler = get_rich_handler()
     console_handler = RichHandler(
         console=console,
         rich_tracebacks=True,
@@ -107,7 +104,7 @@ def configure_logger(config_data: Optional[Dict] = None) -> logging.Logger:
     logger.addHandler(console_handler)
 
     # Устанавливаем Rich traceback только при создании консольного обработчика
-    _ensure_rich_traceback()
+    ensure_rich_traceback()
 
     # Файловый вывод
     if file_enabled:

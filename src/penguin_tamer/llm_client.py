@@ -13,18 +13,15 @@ from penguin_tamer.config_manager import config
 from penguin_tamer.themes import get_code_theme
 from penguin_tamer.debug import debug_print_messages
 from penguin_tamer.error_handlers import ErrorHandler, ErrorContext, ErrorSeverity
-
-# Ленивый импорт только для OpenAI (самый тяжелый модуль - 531ms)
-_openai_client = None
+from penguin_tamer.utils.lazy_import import lazy_import
 
 
-def _get_openai_client():
+# Ленивый импорт OpenAI клиента
+@lazy_import
+def get_openai_client():
     """Ленивый импорт OpenAI клиента для быстрого запуска --version, --help"""
-    global _openai_client
-    if _openai_client is None:
-        from openai import OpenAI
-        _openai_client = OpenAI
-    return _openai_client
+    from openai import OpenAI
+    return OpenAI
 
 
 def _create_markdown(text: str, theme_name: str = "default"):
@@ -40,6 +37,197 @@ def _create_markdown(text: str, theme_name: str = "default"):
     """
     code_theme = get_code_theme(theme_name)
     return Markdown(text, code_theme=code_theme)
+
+
+class StreamProcessor:
+    """Processor for handling streaming LLM responses.
+    
+    Encapsulates the logic of processing streaming responses from LLM API,
+    including error handling, chunk processing, and live display management.
+    """
+    
+    def __init__(self, client: 'OpenRouterClient'):
+        """Initialize stream processor.
+        
+        Args:
+            client: Parent OpenRouterClient instance
+        """
+        self.client = client
+        self.interrupted = threading.Event()
+        self.reply_parts: List[str] = []
+        
+    def process(self, user_input: str) -> str:
+        """Process user input and return AI response.
+        
+        Args:
+            user_input: User's message text
+            
+        Returns:
+            Complete AI response text
+        """
+        self.client.messages.append({"role": "user", "content": user_input})
+        
+        # Create error handler
+        debug_mode = config.get("global", "debug", False)
+        error_handler = ErrorHandler(console=self.client.console, debug_mode=debug_mode)
+        
+        # Phase 1: Connect and wait for first chunk
+        stream, first_chunk = self._connect_and_wait(error_handler)
+        if stream is None:
+            return ""
+        
+        # Phase 2: Process stream with live display
+        try:
+            reply = self._stream_with_live_display(stream, first_chunk)
+        except KeyboardInterrupt:
+            self.interrupted.set()
+            raise
+        
+        # Phase 3: Finalize
+        return self._finalize_response(reply)
+    
+    @contextmanager
+    def _managed_spinner(self, initial_message: str):
+        """Context manager для управления спиннером."""
+        stop_spinner = threading.Event()
+        status_message = {'text': initial_message}
+        spinner_thread = threading.Thread(
+            target=self.client._spinner,
+            args=(stop_spinner, status_message),
+            daemon=True
+        )
+        spinner_thread.start()
+        
+        try:
+            yield status_message
+        finally:
+            stop_spinner.set()
+            if spinner_thread.is_alive():
+                spinner_thread.join(timeout=0.3)
+    
+    def _connect_and_wait(self, error_handler: ErrorHandler) -> tuple:
+        """Connect to API and wait for first chunk.
+        
+        Returns:
+            Tuple of (stream, first_chunk) or (None, None) on error
+        """
+        with self._managed_spinner(t('Connecting...')) as status_message:
+            try:
+                # Send API request
+                api_params = self.client._prepare_api_params()
+                stream = self.client.client.chat.completions.create(**api_params)
+                
+                # Wait for first chunk
+                status_message['text'] = t('Ai thinking...')
+                first_chunk = self._wait_first_chunk(stream)
+                
+                if first_chunk:
+                    self.reply_parts.append(first_chunk)
+                
+                return stream, first_chunk
+                
+            except KeyboardInterrupt:
+                self.interrupted.set()
+                raise
+            except Exception as e:
+                self.interrupted.set()
+                context = ErrorContext(
+                    operation="streaming API request",
+                    severity=ErrorSeverity.ERROR,
+                    recoverable=True
+                )
+                error_message = error_handler.handle(e, context)
+                self.client.console.print(error_message)
+                return None, None
+    
+    def _wait_first_chunk(self, stream) -> Optional[str]:
+        """Ожидание первого чанка с контентом."""
+        try:
+            for chunk in stream:
+                if self.interrupted.is_set():
+                    raise KeyboardInterrupt("Stream interrupted")
+
+                if not hasattr(chunk, 'choices') or not chunk.choices:
+                    continue
+                if not hasattr(chunk.choices[0], 'delta'):
+                    continue
+
+                delta = chunk.choices[0].delta
+                if hasattr(delta, 'content') and delta.content:
+                    return delta.content
+        except (AttributeError, IndexError):
+            return None
+        return None
+    
+    def _stream_with_live_display(self, stream, first_chunk: str) -> str:
+        """Process stream with live markdown display.
+        
+        Args:
+            stream: API response stream
+            first_chunk: First chunk of content
+            
+        Returns:
+            Complete response text
+        """
+        sleep_time = config.get("global", "sleep_time", 0.01)
+        refresh_per_second = config.get("global", "refresh_per_second", 10)
+        theme_name = config.get("global", "markdown_theme", "default")
+
+        with Live(
+            console=self.client.console,
+            refresh_per_second=refresh_per_second,
+            auto_refresh=True
+        ) as live:
+            # Show first chunk
+            if first_chunk:
+                markdown = _create_markdown(first_chunk, theme_name)
+                live.update(markdown)
+
+            # Process remaining chunks
+            try:
+                for chunk in stream:
+                    if self.interrupted.is_set():
+                        raise KeyboardInterrupt("Stream interrupted")
+
+                    if not hasattr(chunk, 'choices') or not chunk.choices:
+                        continue
+                    if not hasattr(chunk.choices[0], 'delta'):
+                        continue
+
+                    if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
+                        text = chunk.choices[0].delta.content
+                        self.reply_parts.append(text)
+                        full_text = "".join(self.reply_parts)
+                        markdown = _create_markdown(full_text, theme_name)
+                        live.update(markdown)
+                        time.sleep(sleep_time)
+            except (AttributeError, IndexError):
+                pass
+
+        return "".join(self.reply_parts)
+    
+    def _finalize_response(self, reply: str) -> str:
+        """Finalize response and update messages.
+        
+        Args:
+            reply: Complete response text
+            
+        Returns:
+            Final response text
+        """
+        # Check for empty response
+        if not reply or not reply.strip():
+            warning = t('Warning: Empty response received from API.')
+            self.client.console.print(f"[dim italic]{warning}[/dim italic]")
+            return ""
+        
+        # Add to message history
+        self.client.messages.append({"role": "assistant", "content": reply})
+        
+        # Debug output if enabled
+        self.client._debug_print_if_enabled("response")
+        
+        return reply
 
 
 @dataclass
@@ -163,32 +351,6 @@ class OpenRouterClient:
         except KeyboardInterrupt:
             pass
 
-    @contextmanager
-    def _managed_spinner(self, initial_message: str):
-        """Context manager для управления спиннером с автоматической очисткой.
-
-        Args:
-            initial_message: Начальное сообщение для спиннера
-
-        Yields:
-            dict: Словарь с ключом 'text' для обновления сообщения спиннера
-        """
-        stop_spinner = threading.Event()
-        status_message = {'text': initial_message}
-        spinner_thread = threading.Thread(
-            target=self._spinner,
-            args=(stop_spinner, status_message),
-            daemon=True
-        )
-        spinner_thread.start()
-
-        try:
-            yield status_message
-        finally:
-            stop_spinner.set()
-            if spinner_thread.is_alive():
-                spinner_thread.join(timeout=0.3)
-
     def _prepare_api_params(self) -> dict:
         """Подготовка параметров для API запроса.
 
@@ -231,102 +393,6 @@ class OpenRouterClient:
                 phase=phase
             )
 
-    def _wait_first_chunk(self, stream, interrupted: threading.Event) -> Optional[str]:
-        """Ожидание первого чанка с контентом.
-
-        Args:
-            stream: Поток ответов от API
-            interrupted: Флаг прерывания
-
-        Returns:
-            str или None: Первый чанк контента или None если не найден
-
-        Raises:
-            KeyboardInterrupt: Если установлен флаг прерывания
-        """
-        try:
-            for chunk in stream:
-                if interrupted.is_set():
-                    raise KeyboardInterrupt("Stream interrupted")
-
-                # Проверяем корректность структуры ответа
-                if not hasattr(chunk, 'choices') or not chunk.choices:
-                    continue
-
-                if not hasattr(chunk.choices[0], 'delta'):
-                    continue
-
-                delta = chunk.choices[0].delta
-                if hasattr(delta, 'content') and delta.content:
-                    return delta.content
-        except (AttributeError, IndexError):
-            # Некорректная структура ответа
-            return None
-
-        return None
-
-    def _process_stream_with_live(
-        self,
-        stream,
-        interrupted: threading.Event,
-        first_chunk: str,
-        reply_parts: List[str]
-    ) -> str:
-        """Обработка потока с Live отображением Markdown.
-
-        Args:
-            stream: Поток ответов от API
-            interrupted: Флаг прерывания
-            first_chunk: Первый чанк контента
-            reply_parts: Список для накопления частей ответа
-
-        Returns:
-            str: Полный ответ
-
-        Raises:
-            KeyboardInterrupt: Если установлен флаг прерывания
-        """
-        sleep_time = config.get("global", "sleep_time", 0.01)
-        refresh_per_second = config.get("global", "refresh_per_second", 10)
-        theme_name = config.get("global", "markdown_theme", "default")
-
-        with Live(
-            console=self.console,
-            refresh_per_second=refresh_per_second,
-            auto_refresh=True
-        ) as live:
-            # Показываем первый чанк
-            if first_chunk:
-                markdown = _create_markdown(first_chunk, theme_name)
-                live.update(markdown)
-
-            # Продолжаем обрабатывать остальные чанки
-            try:
-                for chunk in stream:
-                    if interrupted.is_set():
-                        raise KeyboardInterrupt("Stream interrupted")
-
-                    # Проверяем корректность структуры ответа
-                    if not hasattr(chunk, 'choices') or not chunk.choices:
-                        continue
-
-                    if not hasattr(chunk.choices[0], 'delta'):
-                        continue
-
-                    if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
-                        text = chunk.choices[0].delta.content
-                        reply_parts.append(text)
-                        # Объединяем все части и обрабатываем как Markdown
-                        full_text = "".join(reply_parts)
-                        markdown = _create_markdown(full_text, theme_name)
-                        live.update(markdown)
-                        time.sleep(sleep_time)
-            except (AttributeError, IndexError):
-                # Некорректная структура ответа - продолжаем с тем что есть
-                pass
-
-        return "".join(reply_parts)
-
     @property
     def client(self):
         """Ленивая инициализация OpenAI клиента"""
@@ -339,7 +405,7 @@ class OpenRouterClient:
                     "X-Title": "Penguin Tamer"
                 }
 
-            self._client = _get_openai_client()(
+            self._client = get_openai_client()(
                 api_key=self.api_key,
                 base_url=self.api_url,
                 default_headers=default_headers
@@ -358,69 +424,8 @@ class OpenRouterClient:
         Raises:
             KeyboardInterrupt: При прерывании пользователем
         """
-        self.messages.append({"role": "user", "content": user_input})
-        reply_parts = []
-        interrupted = threading.Event()
-
-        # Create error handler with console and debug mode
-        debug_mode = config.get("global", "debug", False)
-        error_handler = ErrorHandler(console=self.console, debug_mode=debug_mode)
-
-        with self._managed_spinner(t('Connecting...')) as status_message:
-            try:
-                # Отправка запроса
-                api_params = self._prepare_api_params()
-                stream = self.client.chat.completions.create(**api_params)
-
-                # Ожидание ответа от модели
-                status_message['text'] = t('Ai thinking...')
-
-                # Ждем первый чанк с контентом
-                first_chunk = self._wait_first_chunk(stream, interrupted)
-                if first_chunk:
-                    reply_parts.append(first_chunk)
-
-            except KeyboardInterrupt:
-                interrupted.set()
-                raise
-
-            except Exception as e:
-                # Centralized error handling
-                interrupted.set()
-                context = ErrorContext(
-                    operation="streaming API request",
-                    severity=ErrorSeverity.ERROR,
-                    recoverable=True
-                )
-                error_message = error_handler.handle(e, context)
-                self.console.print(error_message)
-                return ""
-
-        # Спиннер остановлен, начинаем Live отображение
-        try:
-            reply = self._process_stream_with_live(
-                stream,
-                interrupted,
-                first_chunk,
-                reply_parts
-            )
-
-            # Проверяем, что ответ не пустой
-            if not reply or not reply.strip():
-                warning = t('Warning: Empty response received from API.')
-                self.console.print(f"[dim italic]{warning}[/dim italic]")
-                return ""
-
-            self.messages.append({"role": "assistant", "content": reply})
-
-            # Debug: показываем структуру ответа
-            self._debug_print_if_enabled("response")
-
-            return reply
-
-        except KeyboardInterrupt:
-            interrupted.set()
-            raise
+        processor = StreamProcessor(self)
+        return processor.process(user_input)
 
     def __str__(self) -> str:
         """Человекочитаемое представление клиента со всеми полями.

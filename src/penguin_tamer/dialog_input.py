@@ -2,16 +2,23 @@
 """Модуль для оформления ввода в диалоговом режиме."""
 from pathlib import Path
 from prompt_toolkit.history import FileHistory
+from penguin_tamer.utils.lazy_import import lazy_import
 
 
-def _ensure_prompt_toolkit():
-    """Ленивый импорт prompt_toolkit"""
-    if '_prompt_toolkit_imported' not in globals() or not globals().get('_prompt_toolkit_imported'):
-        global HTML, prompt, Style, Processor, Transformation, _prompt_toolkit_imported
-        from prompt_toolkit import HTML, prompt
-        from prompt_toolkit.styles import Style
-        from prompt_toolkit.layout.processors import Processor, Transformation
-        _prompt_toolkit_imported = True
+# Ленивые импорты prompt_toolkit через декоратор
+@lazy_import
+def get_prompt_toolkit():
+    """Ленивый импорт prompt_toolkit компонентов"""
+    from prompt_toolkit import HTML, prompt
+    from prompt_toolkit.styles import Style
+    from prompt_toolkit.layout.processors import Processor, Transformation
+    return {
+        'HTML': HTML,
+        'prompt': prompt,
+        'Style': Style,
+        'Processor': Processor,
+        'Transformation': Transformation
+    }
 
 
 class FilteredFileHistory(FileHistory):
@@ -39,9 +46,11 @@ class DialogInputFormatter:
         Args:
             history_file_path: Путь к файлу истории команд
         """
-        _ensure_prompt_toolkit()
-        from prompt_toolkit.styles import Style
-        from prompt_toolkit.layout.processors import Processor, Transformation
+        # Получаем компоненты prompt_toolkit
+        pt = get_prompt_toolkit()
+        Style = pt['Style']
+        Processor = pt['Processor']
+        Transformation = pt['Transformation']
 
         # Используем FilteredFileHistory вместо FileHistory
         self.history = FilteredFileHistory(str(history_file_path))
@@ -90,7 +99,10 @@ class DialogInputFormatter:
         Returns:
             Введенная пользователем строка
         """
-        from prompt_toolkit import HTML, prompt
+        # Получаем компоненты prompt_toolkit
+        pt = get_prompt_toolkit()
+        HTML = pt['HTML']
+        prompt = pt['prompt']
 
         # Если функция перевода не передана, используем заглушку
         if t is None:

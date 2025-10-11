@@ -2,66 +2,154 @@ import subprocess
 import platform
 import tempfile
 import os
+import threading
 from abc import ABC, abstractmethod
 from rich.console import Console
 from penguin_tamer.i18n import t
 
 
-# Абстрактный базовый класс для исполнителей команд
-class CommandExecutor(ABC):
-    """Базовый интерфейс для исполнителей команд разных ОС"""
+# === Базовый класс с Template Method паттерном ===
+
+class BaseCommandExecutor(ABC):
+    """Базовый исполнитель с общей логикой выполнения команд.
+
+    Использует Template Method паттерн для устранения дублирования кода между
+    платформами. Общая логика управления потоками, вывода и обработки ошибок
+    находится здесь, а специфичные для ОС детали делегируются подклассам.
+    """
 
     @abstractmethod
-    def execute(self, code_block: str) -> subprocess.CompletedProcess:
-        """
-        Выполняет блок кода и возвращает результат
+    def _create_process(self, code_block: str) -> subprocess.Popen:
+        """Создает процесс для выполнения команды (специфично для ОС).
 
         Args:
-            code_block (str): Блок кода для выполнения
+            code_block: Код для выполнения
+
+        Returns:
+            subprocess.Popen: Созданный процесс
+        """
+        pass
+
+    @abstractmethod
+    def _decode_line(self, line: bytes) -> str:
+        """Декодирует байты в строку (специфично для ОС).
+
+        Args:
+            line: Байты для декодирования
+
+        Returns:
+            str: Декодированная строка
+        """
+        pass
+
+    def _cleanup(self, process: subprocess.Popen) -> None:
+        """Очищает ресурсы после выполнения (опционально переопределяется).
+
+        Args:
+            process: Процесс для очистки
+        """
+        pass
+
+    def _start_stderr_thread(
+        self,
+        process: subprocess.Popen,
+        stderr_lines: list
+    ) -> threading.Thread:
+        """Запускает поток для чтения stderr.
+
+        Args:
+            process: Процесс для чтения
+            stderr_lines: Список для накопления строк stderr
+
+        Returns:
+            threading.Thread: Запущенный поток
+        """
+        def read_stderr():
+            if process.stderr:
+                for line in process.stderr:
+                    decoded = self._decode_line(line)
+                    if decoded:
+                        stderr_lines.append(decoded)
+
+        thread = threading.Thread(target=read_stderr, daemon=True)
+        thread.start()
+        return thread
+
+    def _process_stdout(
+        self,
+        process: subprocess.Popen,
+        stdout_lines: list
+    ) -> None:
+        """Обрабатывает stdout в реальном времени.
+
+        Args:
+            process: Процесс для чтения
+            stdout_lines: Список для накопления строк stdout
+        """
+        if process.stdout:
+            for line in process.stdout:
+                decoded = self._decode_line(line)
+                if decoded:
+                    stdout_lines.append(decoded)
+                    print(decoded)  # Выводим сразу!
+
+    def _terminate_process(self, process: subprocess.Popen) -> None:
+        """Завершает процесс при прерывании.
+
+        Args:
+            process: Процесс для завершения
+        """
+        try:
+            process.terminate()
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+
+    def _create_result(
+        self,
+        process: subprocess.Popen,
+        stdout_lines: list,
+        stderr_lines: list
+    ) -> subprocess.CompletedProcess:
+        """Создает объект CompletedProcess с результатами.
+
+        Args:
+            process: Завершенный процесс
+            stdout_lines: Строки stdout
+            stderr_lines: Строки stderr
+
+        Returns:
+            subprocess.CompletedProcess: Результат выполнения
+        """
+        return subprocess.CompletedProcess(
+            args=getattr(process.args, '__iter__', lambda: [process.args])(),
+            returncode=process.returncode,
+            stdout='\n'.join(stdout_lines),
+            stderr='\n'.join(stderr_lines)
+        )
+
+    def execute(self, code_block: str) -> subprocess.CompletedProcess:
+        """Шаблонный метод выполнения команды.
+
+        Определяет общий алгоритм выполнения, делегируя специфичные
+        детали подклассам через абстрактные методы.
+
+        Args:
+            code_block: Блок кода для выполнения
 
         Returns:
             subprocess.CompletedProcess: Результат выполнения команды
         """
+        process = self._create_process(code_block)
+        stdout_lines, stderr_lines = [], []
 
+        # Запускаем поток для stderr
+        stderr_thread = self._start_stderr_thread(process, stderr_lines)
 
-# Исполнитель команд для Linux
-class LinuxCommandExecutor(CommandExecutor):
-    """Исполнитель команд для Linux/Unix систем"""
-
-    def execute(self, code_block: str) -> subprocess.CompletedProcess:
-        """Выполняет bash-команды в Linux с выводом в реальном времени"""
-        import threading
-
-        # Используем Popen для вывода в реальном времени
-        process = subprocess.Popen(
-            code_block,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True  # Используем текстовый режим для автоматического декодирования
-        )
-
-        # Буферы для накопления вывода
-        stdout_lines = []
-        stderr_lines = []
-
-        # Функция для чтения stderr в отдельном потоке
-        def read_stderr():
-            if process.stderr:
-                for line in process.stderr:
-                    stderr_lines.append(line.rstrip('\n'))
-
-        # Запускаем поток для чтения stderr
-        stderr_thread = threading.Thread(target=read_stderr, daemon=True)
-        stderr_thread.start()
-
-        # Читаем stdout построчно в основном потоке и сразу выводим
         try:
-            if process.stdout:
-                for line in process.stdout:
-                    line_clean = line.rstrip('\n')
-                    stdout_lines.append(line_clean)
-                    print(line_clean)  # Выводим сразу!
+            # Обрабатываем stdout в основном потоке
+            self._process_stdout(process, stdout_lines)
 
             # Ждем завершения процесса
             process.wait()
@@ -70,148 +158,110 @@ class LinuxCommandExecutor(CommandExecutor):
             stderr_thread.join(timeout=1)
 
         except KeyboardInterrupt:
-            # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
-            try:
-                process.terminate()
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
-            # Ждем поток stderr
+            # Обрабатываем Ctrl+C
+            self._terminate_process(process)
             stderr_thread.join(timeout=1)
             raise
 
-        # Создаем объект CompletedProcess для совместимости
-        result = subprocess.CompletedProcess(
-            args=code_block,
-            returncode=process.returncode,
-            stdout='\n'.join(stdout_lines),
-            stderr='\n'.join(stderr_lines)
+        finally:
+            # Очищаем ресурсы
+            self._cleanup(process)
+
+        return self._create_result(process, stdout_lines, stderr_lines)
+
+
+# === Платформо-специфичные реализации ===
+
+class LinuxCommandExecutor(BaseCommandExecutor):
+    """Исполнитель команд для Linux/Unix систем."""
+
+    def _create_process(self, code_block: str) -> subprocess.Popen:
+        """Создает bash процесс для Linux."""
+        return subprocess.Popen(
+            code_block,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True  # Текстовый режим для автоматического декодирования
         )
 
-        return result
+    def _decode_line(self, line: bytes | str) -> str:
+        """Декодирует строку в Linux (простая логика)."""
+        if isinstance(line, str):
+            return line.rstrip('\n')
+        return line.decode('utf-8', errors='replace').rstrip('\n')
 
 
-# Исполнитель команд для Windows
-class WindowsCommandExecutor(CommandExecutor):
-    """Исполнитель команд для Windows систем"""
+class WindowsCommandExecutor(BaseCommandExecutor):
+    """Исполнитель команд для Windows систем."""
 
-    def _decode_line_windows(self, line_bytes: bytes) -> str:
-        """Безопасное декодирование строки в Windows с учетом разных кодировок"""
-        # Список кодировок для попытки декодирования в Windows
+    def __init__(self):
+        """Инициализация с поддержкой временных файлов."""
+        self._temp_file = None
+
+    def _create_process(self, code_block: str) -> subprocess.Popen:
+        """Создает cmd процесс через временный .bat файл для Windows."""
+        # Предобработка кода для Windows
+        code = '@echo off\n' + code_block.replace('@echo off', '')
+        code = code.replace('pause', 'rem pause')
+
+        # Создаем временный .bat файл
+        fd, self._temp_file = tempfile.mkstemp(suffix='.bat')
+
+        with os.fdopen(fd, 'w', encoding='cp866', errors='replace') as f:
+            f.write(code)
+
+        return subprocess.Popen(
+            [self._temp_file],
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=False,  # Байтовый режим для корректной работы с кодировками
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+
+    def _decode_line(self, line: bytes) -> str:
+        """Декодирует строку в Windows с учетом множества кодировок."""
+        if isinstance(line, str):
+            return line.strip()
+
+        # Список кодировок для Windows
         encodings = ['cp866', 'cp1251', 'utf-8', 'ascii']
 
         for encoding in encodings:
             try:
-                decoded = line_bytes.decode(encoding, errors='strict')
-                return decoded.strip()
+                return line.decode(encoding, errors='strict').strip()
             except UnicodeDecodeError:
                 continue
 
-        # Если ничего не сработало, используем замену с ошибками
+        # Fallback с заменой ошибок
         try:
-            return line_bytes.decode('utf-8', errors='replace').strip()
+            return line.decode('utf-8', errors='replace').strip()
         except Exception:
-            return line_bytes.decode('latin1', errors='replace').strip()
+            return line.decode('latin1', errors='replace').strip()
 
-    def execute(self, code_block: str) -> subprocess.CompletedProcess:
-        """Выполняет bat-команды в Windows через временный файл с выводом в реальном времени"""
-        import threading
-
-        # Предобработка кода для Windows - отключаем echo для предотвращения дублирования команд
-        code = '@echo off\n' + code_block.replace('@echo off', '')
-        code = code.replace('pause', 'rem pause')
-
-        # Создаем временный .bat файл с правильной кодировкой
-        fd, temp_path = tempfile.mkstemp(suffix='.bat')
-
-        try:
-            with os.fdopen(fd, 'w', encoding='cp866', errors='replace') as f:
-                f.write(code)
-
-            # Запускаем команду
-            process = subprocess.Popen(
-                [temp_path],
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=False,  # Используем байты для корректной работы с кодировками
-                creationflags=subprocess.CREATE_NO_WINDOW  # Предотвращаем создание окна консоли
-            )
-
-            # Буферы для накопления вывода
-            stdout_lines = []
-            stderr_lines = []
-
-            # Функция для чтения stderr в отдельном потоке
-            def read_stderr():
-                if process.stderr:
-                    for line in process.stderr:
-                        if line:
-                            decoded = self._decode_line_windows(line)
-                            if decoded:
-                                stderr_lines.append(decoded)
-
-            # Запускаем поток для чтения stderr
-            stderr_thread = threading.Thread(target=read_stderr, daemon=True)
-            stderr_thread.start()
-
-            # Читаем stdout построчно в основном потоке и сразу выводим
+    def _cleanup(self, process: subprocess.Popen) -> None:
+        """Удаляет временный .bat файл."""
+        if self._temp_file:
             try:
-                if process.stdout:
-                    for line in process.stdout:
-                        if line:
-                            decoded = self._decode_line_windows(line)
-                            if decoded:
-                                stdout_lines.append(decoded)
-                                print(decoded)  # Выводим сразу!
-
-                # Ждем завершения процесса
-                process.wait()
-
-                # Даем потоку stderr время завершиться
-                stderr_thread.join(timeout=1)
-
-            except KeyboardInterrupt:
-                # Если получили Ctrl+C, завершаем процесс и пробрасываем исключение
-                try:
-                    process.terminate()
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
-                # Ждем поток stderr
-                stderr_thread.join(timeout=1)
-                raise
-
-            # Создаем объект CompletedProcess для совместимости
-            result = subprocess.CompletedProcess(
-                args=[temp_path],
-                returncode=process.returncode,
-                stdout='\n'.join(stdout_lines),
-                stderr='\n'.join(stderr_lines)
-            )
-
-            return result
-        finally:
-            # Всегда удаляем временный файл
-            try:
-                os.unlink(temp_path)
+                os.unlink(self._temp_file)
             except Exception:
                 pass
+            finally:
+                self._temp_file = None
 
 
-# Фабрика для создания исполнителей команд
+# === Фабрика ===
 class CommandExecutorFactory:
     """Фабрика для создания исполнителей команд в зависимости от ОС"""
 
     @staticmethod
-    def create_executor() -> CommandExecutor:
+    def create_executor() -> BaseCommandExecutor:
         """
         Создает исполнитель команд в зависимости от текущей ОС
 
         Returns:
-            CommandExecutor: Соответствующий исполнитель для текущей ОС
+            BaseCommandExecutor: Соответствующий исполнитель для текущей ОС
         """
         system = platform.system().lower()
         if system == "windows":
