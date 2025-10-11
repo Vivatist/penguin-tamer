@@ -153,6 +153,53 @@ If the response contains code blocks — they are numbered. To run code, simply 
 
 ![dialog mode](/docs/img/en_img2.gif)
 
+## Demo Mode
+
+### What is Demo Mode?
+
+Demo Mode allows you to record and replay interactions with penguin-tamer. Perfect for creating tutorials, automated testing, and demonstrations.
+
+### Available Modes
+
+- **record** - Records all interactions to a file
+- **play** - Replays recorded interactions from a file  
+- **robot** - Fully automated playback with human-like typing simulation
+- **off** - Demo mode disabled (default)
+
+### Quick Start
+
+**1. Record a session:**
+```yaml
+# config.yaml
+demo:
+  mode: record
+  file: my_demo.json
+```
+
+**2. Replay with robot mode:**
+```yaml
+# config.yaml
+demo:
+  mode: robot
+  file: my_demo.json
+```
+
+The program will automatically type all commands with realistic delays, simulating human typing!
+
+### Robot Mode Features
+
+- **Human-like typing** - Random delays between characters (0.05-0.3 seconds)
+- **Smart delays** - Longer pauses for punctuation and capital letters
+- **Random hesitations** - 5% chance of brief "thinking" pauses
+- **Full automation** - No user input required
+
+### Demo Mode Documentation
+
+- [DEMO_MODE.md](docs/DEMO_MODE.md) - Complete demo mode guide
+- [ROBOT_MODE_QUICK.md](docs/ROBOT_MODE_QUICK.md) - Quick start for robot mode
+- [DEMO_ROBOT_MODE.md](docs/DEMO_ROBOT_MODE.md) - Detailed robot mode documentation
+- [DEMO_USER_ACTIONS.md](docs/DEMO_USER_ACTIONS.md) - User actions tracking
+
 ## Security
 
 > [!WARNING]

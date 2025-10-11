@@ -171,6 +171,13 @@ def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) 
     result = get_execute_handler()(console, command)
     console.print()
 
+    # Записываем действие пользователя в демо ПОСЛЕ выполнения
+    if chat_client.demo_manager and chat_client.demo_manager.is_recording():
+        recorder = chat_client.demo_manager.get_recorder()
+        if recorder:
+            context = f"Exit code: {result.get('exit_code', -1)}, Success: {result.get('success', False)}"
+            recorder.record_user_action_only('command', prompt, context)
+
     # Добавляем команду и результат в контекст
     _add_command_to_context(chat_client, command, result)
 
@@ -200,6 +207,13 @@ def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt:
         result = get_script_executor()(console, code_blocks, block_index)
         console.print()
 
+        # Записываем действие пользователя в демо ПОСЛЕ выполнения
+        if chat_client.demo_manager and chat_client.demo_manager.is_recording():
+            recorder = chat_client.demo_manager.get_recorder()
+            if recorder:
+                context = f"Exit code: {result.get('exit_code', -1)}, Success: {result.get('success', False)}"
+                recorder.record_user_action_only('code_block', prompt, context)
+
         # Добавляем команду и результат в контекст
         _add_command_to_context(chat_client, code, result, block_number=block_index)
 
@@ -215,6 +229,10 @@ def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> li
     Returns:
         List of code blocks from AI response
     """
+    # Записываем действие пользователя в демо
+    if chat_client.demo_manager and chat_client.demo_manager.is_recording():
+        chat_client.demo_manager.add_user_action('query', prompt)
+
     reply = chat_client.ask_stream(prompt)
     code_blocks = []
 
@@ -262,15 +280,55 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     # Process initial prompt if provided
     last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
 
+    # Проверяем режим robot
+    is_robot_mode = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
+    robot_action_count = 0  # Счетчик действий для робота
+
     # Main dialog loop
     while True:
         try:
-            # Get user input
-            user_prompt = input_formatter.get_input(
-                console,
-                has_code_blocks=bool(last_code_blocks),
-                t=t
-            )
+            # В режиме robot автоматически получаем следующее действие
+            if is_robot_mode:
+                player = chat_client.demo_manager.get_player()
+                if player:
+                    action = player.get_next_user_action()
+                    if action:
+                        # Пауза перед вводом (кроме самого первого действия)
+                        if robot_action_count > 0:
+                            import time
+                            import random
+                            pause = random.uniform(3.0, 4.0)
+                            time.sleep(pause)
+                        
+                        robot_action_count += 1
+                        user_prompt = action['value']
+                        console.print("[dim]>[/dim] ", end='')
+                        
+                        # Импортируем функцию эмуляции печати
+                        from penguin_tamer.demo_recorder import _simulate_human_typing
+                        _simulate_human_typing(user_prompt, console)
+                        
+                        # Небольшая пауза после "нажатия Enter"
+                        import time
+                        time.sleep(0.3)
+                    else:
+                        # Нет больше действий - переходим в обычный режим
+                        is_robot_mode = False
+                        user_prompt = input_formatter.get_input(
+                            console,
+                            has_code_blocks=bool(last_code_blocks),
+                            t=t
+                        )
+                else:
+                    console.print("[yellow]Ошибка: player не найден в robot mode[/yellow]")
+                    break
+            else:
+                # Обычный режим - запрашиваем ввод у пользователя
+                user_prompt = input_formatter.get_input(
+                    console,
+                    has_code_blocks=bool(last_code_blocks),
+                    t=t
+                )
 
             if not user_prompt:
                 continue

@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 import time
 from dataclasses import dataclass, field
 from contextlib import contextmanager
+from datetime import datetime
 
 from rich.markdown import Markdown
 from rich.live import Live
@@ -14,6 +15,7 @@ from penguin_tamer.themes import get_code_theme
 from penguin_tamer.debug import debug_print_messages
 from penguin_tamer.error_handlers import ErrorHandler, ErrorContext, ErrorSeverity
 from penguin_tamer.utils.lazy_import import lazy_import
+from penguin_tamer.demo_recorder import DemoManager, DemoResponse
 
 
 # Ленивый импорт OpenAI клиента
@@ -55,6 +57,7 @@ class StreamProcessor:
         self.client = client
         self.interrupted = threading.Event()
         self.reply_parts: List[str] = []
+        self.recorded_chunks: List[str] = []  # Для записи чанков в demo mode
 
     def process(self, user_input: str) -> str:
         """Process user input and return AI response.
@@ -173,6 +176,9 @@ class StreamProcessor:
         refresh_per_second = config.get("global", "refresh_per_second", 10)
         theme_name = config.get("global", "markdown_theme", "default")
 
+        # Clear recorded chunks for new recording
+        self.recorded_chunks = []
+
         with Live(
             console=self.client.console,
             refresh_per_second=refresh_per_second,
@@ -180,6 +186,7 @@ class StreamProcessor:
         ) as live:
             # Show first chunk
             if first_chunk:
+                self.recorded_chunks.append(first_chunk)  # Record first chunk
                 markdown = _create_markdown(first_chunk, theme_name)
                 live.update(markdown)
 
@@ -197,6 +204,7 @@ class StreamProcessor:
                     if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
                         self.reply_parts.append(text)
+                        self.recorded_chunks.append(text)  # Record each chunk
                         full_text = "".join(self.reply_parts)
                         markdown = _create_markdown(full_text, theme_name)
                         live.update(markdown)
@@ -230,6 +238,102 @@ class StreamProcessor:
         return reply
 
 
+class DemoStreamProcessor(StreamProcessor):
+    """Stream processor для режима воспроизведения демо-записей.
+
+    Наследует StreamProcessor и переопределяет ключевые методы для
+    воспроизведения записанных ответов вместо реальных API вызовов.
+    """
+
+    def __init__(self, client: 'OpenRouterClient', demo_manager: DemoManager):
+        """Initialize demo stream processor.
+
+        Args:
+            client: Parent OpenRouterClient instance
+            demo_manager: Manager for demo recording/playback
+        """
+        super().__init__(client)
+        self.demo_manager = demo_manager
+
+    def process(self, user_input: str) -> str:
+        """Process user input using demo playback.
+
+        Args:
+            user_input: User's message text (ignored in demo mode)
+
+        Returns:
+            Recorded AI response text
+        """
+        self.client.messages.append({"role": "user", "content": user_input})
+
+        player = self.demo_manager.get_player()
+        if player is None or not player.has_more_responses():
+            warning = t('Demo playback: No more recorded responses.')
+            self.client.console.print(f"[yellow]{warning}[/yellow]")
+            return ""
+
+        # Get next recorded response
+        demo_response = player.play_next_response(user_input)
+        if demo_response is None:
+            return ""
+
+        # Phase 1: Show spinner (имитируем ожидание)
+        spinner_delay = player.get_spinner_delay()
+        self._show_demo_spinner(spinner_delay)
+
+        # Phase 2: Stream chunks with live display
+        try:
+            reply = self._stream_demo_chunks(demo_response)
+        except KeyboardInterrupt:
+            self.interrupted.set()
+            raise
+
+        # Phase 3: Finalize
+        return self._finalize_response(reply)
+
+    def _show_demo_spinner(self, delay: float) -> None:
+        """Show spinner for specified time.
+
+        Args:
+            delay: Time to show spinner (seconds)
+        """
+        with self._managed_spinner(t('Connecting...')) as status_message:
+            time.sleep(delay * 0.3)  # 30% времени на "Connecting..."
+            status_message['text'] = t('Ai thinking...')
+            time.sleep(delay * 0.7)  # 70% времени на "Ai thinking..."
+
+    def _stream_demo_chunks(self, demo_response: DemoResponse) -> str:
+        """Stream recorded chunks with live markdown display.
+
+        Args:
+            demo_response: Recorded response to play
+
+        Returns:
+            Complete response text
+        """
+        sleep_time = config.get("global", "sleep_time", 0.01)
+        refresh_per_second = config.get("global", "refresh_per_second", 10)
+        theme_name = config.get("global", "markdown_theme", "default")
+
+        with Live(
+            console=self.client.console,
+            refresh_per_second=refresh_per_second,
+            auto_refresh=True
+        ) as live:
+            # Stream chunks from recorded response
+            for chunk in demo_response.chunks:
+                if self.interrupted.is_set():
+                    raise KeyboardInterrupt("Stream interrupted")
+
+                self.reply_parts.append(chunk)
+                full_text = "".join(self.reply_parts)
+                markdown = _create_markdown(full_text, theme_name)
+                live.update(markdown)
+                time.sleep(sleep_time)
+
+        return "".join(self.reply_parts)
+
+
 @dataclass
 class LLMConfig:
     """Complete LLM configuration including connection and generation parameters."""
@@ -260,10 +364,20 @@ class OpenRouterClient:
     # Internal state (not part of constructor)
     messages: List[Dict[str, str]] = field(init=False)
     _client: Optional[object] = field(default=None, init=False)
+    _demo_manager: Optional[DemoManager] = field(default=None, init=False)
+    _current_user_query: str = field(default="", init=False)  # Для записи запроса в demo mode
 
     def __post_init__(self):
         """Initialize internal state after dataclass construction."""
         self.messages = self.system_message.copy()
+
+        # Initialize demo manager if demo mode is enabled
+        demo_mode = config.get("global", "demo_mode", "off")
+        if demo_mode != "off":
+            demo_file = config.get("global", "demo_file", "demo_session.json")
+            demo_spinner_ms = config.get("global", "demo_spinner", 1000)
+            demo_spinner_sec = demo_spinner_ms / 1000.0  # Convert to seconds
+            self._demo_manager = DemoManager(demo_mode, demo_file, demo_spinner_sec)
 
     def init_dialog_mode(self, educational_prompt: List[Dict[str, str]]) -> None:
         """Initialize dialog mode by adding educational prompt to messages.
@@ -424,8 +538,41 @@ class OpenRouterClient:
         Raises:
             KeyboardInterrupt: При прерывании пользователем
         """
-        processor = StreamProcessor(self)
-        return processor.process(user_input)
+        # Save user query for demo recording
+        self._current_user_query = user_input
+
+        # Choose processor based on demo mode
+        if self._demo_manager and self._demo_manager.is_playing():
+            # Demo playback mode - use recorded responses
+            processor = DemoStreamProcessor(self, self._demo_manager)
+            response = processor.process(user_input)
+        else:
+            # Normal mode or recording mode
+            processor = StreamProcessor(self)
+            response = processor.process(user_input)
+
+            # If in recording mode, save the response
+            if self._demo_manager and self._demo_manager.is_recording():
+                recorder = self._demo_manager.get_recorder()
+                if recorder and hasattr(processor, 'recorded_chunks'):
+                    # Get metadata
+                    metadata = {
+                        'model': self.llm_config.model,
+                        'temperature': self.llm_config.temperature,
+                        'timestamp': datetime.now().isoformat()
+                    }
+                    # Get accumulated user actions
+                    user_actions = self._demo_manager.get_and_clear_user_actions()
+
+                    recorder.record_response(
+                        user_query=user_input,
+                        response=response,
+                        chunks=processor.recorded_chunks,
+                        metadata=metadata,
+                        user_actions=user_actions
+                    )
+
+        return response
 
     def __str__(self) -> str:
         """Человекочитаемое представление клиента со всеми полями.
@@ -465,3 +612,8 @@ class OpenRouterClient:
             parts.append(f"  {key}={val!r},")
         parts.append(")")
         return "\n".join(parts)
+
+    @property
+    def demo_manager(self) -> Optional['DemoManager']:
+        """Получить доступ к DemoManager для записи действий пользователя."""
+        return self._demo_manager

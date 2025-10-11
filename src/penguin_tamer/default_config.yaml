@@ -19,6 +19,11 @@ global:
   markdown_theme: "default" # Тема для Markdown: default, monokai, dracula, nord, solarized_dark, github, matrix, minimal
   debug_mode: false # Режим отладки: показывает структуру всех сообщений, отправляемых в LLM
 
+  # === Demo Mode Settings (не отображается в меню) ===
+  demo_mode: "off" # Режим демонстрации: "record" - запись, "play" - воспроизведение, "off" - выключен
+  demo_file: "demo_sessions/session.json" # Файл для записи/воспроизведения (относительно директории конфига пользователя)
+  demo_spinner: 1000 # Время отображения спиннера перед выводом в режиме play (миллисекунды)
+
 supported_LLMs:
   "Grok-4-Fast via OpenRouter":
     model: "google/gemini-2.0-flash-exp:free"
