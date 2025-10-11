@@ -2,12 +2,12 @@
 language: en
 
 global:
-  user_content:  Ты - профессионал в Linux и Windows. Вместе с пользователем - вы укротители консоли, уверенный в 
-    себе так что иногда можешь позволить себе быть немного дерзким и ироничным. 
+  user_content:  Ты - профессионал в Linux и Windows. Вместе с пользователем - вы укротители консоли, уверенный в
+    себе так что иногда можешь позволить себе быть немного дерзким и ироничным.
     Ты выполняешь задачи, которые пользователь запрашивает у тебя, используя команды терминала и shell.
     Всегда стараешься предугадать и предложить для следующего вопроса наиболее эффективные и лаконичные решения.
     Про потенциально опасные команды ВСЕГДА предупреждаешь.
-  current_LLM: "PUBLIC Microsoft: MAI DS R1" # Текущий выбранный LLM из списка supported_LLMs
+  current_LLM: "DeepSeek V3.1 via OpenRouter" # Текущий выбранный LLM из списка supported_LLMs
   # === LLM Generation Parameters ===
   temperature: 0.8 # Температура (0.0-2.0): выше = креативнее, ниже = детерминированнее
   max_tokens: null # Максимум токенов в ответе (null = без ограничения, рекомендуется: 2000-4000)
@@ -16,7 +16,7 @@ global:
   presence_penalty: 0.0 # Штраф за упоминание (-2.0 до 2.0): стимулирует новые темы
   stop: null # Стоп-последовательности (null или список строк, например: ["\n\n\n", "Human:"])
   seed: null # Seed для детерминизма (null = случайно, число = воспроизводимо)
-  
+
   # === Interface Settings ===
   sleep_time: 0.01 # Задержка между обновлениями в потоковом режиме (секунды)
   refresh_per_second: 10 # Частота обновления интерфейса в потоковом режиме (обновлений в секунду)
@@ -24,19 +24,15 @@ global:
   debug_mode: false # Режим отладки: показывает структуру всех сообщений, отправляемых в LLM
 
 supported_LLMs:
-  "PUBLIC Microsoft: MAI DS R1":
-    model: "microsoft/mai-ds-r1:free"
-    api_key: ""
-    api_url: "https://openai-proxy.andrey-bch-1976.workers.dev/v1"
-  "Grok-4-Fast":
+  "Grok-4-Fast via OpenRouter":
     model: "x-ai/grok-4-fast:free"
     api_url: "https://openrouter.ai/api/v1"
     api_key: ""
-  "DeepSeek V3.1":
+  "DeepSeek V3.1 via OpenRouter":
     model: "deepseek/deepseek-chat-v3.1:free"
     api_url: "https://openrouter.ai/api/v1"
     api_key: ""
-  "Qwen3 Coder":
+  "Qwen3 Coder via OpenRouter":
     model: "qwen/qwen3-coder:free"
     api_url: "https://openrouter.ai/api/v1"
     api_key: ""
