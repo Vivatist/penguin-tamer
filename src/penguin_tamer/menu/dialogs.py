@@ -8,6 +8,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Static
 
 from penguin_tamer.text_utils import format_api_key_display
+from penguin_tamer.menu.locales.menu_i18n import t
 
 
 class LLMEditDialog(ModalScreen):
@@ -36,40 +37,40 @@ class LLMEditDialog(ModalScreen):
         yield Container(
             Static(self.title_text, classes="llm-dialog-title"),
             Container(
-                Static("Название LLM:", classes="llm-field-label"),
+                Static(t("LLM Name:"), classes="llm-field-label"),
                 Input(
                     value=self.default_name,
                     id="llm-name-input",
                     disabled=not self.name_editable,
-                    placeholder="Любое, например: GPT-4, Claude, Gemini"
+                    placeholder=t("Any, for example: GPT-4, Claude, Gemini")
                 ),
-                Static("Model ID:", classes="llm-field-label"),
+                Static(t("Model ID:"), classes="llm-field-label"),
                 Input(
                     value=self.default_model,
                     id="llm-model-input",
-                    placeholder="Например: gpt-4-turbo-preview"
+                    placeholder=t("For example: gpt-4-turbo-preview")
                 ),
-                Static("API_URL:", classes="llm-field-label"),
+                Static(t("API_URL:"), classes="llm-field-label"),
                 Input(
                     value=self.default_api_url,
                     id="llm-url-input",
-                    placeholder="Например: https://api.openai.com/v1"
+                    placeholder=t("For example: https://api.openai.com/v1")
                 ),
-                Static("API_KEY (необязательно):", classes="llm-field-label"),
+                Static(t("API_KEY:"), classes="llm-field-label"),
                 Input(
                     value="",  # Оставляем пустым при редактировании
                     id="llm-key-input",
                     placeholder=(
-                        f"Текущий: {format_api_key_display(self.default_api_key)}"
+                        t("Current: {key}", key=format_api_key_display(self.default_api_key))
                         if self.default_api_key
-                        else "Оставьте пустым, если не требуется"
+                        else ""
                     )
                 ),
                 classes="llm-fields-container"
             ),
             Horizontal(
-                Button("Сохранить", variant="success", id="save-btn"),
-                Button("Отмена", variant="success", id="cancel-btn"),
+                Button(t("Save"), variant="success", id="save-btn"),
+                Button(t("Cancel"), variant="success", id="cancel-btn"),
                 classes="llm-dialog-buttons",
             ),
             classes="llm-dialog-container",
@@ -94,15 +95,15 @@ class LLMEditDialog(ModalScreen):
 
             # Validation
             if not name:
-                self.notify("Название LLM обязательно", severity="error")
+                self.notify(t("LLM name is required"), severity="error")
                 name_input.focus()
                 return
             if not model:
-                self.notify("Модель обязательна", severity="error")
+                self.notify(t("Model is required"), severity="error")
                 model_input.focus()
                 return
             if not api_url:
-                self.notify("API URL обязателен", severity="error")
+                self.notify(t("API URL is required"), severity="error")
                 url_input.focus()
                 return
 
@@ -129,8 +130,8 @@ class ConfirmDialog(ModalScreen):
             Static(self.title, classes="input-dialog-title"),
             Static(self.message, classes="input-dialog-prompt"),
             Horizontal(
-                Button("Да", variant="error", id="confirm-yes-btn"),
-                Button("Отмена", variant="success", id="confirm-no-btn"),
+                Button(t("Yes"), variant="error", id="confirm-yes-btn"),
+                Button(t("Cancel"), variant="success", id="confirm-no-btn"),
                 classes="input-dialog-buttons",
             ),
             classes="input-dialog-container",
