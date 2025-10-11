@@ -109,14 +109,14 @@ penguin_spin() {
     local frame=0
     local msg_idx=0
     local counter=0
-    
+
     # Hide cursor
     tput civis 2>/dev/null || printf "\033[?25l"
-    
+
     while ps -p $pid > /dev/null 2>&1; do
         # Clear line
         printf "\r%*s\r" $((width + 40)) ""
-        
+
         # Build animation line
         local line=""
         local i
@@ -127,13 +127,13 @@ penguin_spin() {
                 line="${line} "
             fi
         done
-        
+
         # Print with message
         printf " %s  %s" "$line" "${messages[$msg_idx]}"
-        
+
         # Update position
         pos=$((pos + direction))
-        
+
         # Bounce at edges
         if [ $pos -ge $((width - 1)) ]; then
             direction=-1
@@ -141,14 +141,14 @@ penguin_spin() {
             direction=1
             msg_idx=$(( (msg_idx + 1) % ${#messages[@]} ))
         fi
-        
+
         # Update frame and counter
         frame=$(( (frame + 1) % ${#frames[@]} ))
         counter=$((counter + 1))
-        
+
         sleep $delay
     done
-    
+
     # Clear animation line and show cursor
     printf "\r%*s\r" $((width + 40)) ""
     tput cnorm 2>/dev/null || printf "\033[?25h"
