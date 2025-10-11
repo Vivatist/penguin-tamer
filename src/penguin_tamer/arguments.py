@@ -48,6 +48,19 @@ parser.add_argument(
     help=t("Your prompt to the AI."),
 )
 
+parser.add_argument(
+    "--demo-mode",
+    choices=["record", "play", "robot"],
+    help=t("Demo mode: record (save session), play (replay session), "
+           "robot (automated playback with typing simulation)"),
+)
+
+parser.add_argument(
+    "--demo-file",
+    type=str,
+    help=t("Path to demo session file (JSON format)"),
+)
+
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""

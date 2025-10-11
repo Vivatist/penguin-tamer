@@ -367,6 +367,28 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
                         # Небольшая пауза после "нажатия Enter" для всех действий
                         time.sleep(0.3)
+
+                        # Воспроизводим ответ LLM только для действий query и command
+                        if action.get('type') in ['query', 'command']:
+                            response_data = player.play_next_response()
+                            if response_data:
+                                # Воспроизводим ответ побуквенно из chunks
+                                for chunk in response_data.chunks:
+                                    console.print(chunk, end='', markup=False)
+                                console.print()  # Новая строка после ответа
+
+                                # Извлекаем блоки кода из ответа
+                                code_blocks = get_formatter_text()(response_data.response)
+                                last_code_blocks = code_blocks
+                            else:
+                                last_code_blocks = []
+                        elif action.get('type') == 'code_block':
+                            # Для code_block выполняем код
+                            if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks):
+                                pass  # Код выполнен, продолжаем
+
+                        # Продолжаем цикл для следующего действия
+                        continue
                     else:
                         # Нет больше действий - переходим в обычный режим
                         is_robot_mode = False
@@ -410,7 +432,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             console.print(connection_error(e))
 
 
-def _create_chat_client(console):
+def _create_chat_client(console, demo_manager=None):
     """Ленивое создание LLM клиента только когда он действительно нужен"""
 
     # Убеждаемся, что i18n инициализирован перед созданием клиента
@@ -440,6 +462,11 @@ def _create_chat_client(console):
         system_message=get_system_prompt(),
         llm_config=full_llm_config
     )
+    
+    # Устанавливаем demo_manager если он был создан
+    if demo_manager:
+        chat_client._demo_manager = demo_manager
+    
     return chat_client
 
 
@@ -486,7 +513,17 @@ def main() -> None:
 
         # Создаем консоль и клиент только если они нужны для AI операций
         console = _create_console()
-        chat_client = _create_chat_client(console)
+        
+        # Создаем DemoManager если указан demo mode
+        demo_manager = None
+        if hasattr(args, 'demo_mode') and args.demo_mode:
+            from penguin_tamer.demo_recorder import DemoManager
+            demo_manager = DemoManager(
+                demo_mode=args.demo_mode,
+                demo_file=args.demo_file
+            )
+        
+        chat_client = _create_chat_client(console, demo_manager)
 
         # Always run in dialog mode
         prompt_parts: list = args.prompt or []
