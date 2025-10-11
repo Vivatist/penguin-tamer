@@ -462,11 +462,11 @@ def _create_chat_client(console, demo_manager=None):
         system_message=get_system_prompt(),
         llm_config=full_llm_config
     )
-    
+
     # Устанавливаем demo_manager если он был создан
     if demo_manager:
         chat_client._demo_manager = demo_manager
-    
+
     return chat_client
 
 
@@ -513,7 +513,7 @@ def main() -> None:
 
         # Создаем консоль и клиент только если они нужны для AI операций
         console = _create_console()
-        
+
         # Создаем DemoManager если указан demo mode
         demo_manager = None
         if hasattr(args, 'demo_mode') and args.demo_mode:
@@ -522,7 +522,7 @@ def main() -> None:
                 demo_mode=args.demo_mode,
                 demo_file=args.demo_file
             )
-        
+
         chat_client = _create_chat_client(console, demo_manager)
 
         # Always run in dialog mode

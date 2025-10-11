@@ -286,7 +286,7 @@ class DemoPlayer:
     def play_next_response(self, user_query: str = None) -> Optional[DemoResponse]:
         """
         Получает следующий записанный ответ.
-        
+
         В robot mode НЕ увеличивает current_index, так как это делает get_next_user_action().
         Возвращает ответ для текущего current_index, если он еще не был воспроизведен.
 
@@ -300,15 +300,15 @@ class DemoPlayer:
             return None
 
         response = self.responses[self.current_index]
-        
+
         # Возвращаем None для записей с action_only=true (нет ответа для воспроизведения)
         if response.metadata.get('action_only'):
             return None
-            
+
         # Проверяем, есть ли реальный ответ для воспроизведения
         if not response.response or not response.chunks:
             return None
-        
+
         # Возвращаем ответ БЕЗ увеличения current_index
         # Индекс будет увеличен в get_next_user_action() при переходе к следующей записи
         return response
