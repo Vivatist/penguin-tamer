@@ -283,15 +283,14 @@ class DemoPlayer:
         """Возвращает задержку спиннера."""
         return self.spinner_delay
 
-    def play_next_response(self, user_query: str = None) -> Optional[DemoResponse]:
+    def play_next_response(self, user_query: str = None, advance_index: bool = True) -> Optional[DemoResponse]:
         """
         Получает следующий записанный ответ.
 
-        В robot mode НЕ увеличивает current_index, так как это делает get_next_user_action().
-        Возвращает ответ для текущего current_index, если он еще не был воспроизведен.
-
         Args:
             user_query: Запрос пользователя (игнорируется, но принимается для совместимости)
+            advance_index: Если True (по умолчанию), увеличивает current_index.
+                          В robot mode должно быть False, так как индекс управляется get_next_user_action().
 
         Returns:
             DemoResponse или None если ответы закончились или ответ пустой
@@ -303,14 +302,21 @@ class DemoPlayer:
 
         # Возвращаем None для записей с action_only=true (нет ответа для воспроизведения)
         if response.metadata.get('action_only'):
+            if advance_index:
+                self.current_index += 1
             return None
 
         # Проверяем, есть ли реальный ответ для воспроизведения
         if not response.response or not response.chunks:
+            if advance_index:
+                self.current_index += 1
             return None
 
-        # Возвращаем ответ БЕЗ увеличения current_index
-        # Индекс будет увеличен в get_next_user_action() при переходе к следующей записи
+        # Увеличиваем индекс только если advance_index=True (обычный play mode)
+        # В robot mode advance_index=False, индекс управляется get_next_user_action()
+        if advance_index:
+            self.current_index += 1
+
         return response
 
     def create_chunk_generator(

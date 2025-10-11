@@ -370,7 +370,8 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
                         # Воспроизводим ответ LLM только для действий query и command
                         if action.get('type') in ['query', 'command']:
-                            response_data = player.play_next_response()
+                            # В robot mode не двигаем индекс, это делает get_next_user_action()
+                            response_data = player.play_next_response(advance_index=False)
                             if response_data:
                                 # Воспроизводим ответ побуквенно из chunks
                                 for chunk in response_data.chunks:
