@@ -46,6 +46,7 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from penguin_tamer.i18n import detect_system_language
+from penguin_tamer.i18n_content import get_default_user_content, is_default_user_content
 from penguin_tamer.utils.descriptors import ConfigProperty
 
 
@@ -93,6 +94,12 @@ class ConfigManager:
                             cfg = yaml.safe_load(f) or {}
                         sys_lang = detect_system_language(["en", "ru"]) or "en"
                         cfg["language"] = sys_lang
+
+                        # Установить локализованный user_content при создании конфига
+                        if "global" not in cfg:
+                            cfg["global"] = {}
+                        cfg["global"]["user_content"] = get_default_user_content(sys_lang)
+
                         with open(self.user_config_path, 'w', encoding='utf-8') as f:
                             yaml.safe_dump(
                                 cfg, f, indent=2, allow_unicode=True,
@@ -345,6 +352,28 @@ class ConfigManager:
             self.reload()
         else:
             raise FileNotFoundError("Файл с настройками по умолчанию не найден")
+
+    def set_language(self, new_language: str) -> None:
+        """
+        Устанавливает новый язык и автоматически локализует user_content,
+        если он не был изменён пользователем.
+
+        Args:
+            new_language: Новый код языка ('en', 'ru', и т.д.)
+        """
+        current_user_content = self.user_content
+
+        # Проверяем, был ли user_content изменён пользователем
+        # (сравниваем с дефолтным значением любого языка)
+        is_default = is_default_user_content(current_user_content)
+
+        # Обновляем язык
+        self.language = new_language
+
+        # Если user_content не был изменён пользователем, локализуем его
+        if is_default:
+            new_user_content = get_default_user_content(new_language)
+            self.user_content = new_user_content
 
     @property
     def config_path(self) -> Path:
