@@ -61,7 +61,7 @@ class LLMEditDialog(ModalScreen):
                     value="",  # Оставляем пустым при редактировании
                     id="llm-key-input",
                     placeholder=(
-                        t("Current: {key}", key=format_api_key_display(self.default_api_key))
+                        t("Current: {apikey}", apikey=format_api_key_display(self.default_api_key))
                         if self.default_api_key
                         else ""
                     )
