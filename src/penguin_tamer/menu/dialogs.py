@@ -75,6 +75,11 @@ class LLMEditDialog(ModalScreen):
             classes="llm-dialog-container",
         )
 
+    def on_mount(self) -> None:
+        """Set focus to API key input when dialog opens."""
+        key_input = self.query_one("#llm-key-input", Input)
+        key_input.focus()
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "save-btn":
             name_input = self.query_one("#llm-name-input", Input)
@@ -159,9 +164,9 @@ class ApiKeyMissingDialog(ModalScreen):
                 ),
                 Static(
                     self.t(
-                        "You have entered Penguin Tamer configuration "
-                        "because the default LLM does not have an API_KEY. "
-                        "To continue working, please add it in the 'General' tab."
+                        "You have entered `Penguin Tamer` configuration "
+                        "because the default LLM does not have an `API_KEY`. "
+                        "To continue working, select any LLM and add the key by clicking the `Settings` button."
                     ),
                     classes="api-key-dialog-message"
                 ),

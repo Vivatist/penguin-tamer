@@ -165,6 +165,6 @@
   "Русский": "Русский",
 
   "API Key Required": "Требуется API ключ",
-  "You have entered Penguin Tamer configuration because the default LLM does not have an API_KEY. To continue working, please add it in the 'General' tab.": "Вы попали в конфигурацию Penguin Tamer так как у нейросети, выбранной по умолчанию, отсутствует API_KEY. Для продолжения работы добавьте его в разделе 'Общие'.",
+  "You have entered `Penguin Tamer` configuration because the default LLM does not have an `API_KEY`. To continue working, select any LLM and add the key by clicking the `Settings` button.": "Вы попали в конфигурацию `Penguin Tamer` так как у нейросети, выбранной по умолчанию, отсутствует `API_KEY`. Для продолжения работы выберите любую нейросеть и добавьте ключ нажав кнопку `Настройка`.",
   "OK": "OK"
 }

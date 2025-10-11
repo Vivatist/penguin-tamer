@@ -586,6 +586,14 @@ class ConfigMenuApp(App):
                 except Exception:
                     pass
 
+            # Force highlight event to trigger selection (only on first load)
+            if not keep_cursor_position and new_cursor_row > 0:
+                # Manually trigger row highlight to ensure visual feedback
+                try:
+                    llm_table.move_cursor(row=new_cursor_row, animate=False)
+                except Exception:
+                    pass
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle Enter key in input fields."""
         input_id = event.input.id
@@ -648,7 +656,12 @@ class ConfigMenuApp(App):
     # LLM Methods
     def select_current_llm(self) -> None:
         """Select current LLM from table (called automatically on cursor move)."""
-        table = self.query_one("#llm-table", DataTable)
+        try:
+            table = self.query_one("#llm-table", DataTable)
+        except Exception:
+            # Table not found (e.g., dialog is open)
+            return
+
         if table.cursor_row < 0:
             return
 
@@ -722,7 +735,12 @@ class ConfigMenuApp(App):
 
     def edit_llm(self) -> None:
         """Edit selected LLM."""
-        table = self.query_one("#llm-table", DataTable)
+        try:
+            table = self.query_one("#llm-table", DataTable)
+        except Exception:
+            # Table not found (e.g., another dialog is open)
+            return
+
         if table.cursor_row < 0:
             self.notify(t("Select LLM to edit"), severity="warning")
             return
@@ -758,7 +776,12 @@ class ConfigMenuApp(App):
 
     def delete_llm(self) -> None:
         """Delete selected LLM."""
-        table = self.query_one("#llm-table", DataTable)
+        try:
+            table = self.query_one("#llm-table", DataTable)
+        except Exception:
+            # Table not found (e.g., another dialog is open)
+            return
+
         if table.cursor_row < 0:
             self.notify(t("Select LLM to delete"), severity="warning")
             return
