@@ -92,27 +92,74 @@ echo "[+] Installing Penguin Tamer from PyPI..."
 echo "    This may take a minute - downloading and installing dependencies..."
 echo ""
 
-# Function to show spinner
-show_spinner() {
+# Function to show penguin animation
+penguin_spin() {
     local pid=$1
-    local delay=0.1
-    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local delay=0.15
+    local width=40
+    local frames=('🐧' '🐧' '🐧' '🐧')
+    local messages=(
+        "Waddling to PyPI..."
+        "Catching packages..."
+        "Installing deps..."
+        "Almost there..."
+    )
+    local pos=0
+    local direction=1
+    local frame=0
+    local msg_idx=0
+    local counter=0
+    
+    # Hide cursor
+    tput civis 2>/dev/null || printf "\033[?25l"
+    
     while ps -p $pid > /dev/null 2>&1; do
-        local temp=${spinstr#?}
-        printf " [%c] Installing packages..." "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
+        # Clear line
+        printf "\r%*s\r" $((width + 40)) ""
+        
+        # Build animation line
+        local line=""
+        local i
+        for ((i=0; i<width; i++)); do
+            if [ $i -eq $pos ]; then
+                line="${line}${frames[$frame]}"
+            else
+                line="${line} "
+            fi
+        done
+        
+        # Print with message
+        printf " %s  %s" "$line" "${messages[$msg_idx]}"
+        
+        # Update position
+        pos=$((pos + direction))
+        
+        # Bounce at edges
+        if [ $pos -ge $((width - 1)) ]; then
+            direction=-1
+        elif [ $pos -le 0 ]; then
+            direction=1
+            msg_idx=$(( (msg_idx + 1) % ${#messages[@]} ))
+        fi
+        
+        # Update frame and counter
+        frame=$(( (frame + 1) % ${#frames[@]} ))
+        counter=$((counter + 1))
+        
         sleep $delay
-        printf "\r"
     done
-    printf "    \r"
+    
+    # Clear animation line and show cursor
+    printf "\r%*s\r" $((width + 40)) ""
+    tput cnorm 2>/dev/null || printf "\033[?25h"
 }
 
 INSTALL_OUTPUT=""
 if command_exists pipx; then
-    # Run pipx install in background to show spinner
+    # Run pipx install in background to show penguin animation
     pipx install penguin-tamer --force > /tmp/pt_install.log 2>&1 &
     INSTALL_PID=$!
-    show_spinner $INSTALL_PID
+    penguin_spin $INSTALL_PID
     wait $INSTALL_PID
     INSTALL_EXIT=$?
     INSTALL_OUTPUT=$(cat /tmp/pt_install.log)
@@ -126,7 +173,7 @@ if command_exists pipx; then
 elif $PYTHON_CMD -m pipx --version >/dev/null 2>&1; then
     $PYTHON_CMD -m pipx install penguin-tamer --force > /tmp/pt_install.log 2>&1 &
     INSTALL_PID=$!
-    show_spinner $INSTALL_PID
+    penguin_spin $INSTALL_PID
     wait $INSTALL_PID
     INSTALL_EXIT=$?
     INSTALL_OUTPUT=$(cat /tmp/pt_install.log)
@@ -193,7 +240,10 @@ if command_exists pt; then
     TEAL='\033[1;38;5;30m'       # Bold Teal (#007c6e)
     RESET='\033[0m'              # Reset formatting
 
-    # Print colorful success message
+    # Print colorful success message with penguin celebration
+    echo ""
+    echo "    🐧  🎉  🐧  🎉  🐧"
+    echo ""
     echo -e "${ORANGE}Penguin Tamer${RESET} ${TEAL}${PT_VERSION}${RESET} installed successfully!"
     echo ">>> Location: $(which pt)"
 else
