@@ -220,7 +220,7 @@ class ErrorHandler:
 
         message = t(
             "Error 429: Exceeding the quota. Message from the provider: {message}. "
-            "You can change LLM in settings: 'ai --settings'"
+            "You can change LLM in settings: 'pt -s'"
         ).format(message=msg)
         technical = f"RateLimitError: {msg}"
         return self._format_message(message, ErrorSeverity.WARNING, technical)
@@ -303,7 +303,7 @@ class ErrorHandler:
         """Handle permission denied errors."""
         message = t(
             "Error 403: Your region is not supported. Use VPN or change the LLM. "
-            "You can change LLM in settings: 'ai --settings'"
+            "You can change LLM in settings: 'pt -s'"
         )
         technical = f"PermissionDeniedError: {str(error)}"
         return self._format_message(message, ErrorSeverity.ERROR, technical)
