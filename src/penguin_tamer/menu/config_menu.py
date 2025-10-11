@@ -42,14 +42,14 @@ from penguin_tamer.text_utils import format_api_key_display
 if __name__ == "__main__":
     # При прямом запуске используем абсолютные импорты
     from penguin_tamer.menu.widgets import DoubleClickDataTable, ResponsiveButtonRow
-    from penguin_tamer.menu.dialogs import LLMEditDialog, ConfirmDialog
+    from penguin_tamer.menu.dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog
     from penguin_tamer.menu.info_panel import InfoPanel
     from penguin_tamer.menu.intro_screen import show_intro
     from penguin_tamer.menu.locales.menu_i18n import menu_translator, t
 else:
     # При импорте как модуль используем относительные импорты
     from .widgets import DoubleClickDataTable, ResponsiveButtonRow
-    from .dialogs import LLMEditDialog, ConfirmDialog
+    from .dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog
     from .info_panel import InfoPanel
     from .intro_screen import show_intro
     from .locales.menu_i18n import menu_translator, t
@@ -80,9 +80,14 @@ class ConfigMenuApp(App):
         Binding("ctrl+r", "refresh_status", t("Refresh")),
     ]
 
-    def __init__(self, *args, **kwargs):
-        """Initialize app."""
+    def __init__(self, show_api_key_dialog: bool = False, *args, **kwargs):
+        """Initialize app.
+
+        Args:
+            show_api_key_dialog: If True, shows API key missing dialog on mount
+        """
         super().__init__(*args, **kwargs)
+        self._show_api_key_dialog = show_api_key_dialog
 
     def get_css_variables(self) -> dict[str, str]:
         """Определяем кастомную цветовую палитру для Textual."""
@@ -453,6 +458,10 @@ class ConfigMenuApp(App):
             # Show help for first tab
             panel = self.query_one("#info-panel", InfoPanel)
             panel.show_tab_help("tab-general")
+
+            # Show API key dialog if requested
+            if self._show_api_key_dialog:
+                self.show_api_key_missing_dialog()
 
         self.set_timer(0.2, finish_init)
 
@@ -921,6 +930,11 @@ class ConfigMenuApp(App):
             severity="information",
         )
 
+    def show_api_key_missing_dialog(self) -> None:
+        """Show modal dialog informing about missing API key."""
+        dialog = ApiKeyMissingDialog(t)
+        self.push_screen(dialog)
+
     def action_refresh_status(self) -> None:
         """Refresh status action."""
         self.refresh_status()
@@ -1044,13 +1058,17 @@ class ConfigMenuApp(App):
             pass
 
 
-def main_menu():
-    """Entry point for running the config menu."""
+def main_menu(show_api_key_dialog: bool = False):
+    """Entry point for running the config menu.
+
+    Args:
+        show_api_key_dialog: If True, shows API key missing dialog on startup
+    """
     try:
         # Показываем интро перед запуском меню
         show_intro()
 
-        app = ConfigMenuApp()
+        app = ConfigMenuApp(show_api_key_dialog=show_api_key_dialog)
         app.run()
     except Exception as e:
         print(f"Error starting settings menu: {e}", file=sys.stderr)

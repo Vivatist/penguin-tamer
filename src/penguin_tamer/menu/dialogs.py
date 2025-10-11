@@ -135,3 +135,50 @@ class ConfirmDialog(ModalScreen):
         if event.button.id == "confirm-yes-btn":
             self.result = True
         self.dismiss(self.result)
+
+
+class ApiKeyMissingDialog(ModalScreen):
+    """Dialog to inform user about missing API key."""
+
+    def __init__(self, t_func) -> None:
+        """Initialize dialog with translation function.
+
+        Args:
+            t_func: Translation function from menu_i18n
+        """
+        super().__init__()
+        self.t = t_func
+
+    def compose(self) -> ComposeResult:
+        yield Container(
+            Container(
+                Static("🐧", classes="api-key-dialog-icon"),
+                Static(
+                    self.t("API Key Required"),
+                    classes="api-key-dialog-title"
+                ),
+                Static(
+                    self.t(
+                        "You have entered Penguin Tamer configuration "
+                        "because the default LLM does not have an API_KEY. "
+                        "To continue working, please add it in the 'General' tab."
+                    ),
+                    classes="api-key-dialog-message"
+                ),
+                classes="api-key-dialog-content"
+            ),
+            Container(
+                Button(
+                    self.t("OK"),
+                    variant="success",
+                    id="api-key-ok-btn"
+                ),
+                classes="api-key-dialog-button-container"
+            ),
+            classes="api-key-dialog-container",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle OK button press."""
+        if event.button.id == "api-key-ok-btn":
+            self.dismiss(True)

@@ -365,6 +365,28 @@ def main() -> None:
             main_menu()
             return 0
 
+        # Check if API key exists for current LLM before proceeding
+        try:
+            llm_config = config.get_current_llm_config()
+            api_key = llm_config.get("api_key", "").strip()
+
+            if not api_key:
+                # API key is missing - open settings with modal dialog
+                from penguin_tamer.menu.config_menu import main_menu
+                main_menu(show_api_key_dialog=True)
+
+                # After settings closed, check again if key was added
+                config.reload()
+                llm_config = config.get_current_llm_config()
+                api_key = llm_config.get("api_key", "").strip()
+
+                if not api_key:
+                    # User didn't add key - exit gracefully
+                    return 0
+        except Exception:
+            # If we can't check config, let it fail later with proper error
+            pass
+
         # Создаем консоль и клиент только если они нужны для AI операций
         console = _create_console()
         chat_client = _create_chat_client(console)

@@ -160,5 +160,9 @@
   "Error resetting settings: {error}": "Ошибка при сбросе настроек: {error}",
   "Reset Settings": "Сброс настроек",
   "English": "English",
-  "Русский": "Русский"
+  "Русский": "Русский",
+
+  "API Key Required": "Требуется API ключ",
+  "You have entered Penguin Tamer configuration because the default LLM does not have an API_KEY. To continue working, please add it in the 'General' tab.": "Вы попали в конфигурацию Penguin Tamer так как у нейросети, выбранной по умолчанию, отсутствует API_KEY. Для продолжения работы добавьте его в разделе 'Общие'.",
+  "OK": "OK"
 }
