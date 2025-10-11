@@ -212,8 +212,17 @@ global:
     "tab-content": """# CUSTOM CONTEXT
 
 Use this field for **system prompts** and **instructions** that should
-automatically apply to each of your requests to the LLM. Note that basic information
-about your working environment is already available to the model:
+automatically apply to each of your requests to the LLM.
+
+This allows you to:
+- Set the assistant's role and communication style
+- Define response format
+- Add specific context for your tasks
+- Set communication language
+
+---
+
+Note that basic information about your working environment is already available to the model:
 
 - Operating system
 - Architecture
@@ -233,41 +242,33 @@ about your working environment is already available to the model:
 - CPU count
 - Current time
 - Shell
----
-
-This allows you to:
-- Set the assistant's role and communication style
-- Define response format
-- Add specific context for your tasks
-- Set communication language
 
 ---
 
 ## Examples
 
 ### Assistant Role
-```
+
 You are an experienced Python programmer.
 Always provide detailed explanations with code examples.
-```
+
 
 ### Response Format
-```
+
 Answer briefly and to the point.
 Use bullet lists and headings.
-```
+
 
 ### Communication Style
-```
+
 Communicate in a friendly and informal way,
 use real-life examples to explain complex concepts.
-```
+
 
 ### Specialization
-```
+
 You specialize in web development
 with focus on React and TypeScript.
-```
 
 
 

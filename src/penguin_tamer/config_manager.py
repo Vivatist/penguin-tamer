@@ -46,6 +46,8 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from penguin_tamer.i18n import detect_system_language
+from penguin_tamer.i18n_content import get_default_user_content, is_default_user_content
+from penguin_tamer.utils.descriptors import ConfigProperty
 
 
 class ConfigManager:
@@ -92,6 +94,12 @@ class ConfigManager:
                             cfg = yaml.safe_load(f) or {}
                         sys_lang = detect_system_language(["en", "ru"]) or "en"
                         cfg["language"] = sys_lang
+
+                        # Установить локализованный user_content при создании конфига
+                        if "global" not in cfg:
+                            cfg["global"] = {}
+                        cfg["global"]["user_content"] = get_default_user_content(sys_lang)
+
                         with open(self.user_config_path, 'w', encoding='utf-8') as f:
                             yaml.safe_dump(
                                 cfg, f, indent=2, allow_unicode=True,
@@ -201,87 +209,33 @@ class ConfigManager:
         """
         return self._config.copy()
 
-    # === Удобные методы для работы с конкретными настройками ===
+    # === Удобные методы для работы с конкретными настройками (через дескрипторы) ===
+
+    # Основные параметры генерации
+    temperature = ConfigProperty("global", "temperature", 0.7, "Температура генерации ответов")
+    max_tokens = ConfigProperty("global", "max_tokens", None, "Максимум токенов в ответе")
+    top_p = ConfigProperty("global", "top_p", 0.95, "Nucleus sampling (top_p)")
+    frequency_penalty = ConfigProperty("global", "frequency_penalty", 0.0, "Штраф за повторы")
+    presence_penalty = ConfigProperty("global", "presence_penalty", 0.0, "Штраф за упоминание")
+    seed = ConfigProperty("global", "seed", None, "Seed для детерминизма")
+
+    # Top-level параметры
+    language = ConfigProperty("", "language", "en", "UI язык")
+
+    # Дополнительные параметры
+    debug = ConfigProperty("global", "debug", False, "Debug mode enabled/disabled")
+    theme = ConfigProperty("global", "theme", "default", "Current markdown/code theme")
+    user_content = ConfigProperty("global", "user_content", "", "Пользовательский контент для всех LLM")
 
     @property
     def current_llm(self) -> str:
-        """Текущая выбранная LLM."""
+        """Текущая выбранная LLM (custom logic due to naming)."""
         return self.get("global", "current_LLM", "")
 
     @current_llm.setter
     def current_llm(self, value: str) -> None:
         """Устанавливает текущую LLM."""
         self.set("global", "current_LLM", value)
-
-    @property
-    def user_content(self) -> str:
-        """Пользовательский контент для всех LLM."""
-        return self.get("global", "user_content", "")
-
-    @user_content.setter
-    def user_content(self, value: str) -> None:
-        """Устанавливает пользовательский контент."""
-        self.set("global", "user_content", value)
-
-    @property
-    def temperature(self) -> float:
-        """Температура генерации ответов."""
-        return self.get("global", "temperature", 0.8)
-
-    @temperature.setter
-    def temperature(self, value: float) -> None:
-        """Устанавливает температуру генерации."""
-        self.set("global", "temperature", value)
-
-    @property
-    def max_tokens(self) -> int:
-        """Максимум токенов в ответе."""
-        return self.get("global", "max_tokens", None)
-
-    @max_tokens.setter
-    def max_tokens(self, value: int) -> None:
-        """Устанавливает максимум токенов."""
-        self.set("global", "max_tokens", value)
-
-    @property
-    def top_p(self) -> float:
-        """Nucleus sampling (top_p)."""
-        return self.get("global", "top_p", 0.95)
-
-    @top_p.setter
-    def top_p(self, value: float) -> None:
-        """Устанавливает top_p."""
-        self.set("global", "top_p", value)
-
-    @property
-    def frequency_penalty(self) -> float:
-        """Штраф за повторы."""
-        return self.get("global", "frequency_penalty", 0.0)
-
-    @frequency_penalty.setter
-    def frequency_penalty(self, value: float) -> None:
-        """Устанавливает штраф за повторы."""
-        self.set("global", "frequency_penalty", value)
-
-    @property
-    def presence_penalty(self) -> float:
-        """Штраф за упоминание."""
-        return self.get("global", "presence_penalty", 0.0)
-
-    @presence_penalty.setter
-    def presence_penalty(self, value: float) -> None:
-        """Устанавливает штраф за упоминание."""
-        self.set("global", "presence_penalty", value)
-
-    @property
-    def seed(self) -> int:
-        """Seed для детерминизма."""
-        return self.get("global", "seed", None)
-
-    @seed.setter
-    def seed(self, value: int) -> None:
-        """Устанавливает seed."""
-        self.set("global", "seed", value)
 
     def get_available_llms(self) -> List[str]:
         """
@@ -399,6 +353,28 @@ class ConfigManager:
         else:
             raise FileNotFoundError("Файл с настройками по умолчанию не найден")
 
+    def set_language(self, new_language: str) -> None:
+        """
+        Устанавливает новый язык и автоматически локализует user_content,
+        если он не был изменён пользователем.
+
+        Args:
+            new_language: Новый код языка ('en', 'ru', и т.д.)
+        """
+        current_user_content = self.user_content
+
+        # Проверяем, был ли user_content изменён пользователем
+        # (сравниваем с дефолтным значением любого языка)
+        is_default = is_default_user_content(current_user_content)
+
+        # Обновляем язык
+        self.language = new_language
+
+        # Если user_content не был изменён пользователем, локализуем его
+        if is_default:
+            new_user_content = get_default_user_content(new_language)
+            self.user_content = new_user_content
+
     @property
     def config_path(self) -> Path:
         """Путь к файлу конфигурации."""
@@ -411,45 +387,6 @@ class ConfigManager:
 
     def __repr__(self) -> str:
         return f"ConfigManager(app_name='{self.app_name}', config_path='{self.user_config_path}')"
-
-    # === Language ===
-    @property
-    def language(self) -> str:
-        """Current UI language (top-level key)."""
-        try:
-            return self._config.get("language", "en")
-        except Exception:
-            return "en"
-
-    @language.setter
-    def language(self, value: str) -> None:
-        try:
-            self._config["language"] = value
-            self._save_config()
-        except Exception:
-            pass
-
-    # === Debug Mode ===
-    @property
-    def debug(self) -> bool:
-        """Debug mode enabled/disabled."""
-        return self.get("global", "debug", False)
-
-    @debug.setter
-    def debug(self, value: bool) -> None:
-        """Set debug mode."""
-        self.set("global", "debug", value)
-
-    # === Theme ===
-    @property
-    def theme(self) -> str:
-        """Current markdown/code theme."""
-        return self.get("global", "theme", "default")
-
-    @theme.setter
-    def theme(self, value: str) -> None:
-        """Set theme."""
-        self.set("global", "theme", value)
 
 
 # Глобальный экземпляр для удобства использования

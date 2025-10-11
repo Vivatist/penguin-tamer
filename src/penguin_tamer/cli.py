@@ -8,8 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # Сначала импортируем настройки
 from penguin_tamer.config_manager import config
+from penguin_tamer.utils.lazy_import import lazy_import
 
-# Ленивый импорт i18n
+# Ленивый импорт i18n с инициализацией
 _i18n_initialized = False
 
 
@@ -34,67 +35,49 @@ def t_lazy(text, **kwargs):
 # Используем t_lazy вместо t для отложенной инициализации
 t = t_lazy
 
-# Ленивые импорты (только для действительно редких операций)
-_script_executor = None
-_formatter_text = None
-_execute_handler = None
-_console_class = None
-_markdown_class = None
-_get_theme_func = None
 
+# === Ленивые импорты через декоратор ===
 
-def _get_theme():
+@lazy_import
+def get_theme():
     """Ленивый импорт get_theme"""
-    global _get_theme_func
-    if _get_theme_func is None:
-        from penguin_tamer.themes import get_theme
-        _get_theme_func = get_theme
-    return _get_theme_func
+    from penguin_tamer.themes import get_theme
+    return get_theme
 
 
-def _get_console_class():
+@lazy_import
+def get_console_class():
     """Ленивый импорт Console"""
-    global _console_class
-    if _console_class is None:
-        from rich.console import Console
-        _console_class = Console
-    return _console_class
+    from rich.console import Console
+    return Console
 
 
-def _get_markdown_class():
+@lazy_import
+def get_markdown_class():
     """Ленивый импорт Markdown"""
-    global _markdown_class
-    if _markdown_class is None:
-        from rich.markdown import Markdown
-        _markdown_class = Markdown
-    return _markdown_class
+    from rich.markdown import Markdown
+    return Markdown
 
 
-def _get_script_executor():
+@lazy_import
+def get_script_executor():
     """Ленивый импорт command_executor"""
-    global _script_executor
-    if _script_executor is None:
-        from penguin_tamer.command_executor import run_code_block
-        _script_executor = run_code_block
-    return _script_executor
+    from penguin_tamer.command_executor import run_code_block
+    return run_code_block
 
 
-def _get_execute_handler():
+@lazy_import
+def get_execute_handler():
     """Ленивый импорт execute_and_handle_result для выполнения команд"""
-    global _execute_handler
-    if '_execute_handler' not in globals() or _execute_handler is None:
-        from penguin_tamer.command_executor import execute_and_handle_result
-        _execute_handler = execute_and_handle_result
-    return _execute_handler
+    from penguin_tamer.command_executor import execute_and_handle_result
+    return execute_and_handle_result
 
 
-def _get_formatter_text():
+@lazy_import
+def get_formatter_text():
     """Ленивый импорт text_utils"""
-    global _formatter_text
-    if _formatter_text is None:
-        from penguin_tamer.text_utils import extract_labeled_code_blocks
-        _formatter_text = extract_labeled_code_blocks
-    return _formatter_text
+    from penguin_tamer.text_utils import extract_labeled_code_blocks
+    return extract_labeled_code_blocks
 
 
 # Импортируем только самое необходимое для быстрого старта
@@ -185,8 +168,15 @@ def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) 
     console.print(t("[dim]>>> Executing command:[/dim] {command}").format(command=command))
 
     # Выполняем команду и получаем результат
-    result = _get_execute_handler()(console, command)
+    result = get_execute_handler()(console, command)
     console.print()
+
+    # Записываем действие пользователя в демо ПОСЛЕ выполнения
+    if chat_client.demo_manager and chat_client.demo_manager.is_recording():
+        recorder = chat_client.demo_manager.get_recorder()
+        if recorder:
+            context = f"Exit code: {result.get('exit_code', -1)}, Success: {result.get('success', False)}"
+            recorder.record_user_action_only('command', prompt, context)
 
     # Добавляем команду и результат в контекст
     _add_command_to_context(chat_client, command, result)
@@ -214,8 +204,15 @@ def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt:
         code = code_blocks[block_index - 1]
 
         # Выполняем блок кода и получаем результат
-        result = _get_script_executor()(console, code_blocks, block_index)
+        result = get_script_executor()(console, code_blocks, block_index)
         console.print()
+
+        # Записываем действие пользователя в демо ПОСЛЕ выполнения
+        if chat_client.demo_manager and chat_client.demo_manager.is_recording():
+            recorder = chat_client.demo_manager.get_recorder()
+            if recorder:
+                context = f"Exit code: {result.get('exit_code', -1)}, Success: {result.get('success', False)}"
+                recorder.record_user_action_only('code_block', prompt, context)
 
         # Добавляем команду и результат в контекст
         _add_command_to_context(chat_client, code, result, block_number=block_index)
@@ -232,12 +229,16 @@ def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> li
     Returns:
         List of code blocks from AI response
     """
+    # Записываем действие пользователя в демо
+    if chat_client.demo_manager and chat_client.demo_manager.is_recording():
+        chat_client.demo_manager.add_user_action('query', prompt)
+
     reply = chat_client.ask_stream(prompt)
     code_blocks = []
 
     # Извлекаем блоки кода только если получен непустой ответ
     if reply:
-        code_blocks = _get_formatter_text()(reply)
+        code_blocks = get_formatter_text()(reply)
 
     console.print()
     return code_blocks
@@ -279,15 +280,111 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     # Process initial prompt if provided
     last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
 
+    # Проверяем режим robot
+    is_robot_mode = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
+    robot_action_count = 0  # Счетчик действий для робота
+
     # Main dialog loop
     while True:
         try:
-            # Get user input
-            user_prompt = input_formatter.get_input(
-                console,
-                has_code_blocks=bool(last_code_blocks),
-                t=t
-            )
+            # В режиме robot автоматически получаем следующее действие
+            if is_robot_mode:
+                player = chat_client.demo_manager.get_player()
+                if player:
+                    action = player.get_next_user_action()
+                    if action:
+                        robot_action_count += 1
+                        user_prompt = action['value']
+
+                        # Красивое приглашение как в обычном режиме (сразу)
+                        console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+
+                        # Показываем placeholder в зависимости от наличия блоков кода
+                        # (как в DialogInputFormatter)
+                        if last_code_blocks:
+                            placeholder_text = t(
+                                "Number of the code block to execute or "
+                                "the next question... Ctrl+C - exit"
+                            )
+                        else:
+                            placeholder_text = t("Your question... Ctrl+C - exit")
+
+                        # Выводим placeholder серым курсивом (используем низкоуровневый вывод)
+                        import sys
+                        from rich.text import Text
+                        placeholder_obj = Text(placeholder_text, style="dim italic")
+                        console.print(placeholder_obj, end='')
+
+                        # Возвращаем курсор к началу строки (сразу после >>>)
+                        # Это создаёт эффект как в prompt_toolkit, где placeholder "за" текстом
+                        sys.stdout.write('\r')
+                        sys.stdout.flush()
+                        # Перемещаем курсор на 4 символа вправо (длина ">>> ")
+                        sys.stdout.write('\033[4C')
+                        sys.stdout.flush()
+
+                        # Пауза перед началом печати
+                        # Для первого действия - 1 секунда, для остальных - 3-4 секунды
+                        import time
+                        if robot_action_count == 1:
+                            time.sleep(1.0)
+                        else:
+                            import random
+                            pause = random.uniform(3.0, 4.0)
+                            time.sleep(pause)
+
+                        # Очищаем placeholder перед началом печати
+                        # Используем ANSI escape последовательности для очистки
+                        # \r - возврат каретки в начало строки
+                        # \033[K - очистка от курсора до конца строки
+                        sys.stdout.write('\r\033[K')
+                        sys.stdout.flush()
+
+                        # Выводим prompt заново
+                        console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+
+                        # Импортируем функцию эмуляции печати
+                        from penguin_tamer.demo_recorder import _simulate_human_typing
+
+                        # Проверяем, начинается ли команда с точки для подсветки
+                        if user_prompt.startswith('.'):
+                            # Печатаем точку серым цветом
+                            _simulate_human_typing('.', console, style='dim')
+                            # Печатаем команду бирюзовым цветом
+                            _simulate_human_typing(user_prompt[1:], console, style='#007c6e')
+                        else:
+                            # Обычный текст без стиля
+                            _simulate_human_typing(user_prompt, console)
+
+                        # Пауза перед "нажатием Enter" для блоков кода
+                        # Если это блок кода, делаем паузу 1.5 сек, чтобы успеть увидеть номер
+                        import time
+                        if action.get('type') == 'code_block':
+                            time.sleep(1.5)
+
+                        # Перевод строки после ввода (нажатие Enter)
+                        console.print()
+
+                        # Небольшая пауза после "нажатия Enter" для всех действий
+                        time.sleep(0.3)
+                    else:
+                        # Нет больше действий - переходим в обычный режим
+                        is_robot_mode = False
+                        user_prompt = input_formatter.get_input(
+                            console,
+                            has_code_blocks=bool(last_code_blocks),
+                            t=t
+                        )
+                else:
+                    console.print("[yellow]Ошибка: player не найден в robot mode[/yellow]")
+                    break
+            else:
+                # Обычный режим - запрашиваем ввод у пользователя
+                user_prompt = input_formatter.get_input(
+                    console,
+                    has_code_blocks=bool(last_code_blocks),
+                    t=t
+                )
 
             if not user_prompt:
                 continue
@@ -348,9 +445,9 @@ def _create_chat_client(console):
 
 def _create_console():
     """Создание Rich Console с темой из конфига."""
-    Console = _get_console_class()
+    Console = get_console_class()
     theme_name = config.get("global", "markdown_theme", "default")
-    markdown_theme = _get_theme()(theme_name)
+    markdown_theme = get_theme()(theme_name)
     return Console(theme=markdown_theme)
 
 

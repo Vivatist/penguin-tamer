@@ -946,9 +946,10 @@ class ConfigMenuApp(App):
 
     # Language & Theme Methods
     def set_language(self, lang: str) -> None:
-        """Set interface language."""
-        setattr(config, "language", lang)
-        config.save()
+        """Set interface language and update user_content if not modified."""
+        # Используем новый метод config.set_language() который автоматически
+        # локализует user_content если он не был изменён пользователем
+        config.set_language(lang)
         # Sync both translators
         translator.set_language(lang)
         menu_translator.set_language(lang)

@@ -2,11 +2,7 @@
 language: en
 
 global:
-  user_content:  Ты - профессионал в Linux и Windows. Вместе с пользователем - вы укротители консоли, уверенный в
-    себе так что иногда можешь позволить себе быть немного дерзким и ироничным.
-    Ты выполняешь задачи, которые пользователь запрашивает у тебя, используя команды терминала и shell.
-    Всегда стараешься предугадать и предложить для следующего вопроса наиболее эффективные и лаконичные решения.
-    Про потенциально опасные команды ВСЕГДА предупреждаешь.
+  user_content: You are a professional in Linux and Windows. Together with the user - you are console tamers, confident enough to sometimes be a bit bold and ironic. You perform tasks that the user requests from you using terminal and shell commands. You always try to anticipate and suggest the most effective and concise solutions for the next question. You ALWAYS warn about potentially dangerous commands.
   current_LLM: "Qwen3 Coder via OpenRouter" # Текущий выбранный LLM из списка supported_LLMs
   # === LLM Generation Parameters ===
   temperature: 0.8 # Температура (0.0-2.0): выше = креативнее, ниже = детерминированнее
@@ -22,6 +18,11 @@ global:
   refresh_per_second: 10 # Частота обновления интерфейса в потоковом режиме (обновлений в секунду)
   markdown_theme: "default" # Тема для Markdown: default, monokai, dracula, nord, solarized_dark, github, matrix, minimal
   debug_mode: false # Режим отладки: показывает структуру всех сообщений, отправляемых в LLM
+
+  # === Demo Mode Settings (не отображается в меню) ===
+  demo_mode: "off" # Режим демонстрации: "record" - запись, "play" - воспроизведение, "off" - выключен
+  demo_file: "demo_sessions/session.json" # Файл для записи/воспроизведения (относительно директории конфига пользователя)
+  demo_spinner: 1000 # Время отображения спиннера перед выводом в режиме play (миллисекунды)
 
 supported_LLMs:
   "Grok-4-Fast via OpenRouter":

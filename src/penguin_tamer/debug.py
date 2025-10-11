@@ -2,38 +2,29 @@
 
 import json
 from typing import List, Dict
-
-# Ленивый импорт Rich
-_console = None
-_panel = None
-_syntax = None
+from penguin_tamer.utils.lazy_import import lazy_import
 
 
-def _get_console():
+# Ленивые импорты Rich через декоратор
+@lazy_import
+def get_console():
     """Ленивый импорт Console для отладки"""
-    global _console
-    if _console is None:
-        from rich.console import Console
-        _console = Console
-    return _console
+    from rich.console import Console
+    return Console
 
 
-def _get_panel():
+@lazy_import
+def get_panel():
     """Ленивый импорт Panel для отладки"""
-    global _panel
-    if _panel is None:
-        from rich.panel import Panel
-        _panel = Panel
-    return _panel
+    from rich.panel import Panel
+    return Panel
 
 
-def _get_syntax():
+@lazy_import
+def get_syntax():
     """Ленивый импорт Syntax для отладки"""
-    global _syntax
-    if _syntax is None:
-        from rich.syntax import Syntax
-        _syntax = Syntax
-    return _syntax
+    from rich.syntax import Syntax
+    return Syntax
 
 
 def debug_print_messages(
@@ -60,9 +51,9 @@ def debug_print_messages(
         ...     phase="request"
         ... )
     """
-    Console = _get_console()
-    Panel = _get_panel()
-    Syntax = _get_syntax()
+    Console = get_console()
+    Panel = get_panel()
+    Syntax = get_syntax()
 
     console = Console()
 
