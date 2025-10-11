@@ -373,9 +373,29 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                             # В robot mode не двигаем индекс, это делает get_next_user_action()
                             response_data = player.play_next_response(advance_index=False)
                             if response_data:
-                                # Воспроизводим ответ побуквенно из chunks
-                                for chunk in response_data.chunks:
-                                    console.print(chunk, end='', markup=False)
+                                # Импортируем необходимые модули для Markdown отображения
+                                from rich.live import Live
+                                from penguin_tamer.llm_client import _create_markdown
+                                
+                                # Получаем настройки отображения
+                                sleep_time = config.get("global", "sleep_time", 0.01)
+                                refresh_per_second = config.get("global", "refresh_per_second", 10)
+                                theme_name = config.get("global", "markdown_theme", "default")
+                                
+                                # Используем Live для потокового отображения с Markdown форматированием
+                                with Live(
+                                    console=console,
+                                    refresh_per_second=refresh_per_second,
+                                    auto_refresh=True
+                                ) as live:
+                                    accumulated_text = ""
+                                    for chunk in response_data.chunks:
+                                        accumulated_text += chunk
+                                        markdown = _create_markdown(accumulated_text, theme_name)
+                                        live.update(markdown)
+                                        # Добавляем небольшую задержку для эффекта печати
+                                        time.sleep(sleep_time)
+                                
                                 console.print()  # Новая строка после ответа
 
                                 # Извлекаем блоки кода из ответа
