@@ -15,7 +15,7 @@ from penguin_tamer.themes import get_code_theme
 from penguin_tamer.debug import debug_print_messages
 from penguin_tamer.error_handlers import ErrorHandler, ErrorContext, ErrorSeverity
 from penguin_tamer.utils.lazy_import import lazy_import
-from penguin_tamer.demo_recorder import DemoManager, DemoResponse
+from penguin_tamer.demo import DemoManager, DemoResponse
 
 
 # Ленивый импорт OpenAI клиента
@@ -266,19 +266,18 @@ class DemoStreamProcessor(StreamProcessor):
         """
         self.client.messages.append({"role": "user", "content": user_input})
 
-        player = self.demo_manager.get_player()
-        if player is None or not player.has_more_responses():
+        if not self.demo_manager.has_more_responses():
             warning = t('Demo playback: No more recorded responses.')
             self.client.console.print(f"[yellow]{warning}[/yellow]")
             return ""
 
         # Get next recorded response
-        demo_response = player.play_next_response(user_input)
+        demo_response = self.demo_manager.play_next_response(advance_index=True)
         if demo_response is None:
             return ""
 
         # Phase 1: Show spinner (имитируем ожидание)
-        spinner_delay = player.get_spinner_delay()
+        spinner_delay = config.get("global", "demo_spinner_sec", 1.0)
         self._show_demo_spinner(spinner_delay)
 
         # Phase 2: Stream chunks with live display
@@ -375,9 +374,12 @@ class OpenRouterClient:
         demo_mode = config.get("global", "demo_mode", "off")
         if demo_mode != "off":
             demo_file = config.get("global", "demo_file", "demo_session.json")
-            demo_spinner_ms = config.get("global", "demo_spinner", 1000)
-            demo_spinner_sec = demo_spinner_ms / 1000.0  # Convert to seconds
-            self._demo_manager = DemoManager(demo_mode, demo_file, demo_spinner_sec)
+            # В новом API demo_spinner_sec не нужен - он берется из config
+            self._demo_manager = DemoManager(
+                mode=demo_mode,
+                demo_file=demo_file,
+                console=self.console
+            )
 
     def init_dialog_mode(self, educational_prompt: List[Dict[str, str]]) -> None:
         """Initialize dialog mode by adding educational prompt to messages.
@@ -553,23 +555,21 @@ class OpenRouterClient:
 
             # If in recording mode, save the response
             if self._demo_manager and self._demo_manager.is_recording():
-                recorder = self._demo_manager.get_recorder()
-                if recorder and hasattr(processor, 'recorded_chunks'):
+                if hasattr(processor, 'recorded_chunks'):
                     # Get metadata
                     metadata = {
                         'model': self.llm_config.model,
                         'temperature': self.llm_config.temperature,
                         'timestamp': datetime.now().isoformat()
                     }
-                    # Get accumulated user actions
-                    user_actions = self._demo_manager.get_and_clear_user_actions()
 
-                    recorder.record_response(
+                    # В новом API не нужно передавать user_actions отдельно
+                    # Они уже добавлены через add_user_action() и хранятся в стратегии
+                    self._demo_manager.record_response(
                         user_query=user_input,
                         response=response,
                         chunks=processor.recorded_chunks,
-                        metadata=metadata,
-                        user_actions=user_actions
+                        metadata=metadata
                     )
 
         return response
