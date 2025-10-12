@@ -376,12 +376,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                                 # Импортируем необходимые модули для Markdown отображения
                                 from rich.live import Live
                                 from penguin_tamer.llm_client import _create_markdown
-                                
+
                                 # Получаем настройки отображения
                                 sleep_time = config.get("global", "sleep_time", 0.01)
                                 refresh_per_second = config.get("global", "refresh_per_second", 10)
                                 theme_name = config.get("global", "markdown_theme", "default")
-                                
+
                                 # Используем Live для потокового отображения с Markdown форматированием
                                 with Live(
                                     console=console,
@@ -395,7 +395,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                                         live.update(markdown)
                                         # Добавляем небольшую задержку для эффекта печати
                                         time.sleep(sleep_time)
-                                
+
                                 console.print()  # Новая строка после ответа
 
                                 # Извлекаем блоки кода из ответа
