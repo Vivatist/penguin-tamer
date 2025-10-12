@@ -272,8 +272,13 @@ class RecordStrategy:
 
         self.pending_actions.append(action.to_dict())
 
-    def record_response(self, user_query: str, response: str, chunks: list,
-                       metadata: dict) -> None:
+    def record_response(
+        self,
+        user_query: str,
+        response: str,
+        chunks: list,
+        metadata: dict
+    ) -> None:
         """
         Record a complete response with pending actions.
 

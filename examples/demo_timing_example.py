@@ -21,7 +21,7 @@ def demo_with_fast_timing():
     manager = DemoManager(mode='robot', demo_file='demo.json', console=console)
 
     # Use fast timing preset
-    presenter = RobotPresenter(console, manager, lambda x: x, timing=FAST_ROBOT_TIMING)
+    _ = RobotPresenter(console, manager, lambda x: x, timing=FAST_ROBOT_TIMING)
 
     print("Running with FAST timing...")
     # ... robot mode loop
@@ -33,7 +33,7 @@ def demo_with_slow_timing():
     manager = DemoManager(mode='robot', demo_file='demo.json', console=console)
 
     # Use slow timing preset
-    presenter = RobotPresenter(console, manager, lambda x: x, timing=SLOW_ROBOT_TIMING)
+    _ = RobotPresenter(console, manager, lambda x: x, timing=SLOW_ROBOT_TIMING)
 
     print("Running with SLOW timing...")
     # ... robot mode loop
@@ -53,7 +53,7 @@ def demo_with_custom_timing():
         chunk_delay=0.008,                   # Medium streaming
     )
 
-    presenter = RobotPresenter(console, manager, lambda x: x, timing=custom)
+    _ = RobotPresenter(console, manager, lambda x: x, timing=custom)
 
     print("Running with CUSTOM timing...")
     # ... robot mode loop
@@ -68,7 +68,7 @@ def demo_with_preset_by_name():
     preset_name = "fast"  # Could come from: args.timing_preset
     timing = get_robot_timing(preset_name)
 
-    presenter = RobotPresenter(console, manager, lambda x: x, timing=timing)
+    _ = RobotPresenter(console, manager, lambda x: x, timing=timing)
 
     print(f"Running with {preset_name.upper()} timing...")
     # ... robot mode loop

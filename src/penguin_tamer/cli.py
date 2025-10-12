@@ -257,6 +257,79 @@ def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str)
         return []
 
 
+def _setup_robot_presenter(chat_client, console):
+    """Setup robot presenter if in robot mode.
+
+    Returns:
+        Tuple of (is_robot_mode, robot_presenter)
+    """
+    is_robot_mode = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
+    robot_presenter = None
+
+    if is_robot_mode:
+        from penguin_tamer.demo import RobotPresenter
+        robot_presenter = RobotPresenter(console, chat_client.demo_manager, t)
+
+    return is_robot_mode, robot_presenter
+
+
+def _handle_robot_action(robot_presenter, action, last_code_blocks, console, chat_client):
+    """Handle single robot mode action.
+
+    Returns:
+        Tuple of (should_continue, new_code_blocks, user_prompt)
+    """
+    # Используем presenter для визуализации
+    action_type, code_blocks = robot_presenter.present_action(
+        action,
+        has_code_blocks=bool(last_code_blocks)
+    )
+
+    # Обновляем code_blocks если получили новые
+    if code_blocks:
+        last_code_blocks = code_blocks
+
+    # Выполняем действия если нужно
+    user_prompt = action['value']
+    if action_type == 'command':
+        _handle_direct_command(console, chat_client, user_prompt)
+        return True, last_code_blocks, None
+    elif action_type == 'code_block':
+        _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks)
+        return True, last_code_blocks, None
+
+    return False, last_code_blocks, user_prompt
+
+
+def _get_user_input(is_robot_mode, robot_presenter, chat_client, input_formatter, console, last_code_blocks):
+    """Get user input from robot mode or interactive input.
+
+    Returns:
+        Tuple of (user_prompt, is_robot_mode, robot_presenter, last_code_blocks)
+    """
+    if is_robot_mode:
+        action = chat_client.demo_manager.get_next_user_action()
+        if action:
+            should_continue, last_code_blocks, user_prompt = _handle_robot_action(
+                robot_presenter, action, last_code_blocks, console, chat_client
+            )
+            if should_continue:
+                return None, is_robot_mode, robot_presenter, last_code_blocks
+            return user_prompt, is_robot_mode, robot_presenter, last_code_blocks
+        else:
+            # Нет больше действий - переходим в обычный режим
+            is_robot_mode = False
+            robot_presenter = None
+
+    # Обычный режим - запрашиваем ввод у пользователя
+    user_prompt = input_formatter.get_input(
+        console,
+        has_code_blocks=bool(last_code_blocks),
+        t=t
+    )
+    return user_prompt, is_robot_mode, robot_presenter, last_code_blocks
+
+
 def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode with educational prompt for code block numbering.
 
@@ -276,55 +349,16 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     # Process initial prompt if provided
     last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
 
-    # Проверяем режим robot
-    is_robot_mode = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
-    robot_presenter = None
-
-    if is_robot_mode:
-        from penguin_tamer.demo import RobotPresenter
-        robot_presenter = RobotPresenter(console, chat_client.demo_manager, t)
+    # Setup robot mode if needed
+    is_robot_mode, robot_presenter = _setup_robot_presenter(chat_client, console)
 
     # Main dialog loop
     while True:
         try:
-            # В режиме robot автоматически получаем следующее действие
-            if is_robot_mode:
-                action = chat_client.demo_manager.get_next_user_action()
-                if action:
-                    # Используем presenter для визуализации
-                    action_type, code_blocks = robot_presenter.present_action(
-                        action,
-                        has_code_blocks=bool(last_code_blocks)
-                    )
-
-                    # Обновляем code_blocks если получили новые
-                    if code_blocks:
-                        last_code_blocks = code_blocks
-
-                    # Выполняем действия если нужно
-                    user_prompt = action['value']
-                    if action_type == 'command':
-                        _handle_direct_command(console, chat_client, user_prompt)
-                    elif action_type == 'code_block':
-                        _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks)
-
-                    continue
-                else:
-                    # Нет больше действий - переходим в обычный режим
-                    is_robot_mode = False
-                    robot_presenter = None
-                    user_prompt = input_formatter.get_input(
-                        console,
-                        has_code_blocks=bool(last_code_blocks),
-                        t=t
-                    )
-            else:
-                # Обычный режим - запрашиваем ввод у пользователя
-                user_prompt = input_formatter.get_input(
-                    console,
-                    has_code_blocks=bool(last_code_blocks),
-                    t=t
-                )
+            # Get user input (from robot or interactive)
+            user_prompt, is_robot_mode, robot_presenter, last_code_blocks = _get_user_input(
+                is_robot_mode, robot_presenter, chat_client, input_formatter, console, last_code_blocks
+            )
 
             if not user_prompt:
                 continue
