@@ -11,7 +11,7 @@ Shows:
 from typing import Optional
 
 from penguin_tamer.config_manager import config
-from penguin_tamer.text_utils import format_api_key_display
+from penguin_tamer.utils.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 
 

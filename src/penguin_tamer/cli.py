@@ -76,7 +76,7 @@ def get_execute_handler():
 @lazy_import
 def get_formatter_text():
     """Ленивый импорт text_utils"""
-    from penguin_tamer.text_utils import extract_labeled_code_blocks
+    from penguin_tamer.utils.text_utils import extract_labeled_code_blocks
     return extract_labeled_code_blocks
 
 

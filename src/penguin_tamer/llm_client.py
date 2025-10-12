@@ -8,7 +8,7 @@ from datetime import datetime
 from rich.markdown import Markdown
 from rich.live import Live
 
-from penguin_tamer.text_utils import format_api_key_display
+from penguin_tamer.utils.text_utils import format_api_key_display
 from penguin_tamer.i18n import t
 from penguin_tamer.config_manager import config
 from penguin_tamer.themes import get_code_theme

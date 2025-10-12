@@ -166,7 +166,7 @@ class RobotPresenter:
         self._stream_response(response_data)
 
         # Phase 3: Extract code blocks
-        from ..text_utils import extract_labeled_code_blocks
+        from ..utils.text_utils import extract_labeled_code_blocks
         code_blocks = extract_labeled_code_blocks(response_data.response)
 
         return code_blocks

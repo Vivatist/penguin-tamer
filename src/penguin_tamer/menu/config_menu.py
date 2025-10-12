@@ -36,7 +36,7 @@ from textual.widgets import (
 from penguin_tamer.config_manager import config
 from penguin_tamer.i18n import translator
 from penguin_tamer.arguments import __version__
-from penguin_tamer.text_utils import format_api_key_display
+from penguin_tamer.utils.text_utils import format_api_key_display
 
 # Import modular components
 if __name__ == "__main__":

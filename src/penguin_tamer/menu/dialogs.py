@@ -7,7 +7,7 @@ from textual.containers import Container, Horizontal
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Static
 
-from penguin_tamer.text_utils import format_api_key_display
+from penguin_tamer.utils.text_utils import format_api_key_display
 from penguin_tamer.menu.locales.menu_i18n import t
 
 

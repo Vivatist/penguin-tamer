@@ -1,7 +1,7 @@
 """Tests for text_utils module."""
 
 import pytest
-from penguin_tamer.text_utils import extract_labeled_code_blocks, format_api_key_display
+from penguin_tamer.utils.text_utils import extract_labeled_code_blocks, format_api_key_display
 
 
 class TestExtractLabeledCodeBlocks:
