@@ -439,6 +439,10 @@ def _create_console():
 
 def main() -> None:
     """Main entry point for Penguin Tamer CLI."""
+    # Initialize variables that are used in finally block
+    demo_manager = None
+    console = None
+    
     try:
         args = parse_args()
 
@@ -503,7 +507,7 @@ def main() -> None:
         # Show where demo was saved if recording
         if demo_manager and demo_manager.is_recording():
             saved_path = demo_manager.get_saved_path()
-            if saved_path:
+            if saved_path and console:
                 console.print(f"\n[green]Demo recording saved to:[/green] [cyan]{saved_path}[/cyan]")
 
         print()  # print empty line anyway
