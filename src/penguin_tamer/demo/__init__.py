@@ -44,6 +44,22 @@ from .strategies import (
     RecordStrategy
 )
 
+# Presenter - Robot mode UI
+from .robot_presenter import RobotPresenter
+
+# Timing - Centralized timing configuration
+from .timing import (
+    RobotTimingConfig,
+    PlaybackTimingConfig,
+    DEFAULT_ROBOT_TIMING,
+    DEFAULT_PLAYBACK_TIMING,
+    FAST_ROBOT_TIMING,
+    SLOW_ROBOT_TIMING,
+    INSTANT_PLAYBACK_TIMING,
+    get_robot_timing,
+    get_playback_timing
+)
+
 __all__ = [
     # Manager
     'DemoManager',
@@ -73,5 +89,19 @@ __all__ = [
     'StreamingPlaybackStrategy',
     'RobotPlaybackStrategy',
     'RecordStrategy',
+
+    # Presenter
+    'RobotPresenter',
+
+    # Timing
+    'RobotTimingConfig',
+    'PlaybackTimingConfig',
+    'DEFAULT_ROBOT_TIMING',
+    'DEFAULT_PLAYBACK_TIMING',
+    'FAST_ROBOT_TIMING',
+    'SLOW_ROBOT_TIMING',
+    'INSTANT_PLAYBACK_TIMING',
+    'get_robot_timing',
+    'get_playback_timing',
 ]
 

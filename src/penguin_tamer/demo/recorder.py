@@ -56,6 +56,9 @@ class DemoRecorder:
         if not self._is_recording:
             return False
 
+        # Add "the_end" marker before stopping recording
+        self.record_action_only('query', 'the_end', 'Recording ended')
+
         self._is_recording = False
 
         if self.demo_file:

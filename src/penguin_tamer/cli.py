@@ -278,7 +278,11 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
     # Проверяем режим robot
     is_robot_mode = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
-    robot_action_count = 0  # Счетчик действий для робота
+    robot_presenter = None
+
+    if is_robot_mode:
+        from penguin_tamer.demo import RobotPresenter
+        robot_presenter = RobotPresenter(console, chat_client.demo_manager, t)
 
     # Main dialog loop
     while True:
@@ -287,133 +291,28 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             if is_robot_mode:
                 action = chat_client.demo_manager.get_next_user_action()
                 if action:
-                    robot_action_count += 1
+                    # Используем presenter для визуализации
+                    action_type, code_blocks = robot_presenter.present_action(
+                        action,
+                        has_code_blocks=bool(last_code_blocks)
+                    )
+
+                    # Обновляем code_blocks если получили новые
+                    if code_blocks:
+                        last_code_blocks = code_blocks
+
+                    # Выполняем действия если нужно
                     user_prompt = action['value']
+                    if action_type == 'command':
+                        _handle_direct_command(console, chat_client, user_prompt)
+                    elif action_type == 'code_block':
+                        _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks)
 
-                    # Красивое приглашение как в обычном режиме (сразу)
-                    console.print("[bold #e07333]>>> [/bold #e07333]", end='')
-
-                    # Показываем placeholder в зависимости от наличия блоков кода
-                    # (как в DialogInputFormatter)
-                    if last_code_blocks:
-                        placeholder_text = t(
-                            "Number of the code block to execute or "
-                            "the next question... Ctrl+C - exit"
-                        )
-                    else:
-                        placeholder_text = t("Your question... Ctrl+C - exit")
-
-                    # Выводим placeholder серым курсивом (используем низкоуровневый вывод)
-                    import sys
-                    from rich.text import Text
-                    placeholder_obj = Text(placeholder_text, style="dim italic")
-                    console.print(placeholder_obj, end='')
-
-                    # Возвращаем курсор к началу строки (сразу после >>>)
-                    # Это создаёт эффект как в prompt_toolkit, где placeholder "за" текстом
-                    sys.stdout.write('\r')
-                    sys.stdout.flush()
-                    # Перемещаем курсор на 4 символа вправо (длина ">>> ")
-                    sys.stdout.write('\033[4C')
-                    sys.stdout.flush()
-
-                    # Пауза перед началом печати
-                    # Для первого действия - 1 секунда, для остальных - 3-4 секунды
-                    import time
-                    if robot_action_count == 1:
-                        time.sleep(1.0)
-                    else:
-                        import random
-                        pause = random.uniform(3.0, 4.0)
-                        time.sleep(pause)
-
-                    # Очищаем placeholder перед началом печати
-                    # Используем ANSI escape последовательности для очистки
-                    # \r - возврат каретки в начало строки
-                    # \033[K - очистка от курсора до конца строки
-                    sys.stdout.write('\r\033[K')
-                    sys.stdout.flush()
-
-                    # Выводим prompt заново
-                    console.print("[bold #e07333]>>> [/bold #e07333]", end='')
-
-                    # Используем функцию из стратегии для имитации печати
-                    strategy = chat_client.demo_manager.get_typing_strategy()
-                    if strategy and hasattr(strategy, 'simulate_typing'):
-                        # Проверяем, начинается ли команда с точки для подсветки
-                        if user_prompt.startswith('.'):
-                            # Печатаем точку серым цветом
-                            strategy.simulate_typing('.', style='dim')
-                            # Печатаем команду бирюзовым цветом
-                            strategy.simulate_typing(user_prompt[1:], style='#007c6e')
-                        else:
-                            # Обычный текст без стиля
-                            strategy.simulate_typing(user_prompt)
-                    else:
-                        # Fallback - просто выводим текст
-                        console.print(user_prompt, end='', highlight=False)
-
-                    # Пауза перед "нажатием Enter" для блоков кода
-                    # Если это блок кода, делаем паузу 1.5 сек, чтобы успеть увидеть номер
-                    import time
-                    if action.get('type') == 'code_block':
-                        time.sleep(1.5)
-
-                    # Перевод строки после ввода (нажатие Enter)
-                    console.print()
-
-                    # Небольшая пауза после "нажатия Enter" для всех действий
-                    time.sleep(0.3)
-
-                    # Воспроизводим ответ LLM только для действий query
-                    if action.get('type') == 'query':
-                        # В robot mode не двигаем индекс, это делает get_next_user_action()
-                        response_data = chat_client.demo_manager.play_next_response(advance_index=False)
-                        if response_data:
-                            # Импортируем необходимые модули для Markdown отображения
-                            from rich.live import Live
-                            from penguin_tamer.llm_client import _create_markdown
-
-                            # Получаем настройки отображения
-                            sleep_time = config.get("global", "sleep_time", 0.01)
-                            refresh_per_second = config.get("global", "refresh_per_second", 10)
-                            theme_name = config.get("global", "markdown_theme", "default")
-
-                            # Используем Live для потокового отображения с Markdown форматированием
-                            with Live(
-                                console=console,
-                                refresh_per_second=refresh_per_second,
-                                auto_refresh=True
-                            ) as live:
-                                accumulated_text = ""
-                                for chunk in response_data.chunks:
-                                    accumulated_text += chunk
-                                    markdown = _create_markdown(accumulated_text, theme_name)
-                                    live.update(markdown)
-                                    # Добавляем небольшую задержку для эффекта печати
-                                    time.sleep(sleep_time)
-
-                            console.print()  # Новая строка после ответа
-
-                            # Извлекаем блоки кода из ответа
-                            code_blocks = get_formatter_text()(response_data.response)
-                            last_code_blocks = code_blocks
-                        else:
-                            last_code_blocks = []
-                    elif action.get('type') == 'command':
-                        # Для command выполняем команду напрямую
-                        if _handle_direct_command(console, chat_client, user_prompt):
-                            pass  # Команда выполнена, продолжаем
-                    elif action.get('type') == 'code_block':
-                        # Для code_block выполняем код
-                        if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks):
-                            pass  # Код выполнен, продолжаем
-
-                    # Продолжаем цикл для следующего действия
                     continue
                 else:
                     # Нет больше действий - переходим в обычный режим
                     is_robot_mode = False
+                    robot_presenter = None
                     user_prompt = input_formatter.get_input(
                         console,
                         has_code_blocks=bool(last_code_blocks),
