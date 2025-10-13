@@ -15,7 +15,8 @@ from penguin_tamer.themes import get_code_theme
 from penguin_tamer.debug import debug_print_messages
 from penguin_tamer.error_handlers import ErrorHandler, ErrorContext, ErrorSeverity
 from penguin_tamer.utils.lazy_import import lazy_import
-from penguin_tamer.demo import DemoManager, DemoResponse
+# Note: DemoManager is passed from outside (cli.py), no import needed here
+# This eliminates circular dependency between llm_client and demo modules
 
 
 # Ленивый импорт OpenAI клиента
@@ -245,12 +246,12 @@ class DemoStreamProcessor(StreamProcessor):
     воспроизведения записанных ответов вместо реальных API вызовов.
     """
 
-    def __init__(self, client: 'OpenRouterClient', demo_manager: DemoManager):
+    def __init__(self, client: 'OpenRouterClient', demo_manager):
         """Initialize demo stream processor.
 
         Args:
             client: Parent OpenRouterClient instance
-            demo_manager: Manager for demo recording/playback
+            demo_manager: Manager for demo recording/playback (duck-typed)
         """
         super().__init__(client)
         self.demo_manager = demo_manager
@@ -301,11 +302,11 @@ class DemoStreamProcessor(StreamProcessor):
             status_message['text'] = t('Ai thinking...')
             time.sleep(delay * 0.7)  # 70% времени на "Ai thinking..."
 
-    def _stream_demo_chunks(self, demo_response: DemoResponse) -> str:
+    def _stream_demo_chunks(self, demo_response) -> str:
         """Stream recorded chunks with live markdown display.
 
         Args:
-            demo_response: Recorded response to play
+            demo_response: Recorded response to play (duck-typed DemoResponse)
 
         Returns:
             Complete response text
@@ -363,23 +364,14 @@ class OpenRouterClient:
     # Internal state (not part of constructor)
     messages: List[Dict[str, str]] = field(init=False)
     _client: Optional[object] = field(default=None, init=False)
-    _demo_manager: Optional[DemoManager] = field(default=None, init=False)
+    _demo_manager: Optional[object] = field(default=None, init=False)  # Duck-typed DemoManager
     _current_user_query: str = field(default="", init=False)  # Для записи запроса в demo mode
 
     def __post_init__(self):
         """Initialize internal state after dataclass construction."""
         self.messages = self.system_message.copy()
-
-        # Initialize demo manager if demo mode is enabled
-        demo_mode = config.get("global", "demo_mode", "off")
-        if demo_mode != "off":
-            demo_file = config.get("global", "demo_file", "demo_session.json")
-            # В новом API demo_spinner_sec не нужен - он берется из config
-            self._demo_manager = DemoManager(
-                mode=demo_mode,
-                demo_file=demo_file,
-                console=self.console
-            )
+        # Note: demo_manager should be set externally via _demo_manager property
+        # It's created in cli.py and passed through _create_chat_client()
 
     def init_dialog_mode(self, educational_prompt: List[Dict[str, str]]) -> None:
         """Initialize dialog mode by adding educational prompt to messages.
@@ -614,6 +606,6 @@ class OpenRouterClient:
         return "\n".join(parts)
 
     @property
-    def demo_manager(self) -> Optional['DemoManager']:
-        """Получить доступ к DemoManager для записи действий пользователя."""
+    def demo_manager(self) -> Optional[object]:
+        """Получить доступ к DemoManager для записи действий пользователя (duck-typed)."""
         return self._demo_manager
