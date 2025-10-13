@@ -346,7 +346,7 @@ def _get_user_input(
                 return None, is_robot_mode, robot_presenter, last_code_blocks
             return user_prompt, is_robot_mode, robot_presenter, last_code_blocks
         else:
-            # Нет больше действий - переходим в обычный режим
+            # Robot mode finished - switch to normal interactive mode
             is_robot_mode = False
             robot_presenter = None
 
@@ -522,13 +522,26 @@ def main() -> None:
         # Создаем консоль и клиент только если они нужны для AI операций
         console = _create_console()
 
-        # Создаем DemoManager если указан demo mode
+        # Создаем DemoManager если указан demo mode (из args или config)
         demo_manager = None
+        demo_mode = None
+        demo_file = None
+
+        # Проверяем сначала аргументы командной строки
         if hasattr(args, 'demo_mode') and args.demo_mode:
+            demo_mode = args.demo_mode
+            demo_file = args.demo_file
+        # Если в args нет, проверяем конфиг
+        elif config.get("global", "demo_mode") and config.get("global", "demo_mode") != "off":
+            demo_mode = config.get("global", "demo_mode")
+            demo_file = config.get("global", "demo_file", "demo_session.json")
+
+        # Создаем DemoManager если режим определен
+        if demo_mode:
             from penguin_tamer.demo import DemoManager
             demo_manager = DemoManager(
-                mode=args.demo_mode,
-                demo_file=args.demo_file,
+                mode=demo_mode,
+                demo_file=demo_file,
                 console=console
             )
 
