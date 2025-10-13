@@ -4,7 +4,7 @@ Fix explanation for duplicate first LLM message issue.
 ## Problem
 When running robot mode with skip_first_query=True:
 1. present_action() shows the LLM response via _present_query_response()
-2. _handle_robot_action() returns user_prompt 
+2. _handle_robot_action() returns user_prompt
 3. Main loop calls _process_ai_query(user_prompt) AGAIN
 → Response shown twice
 
