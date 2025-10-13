@@ -18,7 +18,7 @@ from penguin_tamer.demo import DemoManager, DemoResponse  # Line 18
 ```python
 class OpenRouterClient:
     _demo_manager: Optional[DemoManager] = field(default=None, init=False)
-    
+
     def __post_init__(self):
         demo_mode = config.get("global", "demo_mode", "off")
         if demo_mode != "off":
@@ -45,7 +45,7 @@ class DemoStreamProcessor(StreamProcessor):
 ### 4. **cli.py передает chat_client в demo функции**
 
 ```python
-def _handle_robot_action(robot_presenter, action, last_code_blocks, 
+def _handle_robot_action(robot_presenter, action, last_code_blocks,
                         console, chat_client, is_first_query=False):
     # ...
     _handle_direct_command(console, chat_client, user_prompt)
@@ -58,7 +58,7 @@ def _handle_robot_action(robot_presenter, action, last_code_blocks,
 ### 5. **RobotPresenter требует перевод функцию `t`**
 
 ```python
-def __init__(self, console: Console, demo_manager: DemoManager, 
+def __init__(self, console: Console, demo_manager: DemoManager,
              t: Callable[[str], str], timing: Optional[RobotTimingConfig] = None):
 ```
 
@@ -164,14 +164,14 @@ else:
 class StreamProcessor:
     def __init__(self, client, response_provider: ResponseProvider):
         self.response_provider = response_provider
-    
+
     def process(self, user_input):
         # Единый код для обоих режимов
         response = self.response_provider.get_response(user_input)
         # ...
 ```
 
-**Как:** 
+**Как:**
 - Создать интерфейс `ResponseProvider` с методом `get_response()`
 - Реализации: `LLMResponseProvider`, `DemoResponseProvider`
 - Внедрять через конструктор
@@ -182,7 +182,7 @@ class StreamProcessor:
 
 **Текущее:**
 ```python
-def _handle_robot_action(robot_presenter, action, last_code_blocks, 
+def _handle_robot_action(robot_presenter, action, last_code_blocks,
                         console, chat_client, is_first_query=False):
     # 6 параметров!
 ```
@@ -195,7 +195,7 @@ class DialogSession:
         self.chat_client = chat_client
         self.code_blocks = []
         self.is_first = True
-    
+
     def handle_action(self, action):
         # 1 параметр!
 ```
@@ -239,7 +239,7 @@ def __init__(self, console, timing=None):
     self.t = t  # import напрямую
 ```
 
-**Как:** 
+**Как:**
 - Импортировать `t` напрямую из i18n
 - Получать данные через методы, а не хранить demo_manager
 

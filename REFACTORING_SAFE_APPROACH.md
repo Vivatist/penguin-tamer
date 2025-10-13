@@ -40,7 +40,7 @@ chat_client.demo_manager = demo_manager  # Внешнее присвоение
 
 #### 1.2 Добавить demo_manager в конструктор (опционально)
 ```python
-@dataclass  
+@dataclass
 class OpenRouterClient:
     console: object
     system_message: List[Dict[str, str]]
@@ -125,7 +125,7 @@ def _handle_demo_or_llm_query(chat_client, console, prompt, demo_manager):
 #### 3.2 Упростить параметры через dict
 **Было:**
 ```python
-def _handle_robot_action(robot_presenter, action, last_code_blocks, 
+def _handle_robot_action(robot_presenter, action, last_code_blocks,
                         console, chat_client, is_first_query=False):  # 6 параметров!
 ```
 

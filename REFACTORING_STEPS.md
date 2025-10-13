@@ -35,7 +35,7 @@
 ---
 
 ### Шаг 3: Убрать _demo_manager из OpenRouterClient
-**Файл:** `llm_client.py`  
+**Файл:** `llm_client.py`
 **Изменения:**
 - Удалить поле `_demo_manager`
 - Удалить создание DemoManager из `__post_init__()`
@@ -84,11 +84,11 @@ response = client.ask_with_provider(user_input, provider)
 ```python
 def ask_stream(self, user_input: str, provider: ResponseProvider = None) -> str:
     """Потоковый режим с провайдером ответов."""
-    
+
     # Если provider не передан, используем LLM
     if provider is None:
         provider = LLMResponseProvider(self.client, self._prepare_api_params())
-    
+
     # Обработка через единый StreamProcessor
     processor = StreamProcessor(self, provider)
     return processor.process(user_input)
@@ -116,7 +116,7 @@ def _process_ai_query(chat_client, console, prompt, demo_manager=None):
         provider = DemoResponseProvider(demo_manager)
     else:
         provider = None  # Будет использован LLM по умолчанию
-    
+
     # Отправляем запрос
     reply = chat_client.ask_stream(prompt, provider=provider)
     ...
@@ -163,7 +163,7 @@ def _process_ai_query(chat_client, console, prompt, demo_manager=None):
 ```
 [✅] ResponseProvider интерфейс
 [ ] StreamProcessor с provider
-[ ] Удалить DemoStreamProcessor  
+[ ] Удалить DemoStreamProcessor
 [ ] Убрать _demo_manager из OpenRouterClient
 [ ] Передача demo_manager извне
 [ ] Упростить ask_stream()
