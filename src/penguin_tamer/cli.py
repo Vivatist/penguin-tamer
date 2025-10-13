@@ -288,10 +288,10 @@ def _handle_robot_action(robot_presenter, action, last_code_blocks, console, cha
         Tuple of (should_continue, new_code_blocks, user_prompt)
     """
     action_type = action.get('type')
-    
+
     # Skip user input only for first query, not for commands or code blocks
     skip_input = is_first_query and action_type == 'query'
-    
+
     # Используем presenter для визуализации
     action_type, code_blocks = robot_presenter.present_action(
         action,
@@ -377,7 +377,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
     # Check if robot mode first
     is_robot_mode_check = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
-    
+
     # Process initial prompt only if NOT in robot mode
     # In robot mode, all actions come from the demo file
     if not is_robot_mode_check:

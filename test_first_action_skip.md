@@ -49,7 +49,7 @@
 
 **Проблема**: Первоначально `is_first_robot_action` применялся ко ВСЕМ типам действий (query, command, code_block).
 
-**Решение**: 
+**Решение**:
 1. Переименовал `is_first_robot_action` → `skip_first_query`
 2. В `_handle_robot_action()` добавлена проверка типа:
    ```python

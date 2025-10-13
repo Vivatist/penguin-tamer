@@ -74,7 +74,7 @@ class RobotPresenter:
         if not skip_user_input:
             # Increment action count only when showing user input
             self.action_count += 1
-            
+
             # Phase 1: Show prompt and placeholder
             self._show_prompt_with_placeholder(has_code_blocks)
 

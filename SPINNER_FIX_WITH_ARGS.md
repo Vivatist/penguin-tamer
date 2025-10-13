@@ -17,7 +17,7 @@
 def run_dialog_mode(chat_client, console, initial_user_prompt=None):
     # 1. Обработать initial_user_prompt (если есть)
     last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
-    
+
     # 2. Потом проверить robot mode
     is_robot_mode, robot_presenter = _setup_robot_presenter(chat_client, console)
 ```
@@ -52,13 +52,13 @@ def run_dialog_mode(chat_client, console, initial_user_prompt=None):
 def run_dialog_mode(chat_client, console, initial_user_prompt=None):
     # 1. Проверить robot mode ПЕРВЫМ делом
     is_robot_mode_check = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
-    
+
     # 2. Обработать initial_prompt ТОЛЬКО если НЕ robot mode
     if not is_robot_mode_check:
         last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
     else:
         last_code_blocks = []  # В robot mode все действия из файла
-    
+
     # 3. Создать robot presenter
     is_robot_mode, robot_presenter = _setup_robot_presenter(chat_client, console)
 ```
