@@ -1,0 +1,33 @@
+
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    },
+    {
+      "role": "assistant", 
+      "content": "This is the first response. It should appear ONLY ONCE."
+    },
+    {
+      "role": "user",
+      "content": "2"
+    },
+    {
+      "role": "assistant",
+      "content": "This is the second response."
+    }
+  ],
+  "actions": [
+    {
+      "type": "query",
+      "value": "Hello",
+      "note": "First query"
+    },
+    {
+      "type": "code_block",
+      "value": "2",
+      "note": "Code block"
+    }
+  ]
+}
