@@ -273,16 +273,30 @@ def _setup_robot_presenter(chat_client, console):
     return is_robot_mode, robot_presenter
 
 
-def _handle_robot_action(robot_presenter, action, last_code_blocks, console, chat_client):
+def _handle_robot_action(robot_presenter, action, last_code_blocks, console, chat_client, is_first_query=False):
     """Handle single robot mode action.
+
+    Args:
+        robot_presenter: RobotPresenter instance
+        action: Action dict to present
+        last_code_blocks: Previous code blocks
+        console: Rich console
+        chat_client: LLM client
+        is_first_query: If True and action is 'query', skip showing user input
 
     Returns:
         Tuple of (should_continue, new_code_blocks, user_prompt)
     """
+    action_type = action.get('type')
+    
+    # Skip user input only for first query, not for commands or code blocks
+    skip_input = is_first_query and action_type == 'query'
+    
     # Используем presenter для визуализации
     action_type, code_blocks = robot_presenter.present_action(
         action,
-        has_code_blocks=bool(last_code_blocks)
+        has_code_blocks=bool(last_code_blocks),
+        skip_user_input=skip_input
     )
 
     # Обновляем code_blocks если получили новые
@@ -297,12 +311,27 @@ def _handle_robot_action(robot_presenter, action, last_code_blocks, console, cha
     elif action_type == 'code_block':
         _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks)
         return True, last_code_blocks, None
+    elif action_type == 'query' and skip_input:
+        # First query already shown by present_action, skip _process_ai_query
+        return True, last_code_blocks, None
 
     return False, last_code_blocks, user_prompt
 
 
-def _get_user_input(is_robot_mode, robot_presenter, chat_client, input_formatter, console, last_code_blocks):
+def _get_user_input(
+    is_robot_mode, robot_presenter, chat_client, input_formatter,
+    console, last_code_blocks, is_first_query=False
+):
     """Get user input from robot mode or interactive input.
+
+    Args:
+        is_robot_mode: Whether in robot mode
+        robot_presenter: RobotPresenter instance
+        chat_client: LLM client
+        input_formatter: Input formatter
+        console: Rich console
+        last_code_blocks: Previous code blocks
+        is_first_query: If True, skip showing input for first query action
 
     Returns:
         Tuple of (user_prompt, is_robot_mode, robot_presenter, last_code_blocks)
@@ -311,7 +340,7 @@ def _get_user_input(is_robot_mode, robot_presenter, chat_client, input_formatter
         action = chat_client.demo_manager.get_next_user_action()
         if action:
             should_continue, last_code_blocks, user_prompt = _handle_robot_action(
-                robot_presenter, action, last_code_blocks, console, chat_client
+                robot_presenter, action, last_code_blocks, console, chat_client, is_first_query
             )
             if should_continue:
                 return None, is_robot_mode, robot_presenter, last_code_blocks
@@ -346,22 +375,38 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     educational_prompt = get_educational_prompt()
     chat_client.init_dialog_mode(educational_prompt)
 
-    # Process initial prompt if provided
-    last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
+    # Check if robot mode first
+    is_robot_mode_check = chat_client.demo_manager and chat_client.demo_manager.is_robot_mode()
+    
+    # Process initial prompt only if NOT in robot mode
+    # In robot mode, all actions come from the demo file
+    if not is_robot_mode_check:
+        last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
+    else:
+        last_code_blocks = []
 
     # Setup robot mode if needed
     is_robot_mode, robot_presenter = _setup_robot_presenter(chat_client, console)
+
+    # Track if we should skip the first query in robot mode
+    skip_first_query = is_robot_mode
 
     # Main dialog loop
     while True:
         try:
             # Get user input (from robot or interactive)
             user_prompt, is_robot_mode, robot_presenter, last_code_blocks = _get_user_input(
-                is_robot_mode, robot_presenter, chat_client, input_formatter, console, last_code_blocks
+                is_robot_mode, robot_presenter, chat_client, input_formatter,
+                console, last_code_blocks, skip_first_query
             )
 
             if not user_prompt:
                 continue
+
+            # After processing first query action, reset the flag
+            # (flag is only used for query actions, not commands or code blocks)
+            if skip_first_query:
+                skip_first_query = False
 
             # Check for exit
             if _is_exit_command(user_prompt):
@@ -442,7 +487,7 @@ def main() -> None:
     # Initialize variables that are used in finally block
     demo_manager = None
     console = None
-    
+
     try:
         args = parse_args()
 

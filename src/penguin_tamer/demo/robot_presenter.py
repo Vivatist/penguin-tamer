@@ -53,7 +53,8 @@ class RobotPresenter:
     def present_action(
         self,
         action: dict,
-        has_code_blocks: bool
+        has_code_blocks: bool,
+        skip_user_input: bool = False
     ) -> tuple[Optional[str], list]:
         """
         Present a single robot action.
@@ -61,31 +62,35 @@ class RobotPresenter:
         Args:
             action: Action dictionary from demo
             has_code_blocks: Whether code blocks are available
+            skip_user_input: If True, skip showing user input (for first action)
 
         Returns:
             Tuple of (action_type, code_blocks)
             action_type can be: 'query', 'command', 'code_block'
         """
-        self.action_count += 1
         user_prompt = action['value']
         action_type = action.get('type')
 
-        # Phase 1: Show prompt and placeholder
-        self._show_prompt_with_placeholder(has_code_blocks)
+        if not skip_user_input:
+            # Increment action count only when showing user input
+            self.action_count += 1
+            
+            # Phase 1: Show prompt and placeholder
+            self._show_prompt_with_placeholder(has_code_blocks)
 
-        # Phase 2: Pause before typing
-        self._pause_before_typing()
+            # Phase 2: Pause before typing
+            self._pause_before_typing()
 
-        # Phase 3: Clear and show typing
-        self._clear_and_type(user_prompt)
+            # Phase 3: Clear and show typing
+            self._clear_and_type(user_prompt)
 
-        # Phase 4: Pause before Enter (for code blocks)
-        if action_type == 'code_block':
-            time.sleep(self.timing.code_block_pause)
+            # Phase 4: Pause before Enter (for code blocks)
+            if action_type == 'code_block':
+                time.sleep(self.timing.code_block_pause)
 
-        # Phase 5: Press Enter
-        self.console.print()
-        time.sleep(self.timing.after_enter_pause)
+            # Phase 5: Press Enter
+            self.console.print()
+            time.sleep(self.timing.after_enter_pause)
 
         # Phase 6: Handle response based on action type
         code_blocks = []

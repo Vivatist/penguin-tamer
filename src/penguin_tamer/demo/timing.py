@@ -49,7 +49,7 @@ class RobotTimingConfig:
     """Pause after pressing Enter"""
 
     # === Spinner timing ===
-    spinner_total_time: float = 4.0
+    spinner_total_time: float = 3.0
     """Total spinner display time (seconds)"""
 
     spinner_connecting_ratio: float = 0.4
