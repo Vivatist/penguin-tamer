@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # Сначала импортируем настройки
 from penguin_tamer.config_manager import config
 from penguin_tamer.utils.lazy_import import lazy_import
+from penguin_tamer.demo_system import create_demo_manager
 
 # Ленивый импорт i18n с инициализацией
 _i18n_initialized = False
@@ -209,8 +210,14 @@ def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt:
     return True
 
 
-def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> list:
+def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str, demo_manager=None) -> list:
     """Send query to AI and extract code blocks from response.
+
+    Args:
+        chat_client: LLM client
+        console: Rich console for output
+        prompt: User prompt
+        demo_manager: Demo manager for recording (optional)
 
     Returns:
         List of code blocks from AI response
@@ -221,13 +228,23 @@ def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str) -> li
     # Извлекаем блоки кода только если получен непустой ответ
     if reply:
         code_blocks = get_formatter_text()(reply)
+    
+    # Finalize LLM output for recording
+    if demo_manager:
+        demo_manager.finalize_llm_output()
 
     console.print()
     return code_blocks
 
 
-def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str) -> list:
+def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str, demo_manager=None) -> list:
     """Process initial user prompt if provided.
+
+    Args:
+        chat_client: LLM client
+        console: Rich console for output
+        prompt: Initial user prompt
+        demo_manager: Demo manager for recording (optional)
 
     Returns:
         List of code blocks from response
@@ -236,7 +253,7 @@ def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str)
         return []
 
     try:
-        return _process_ai_query(chat_client, console, prompt)
+        return _process_ai_query(chat_client, console, prompt, demo_manager)
     except Exception as e:
         console.print(connection_error(e))
         console.print()
@@ -251,6 +268,19 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         console: Rich console for output
         initial_user_prompt: Optional initial prompt to process before entering dialog loop
     """
+    # Initialize demo system
+    demo_manager = create_demo_manager(
+        mode=config.get("global", "demo_mode", "off"),
+        console=console,
+        config_dir=config.user_config_dir,
+        demo_file=config.get("global", "demo_file")
+    )
+    
+    # If play mode - just play and exit
+    if demo_manager.is_playing():
+        demo_manager.play()
+        return
+    
     # Setup
     history_file_path = config.user_config_dir / "cmd_history"
     input_formatter = DialogInputFormatter(history_file_path)
@@ -260,7 +290,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     chat_client.init_dialog_mode(educational_prompt)
 
     # Process initial prompt if provided
-    last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt)
+    last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt, demo_manager)
 
     # Main dialog loop
     while True:
@@ -274,6 +304,9 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
             if not user_prompt:
                 continue
+            
+            # Record user input
+            demo_manager.record_user_input(user_prompt)
 
             # Check for exit
             if _is_exit_command(user_prompt):
@@ -288,12 +321,15 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                 continue
 
             # Process as AI query
-            last_code_blocks = _process_ai_query(chat_client, console, user_prompt)
+            last_code_blocks = _process_ai_query(chat_client, console, user_prompt, demo_manager)
 
         except KeyboardInterrupt:
             break
         except Exception as e:
             console.print(connection_error(e))
+    
+    # Finalize demo recording
+    demo_manager.finalize()
 
 
 def _create_chat_client(console):

@@ -18,6 +18,10 @@ global:
   refresh_per_second: 10 # Частота обновления интерфейса в потоковом режиме (обновлений в секунду)
   markdown_theme: "default" # Тема для Markdown: default, monokai, dracula, nord, solarized_dark, github, matrix, minimal
   debug_mode: false # Режим отладки: показывает структуру всех сообщений, отправляемых в LLM
+  
+  # === Demo System Settings ===
+  demo_mode: "off" # Режим демонстрации: off, record, play
+  demo_file: null # Файл для воспроизведения в режиме play (если null, используется последний записанный)
 
 supported_LLMs:
   "Grok-4-Fast via OpenRouter":

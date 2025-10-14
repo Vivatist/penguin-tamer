@@ -1,0 +1,10 @@
+# Simplified demo system configuration
+
+playback:
+  # Typing simulation
+  typing_delay_per_char: 0.03    # Delay per character (seconds)
+  typing_delay_variance: 0.02    # Random variance in typing speed
+  
+  # Delays between events
+  pause_after_input: 0.5         # Pause after user enters text
+  output_delay: 1.0              # Delay before showing LLM output
