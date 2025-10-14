@@ -228,7 +228,7 @@ def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str, demo_
     # Извлекаем блоки кода только если получен непустой ответ
     if reply:
         code_blocks = get_formatter_text()(reply)
-    
+
     # Finalize LLM output for recording
     if demo_manager:
         demo_manager.finalize_llm_output()
@@ -275,12 +275,12 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         config_dir=config.user_config_dir,
         demo_file=config.get("global", "demo_file")
     )
-    
+
     # If play mode - just play and exit
     if demo_manager.is_playing():
         demo_manager.play()
         return
-    
+
     # Setup
     history_file_path = config.user_config_dir / "cmd_history"
     input_formatter = DialogInputFormatter(history_file_path)
@@ -304,7 +304,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
             if not user_prompt:
                 continue
-            
+
             # Record user input
             demo_manager.record_user_input(user_prompt)
 
@@ -327,7 +327,7 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
             break
         except Exception as e:
             console.print(connection_error(e))
-    
+
     # Finalize demo recording
     demo_manager.finalize()
 
