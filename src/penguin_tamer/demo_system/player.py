@@ -144,11 +144,11 @@ class DemoPlayer:
 
         # Stream output with realistic variable-sized chunks
         base_chunk_delay = config.get("chunk_delay", 0.05)
-        
+
         # Use Live display for progressive markdown rendering
         accumulated_text = ""
         i = 0
-        
+
         with Live(console=self.console, auto_refresh=False) as live:
             while i < len(text):
                 # Generate realistic chunk size (1-10 characters, weighted towards smaller)
@@ -157,24 +157,24 @@ class DemoPlayer:
                     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     weights=[5, 10, 15, 20, 15, 10, 8, 5, 2, 1]
                 )[0]
-                
+
                 # Extract chunk
                 chunk = text[i:i + chunk_size]
                 accumulated_text += chunk
                 i += chunk_size
-                
+
                 # Render accumulated text as markdown
                 md = Markdown(accumulated_text)
                 live.update(md)
                 live.refresh()
-                
+
                 # Highly variable delay between chunks (realistic LLM behavior)
                 # Sometimes fast bursts, sometimes slower processing
                 delay_type = random.choices(
                     ['fast', 'normal', 'slow', 'pause'],
                     weights=[40, 35, 20, 5]
                 )[0]
-                
+
                 if delay_type == 'fast':
                     # Fast burst (0.01-0.03s)
                     delay = random.uniform(0.01, 0.03)
@@ -187,9 +187,9 @@ class DemoPlayer:
                 else:  # pause
                     # Brief thinking pause (4-6x base)
                     delay = base_chunk_delay * random.uniform(4.0, 6.0)
-                
+
                 time.sleep(max(0.01, delay))
-        
+
         self.console.print()  # Extra newline for spacing
 
     def _play_command_output(self, event: Dict[str, Any], config: Dict[str, Any]):
