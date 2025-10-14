@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.live import Live
 
 from .models import DemoSession
 
@@ -120,12 +121,13 @@ class DemoPlayer:
         # Show prompt
         self.console.print("[bold #e07333]>>> [/bold #e07333]", end='')
 
-        # Simulate typing
+        # Simulate typing with realistic delays
         base_delay = config.get("typing_delay_per_char", 0.03)
         variance = config.get("typing_delay_variance", 0.02)
 
         for char in text:
             self.console.print(char, end='', highlight=False)
+            # Add variance to make it look more human
             delay = base_delay + random.uniform(-variance, variance)
             time.sleep(delay)
 
@@ -134,16 +136,61 @@ class DemoPlayer:
         time.sleep(config.get("pause_after_input", 0.5))
 
     def _play_llm_output(self, event: Dict[str, Any], config: Dict[str, Any]):
-        """Play LLM output."""
+        """Play LLM output with realistic streaming effect and markdown rendering."""
         text = event.get("text", "")
 
-        # Brief delay before response
+        # Brief delay before response (thinking time)
         time.sleep(config.get("output_delay", 1.0))
 
-        # Show output with markdown
-        md = Markdown(text)
-        self.console.print(md)
-        self.console.print()
+        # Stream output with realistic variable-sized chunks
+        base_chunk_delay = config.get("chunk_delay", 0.05)
+        
+        # Use Live display for progressive markdown rendering
+        accumulated_text = ""
+        i = 0
+        
+        with Live(console=self.console, auto_refresh=False) as live:
+            while i < len(text):
+                # Generate realistic chunk size (1-10 characters, weighted towards smaller)
+                # This simulates real LLM streaming where chunks vary in size
+                chunk_size = random.choices(
+                    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    weights=[5, 10, 15, 20, 15, 10, 8, 5, 2, 1]
+                )[0]
+                
+                # Extract chunk
+                chunk = text[i:i + chunk_size]
+                accumulated_text += chunk
+                i += chunk_size
+                
+                # Render accumulated text as markdown
+                md = Markdown(accumulated_text)
+                live.update(md)
+                live.refresh()
+                
+                # Highly variable delay between chunks (realistic LLM behavior)
+                # Sometimes fast bursts, sometimes slower processing
+                delay_type = random.choices(
+                    ['fast', 'normal', 'slow', 'pause'],
+                    weights=[40, 35, 20, 5]
+                )[0]
+                
+                if delay_type == 'fast':
+                    # Fast burst (0.01-0.03s)
+                    delay = random.uniform(0.01, 0.03)
+                elif delay_type == 'normal':
+                    # Normal speed (base_chunk_delay ± 30%)
+                    delay = base_chunk_delay + random.uniform(-base_chunk_delay * 0.3, base_chunk_delay * 0.3)
+                elif delay_type == 'slow':
+                    # Slower processing (2-3x base)
+                    delay = base_chunk_delay * random.uniform(2.0, 3.0)
+                else:  # pause
+                    # Brief thinking pause (4-6x base)
+                    delay = base_chunk_delay * random.uniform(4.0, 6.0)
+                
+                time.sleep(max(0.01, delay))
+        
+        self.console.print()  # Extra newline for spacing
 
     def _play_command_output(self, event: Dict[str, Any], config: Dict[str, Any]):
         """Play command execution output."""

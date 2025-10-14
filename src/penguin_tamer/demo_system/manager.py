@@ -99,6 +99,9 @@ class DemoSystemManager:
             # Determine which file to play
             if self.demo_file:
                 session_file = Path(self.demo_file)
+                # If not absolute path, look in demo/ folder
+                if not session_file.is_absolute():
+                    session_file = self.config_dir / "demo" / self.demo_file
             else:
                 # Use last recording
                 temp_recorder = DemoRecorder(self.config_dir)
@@ -111,7 +114,7 @@ class DemoSystemManager:
                     self.console.print(f"[red]Failed to load demo file: {session_file}[/red]")
                     self.mode = "off"
             else:
-                self.console.print("[red]No demo file found to play[/red]")
+                self.console.print(f"[red]No demo file found to play: {session_file}[/red]")
                 self.mode = "off"
 
     def is_recording(self) -> bool:
