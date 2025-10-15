@@ -121,7 +121,8 @@ class DemoSystemManager:
 
             if session_file and session_file.exists():
                 if self.player.load_session(session_file):
-                    self.console.print(f"[green]▶️  Playing demo: {session_file}[/green]")
+                    # Silent mode - no status messages during playback
+                    pass
                 else:
                     self.console.print(f"[red]Failed to load demo file: {session_file}[/red]")
                     self.mode = "off"
