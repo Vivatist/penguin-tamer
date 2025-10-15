@@ -73,7 +73,8 @@ class DemoSystemManager:
     Provides simple interface for cli.py integration.
     """
 
-    def __init__(self, mode: str, console: Console, config_dir: Path, demo_file: Optional[Path] = None):
+    def __init__(self, mode: str, console: Console, config_dir: Path, demo_file: Optional[Path] = None,
+                 play_first_input: bool = True):
         """
         Initialize demo manager.
 
@@ -82,11 +83,13 @@ class DemoSystemManager:
             console: Rich console
             config_dir: Directory where config is stored
             demo_file: File to play (for 'play' mode, optional - uses last if not specified)
+            play_first_input: Show first user input during playback (default: True)
         """
         self.mode = mode
         self.console = console
         self.config_dir = config_dir
         self.demo_file = demo_file
+        self.play_first_input = play_first_input
 
         self.recorder: Optional[DemoRecorder] = None
         self.player: Optional[DemoPlayer] = None
@@ -103,7 +106,7 @@ class DemoSystemManager:
         elif self.mode == "play":
             # config_demo.yaml is in the same directory as this file
             config_demo_path = Path(__file__).parent / "config_demo.yaml"
-            self.player = DemoPlayer(self.console, config_demo_path)
+            self.player = DemoPlayer(self.console, config_demo_path, self.play_first_input)
 
             # Determine which file to play
             if self.demo_file:
@@ -212,7 +215,7 @@ class DemoSystemManager:
 
 
 def create_demo_manager(mode: str, console: Console, config_dir: Path,
-                        demo_file: Optional[Path] = None):
+                        demo_file: Optional[Path] = None, play_first_input: bool = True):
     """
     Factory function to create appropriate demo manager.
 
@@ -224,6 +227,7 @@ def create_demo_manager(mode: str, console: Console, config_dir: Path,
         console: Rich console
         config_dir: Config directory path
         demo_file: Demo file for playback (optional)
+        play_first_input: Show first user input during playback (default: True)
 
     Returns:
         DemoSystemManager or NullDemoManager
@@ -236,4 +240,4 @@ def create_demo_manager(mode: str, console: Console, config_dir: Path,
     if mode == "off":
         return NullDemoManager()
     else:
-        return DemoSystemManager(mode, console, config_dir, demo_file)
+        return DemoSystemManager(mode, console, config_dir, demo_file, play_first_input)

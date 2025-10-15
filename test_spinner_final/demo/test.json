@@ -1,0 +1,21 @@
+{
+  "version": "2.0",
+  "events": [
+    {
+      "type": "input",
+      "text": "Первый вопрос"
+    },
+    {
+      "type": "output",
+      "text": "Первый ответ"
+    },
+    {
+      "type": "input",
+      "text": "Второй вопрос"
+    },
+    {
+      "type": "output",
+      "text": "Второй ответ"
+    }
+  ]
+}

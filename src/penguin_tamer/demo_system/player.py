@@ -18,16 +18,18 @@ from .models import DemoSession
 class DemoPlayer:
     """Plays back recorded demo sessions with realistic timing."""
 
-    def __init__(self, console: Console, config_path: Optional[Path] = None):
+    def __init__(self, console: Console, config_path: Optional[Path] = None, play_first_input: bool = True):
         """
         Initialize player.
 
         Args:
             console: Rich console for output
             config_path: Path to config_demo.yaml (if None, looks for it in demo_system/)
+            play_first_input: Show first user input during playback (default: True)
         """
         self.console = console
         self.session: Optional[DemoSession] = None
+        self.play_first_input = play_first_input
 
         # If no config path provided, use default location in demo_system/
         if config_path is None:
@@ -86,20 +88,35 @@ class DemoPlayer:
             return
 
         self.is_playing = True
-        play_first_input = self.config.get("playback", {}).get("play_first_input", True)
+        play_first_input = self.play_first_input  # Use instance variable instead of config
         first_input_skipped = False
+        previous_event_type = None
 
         try:
             for event in self.session.events:
                 if not self.is_playing:
                     break
 
+                event_type = event.get("type")
+
                 # Skip first input event if play_first_input is False
-                if not play_first_input and not first_input_skipped and event.get("type") == "input":
+                if not play_first_input and not first_input_skipped and event_type == "input":
                     first_input_skipped = True
+                    # Set previous_event_type to 'input' even though we skipped it
+                    # so spinner shows before first output
+                    previous_event_type = "input"
                     continue
 
+                # Show spinner before LLM output if previous event was input or if first input was skipped
+                if event_type == "output":
+                    # Show spinner after input or at the start if first input was skipped
+                    if (previous_event_type == "input" or
+                            (not play_first_input and not first_input_skipped and
+                             previous_event_type is None)):
+                        self._show_spinner()
+
                 self._play_event(event)
+                previous_event_type = event_type
         except KeyboardInterrupt:
             self.console.print("\n[yellow]Playback interrupted[/yellow]")
         finally:
@@ -108,6 +125,50 @@ class DemoPlayer:
     def stop(self):
         """Stop playback."""
         self.is_playing = False
+
+    def _show_spinner(self):
+        """Show two-phase spinner before LLM output (Connecting... → Thinking...)."""
+        config = self.config.get("playback", {})
+
+        if not config.get("spinner_enabled", True):
+            return
+
+        phase_duration = config.get("spinner_phase_duration", 0.1)
+        phase_variance = config.get("spinner_phase_variance", 0.03)
+
+        # Phase 1: "Connecting..."
+        phase1_text = config.get("spinner_phase1_text", "Connecting...")
+        phase1_min = config.get("spinner_phase1_min_duration", 0.3)
+        phase1_max = config.get("spinner_phase1_max_duration", 0.8)
+        phase1_duration = random.uniform(phase1_min, phase1_max)
+
+        # Phase 2: "Thinking..."
+        phase2_text = config.get("spinner_phase2_text", "Thinking...")
+        phase2_min = config.get("spinner_phase2_min_duration", 0.5)
+        phase2_max = config.get("spinner_phase2_max_duration", 2.0)
+        phase2_duration = random.uniform(phase2_min, phase2_max)
+
+        try:
+            # Используем один status для обеих фаз
+            with self.console.status(f"[dim]{phase1_text}[/dim]",
+                                     spinner="dots",
+                                     spinner_style="dim") as status:
+                # Phase 1: Connecting
+                start_time = time.time()
+                while time.time() - start_time < phase1_duration:
+                    delay = phase_duration + random.uniform(-phase_variance, phase_variance)
+                    delay = max(0.01, delay)
+                    time.sleep(delay)
+
+                # Phase 2: Thinking - обновляем сообщение на той же строке
+                status.update(f"[dim]{phase2_text}[/dim]")
+                start_time = time.time()
+                while time.time() - start_time < phase2_duration:
+                    delay = phase_duration + random.uniform(-phase_variance, phase_variance)
+                    delay = max(0.01, delay)
+                    time.sleep(delay)
+        except KeyboardInterrupt:
+            pass
 
     def _play_event(self, event: Dict[str, Any]):
         """Play single event with appropriate timing and effects."""
@@ -151,16 +212,15 @@ class DemoPlayer:
                 delay = base_delay + random.uniform(-variance, variance)
                 time.sleep(delay)
 
-        # Press Enter
-        self.console.print()
+        # Press Enter (no newline, continue on same line)
         time.sleep(config.get("pause_after_input", 0.5))
 
     def _play_llm_output(self, event: Dict[str, Any], config: Dict[str, Any]):
         """Play LLM output with realistic streaming effect and markdown rendering."""
         text = event.get("text", "")
 
-        # Brief delay before response (thinking time)
-        time.sleep(config.get("output_delay", 1.0))
+        # Note: Spinner is shown before this method is called in play_session()
+        # No additional delay needed here
 
         # Stream output with realistic variable-sized chunks
         base_chunk_delay = config.get("chunk_delay", 0.05)

@@ -22,6 +22,7 @@ global:
   # === Demo System Settings ===
   demo_mode: "off" # Режим демонстрации: off, record, play
   demo_file: null # Файл для воспроизведения в режиме play (если null, используется последний записанный)
+  demo_play_first_input: false # В режиме воспроизведения, воспроизводить ли первый ввод пользователя (true/false)
 
 supported_LLMs:
   "Grok-4-Fast via OpenRouter":
