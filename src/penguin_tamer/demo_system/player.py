@@ -131,7 +131,7 @@ class DemoPlayer:
             self.console.print('.', end='', style='dim', highlight=False)
             delay = base_delay + random.uniform(-variance, variance)
             time.sleep(delay)
-            
+
             # Type the rest in teal color (#007c6e)
             for char in text[1:]:
                 self.console.print(char, end='', style='#007c6e', highlight=False)
@@ -208,7 +208,7 @@ class DemoPlayer:
     def _play_command_output(self, event: Dict[str, Any], config: Dict[str, Any]):
         """Play command execution output with proper formatting and recorded timing."""
         command = event.get("command", "")
-        
+
         time.sleep(0.3)
 
         # Show "Executing command" message (same as in main program)
@@ -217,19 +217,19 @@ class DemoPlayer:
         # Check if we have chunks with timing or just plain output
         chunks = event.get("chunks")
         output = event.get("output")
-        
+
         if chunks:
             # Replay with recorded timing
             last_delay = 0.0
             for chunk_data in chunks:
                 chunk_text = chunk_data.get("text", "")
                 chunk_delay = chunk_data.get("delay", 0.0)
-                
+
                 # Wait for the time difference between this chunk and previous
                 delay_diff = chunk_delay - last_delay
                 if delay_diff > 0:
                     time.sleep(delay_diff)
-                
+
                 # Print chunk without newline (already included in chunk)
                 print(chunk_text, end='', flush=True)
                 last_delay = chunk_delay

@@ -28,7 +28,7 @@ class DemoSession:
 
     def add_command_output(self, command: str, output: str = None, chunks: List[Dict[str, Any]] = None) -> None:
         """Add command output event.
-        
+
         Args:
             command: Command that was executed
             output: Full output text (for simple recording)
@@ -38,12 +38,12 @@ class DemoSession:
             "type": "command",
             "command": command
         }
-        
+
         if chunks is not None:
             event["chunks"] = chunks
         elif output is not None:
             event["output"] = output
-            
+
         self.events.append(event)
 
     def to_dict(self) -> Dict[str, Any]:

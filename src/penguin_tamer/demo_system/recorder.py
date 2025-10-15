@@ -106,13 +106,13 @@ class DemoRecorder:
     def start_command_recording(self, command: str):
         """
         Start recording command output with timing.
-        
+
         Args:
             command: Command being executed
         """
         if not self.is_recording:
             return
-            
+
         self._current_command_chunks = []
         self._command_start_time = time.time()
         self._current_command = command
@@ -120,13 +120,13 @@ class DemoRecorder:
     def record_command_chunk(self, chunk: str):
         """
         Record a chunk of command output with timestamp.
-        
+
         Args:
             chunk: Output chunk (typically a line)
         """
         if not self.is_recording or self._command_start_time is None:
             return
-            
+
         elapsed = time.time() - self._command_start_time
         self._current_command_chunks.append({
             "text": chunk,
