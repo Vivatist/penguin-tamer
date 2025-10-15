@@ -1,28 +1,28 @@
 playback:
   # Delay between chunks when streaming LLM output
   chunk_delay: 0.05
-  
+
   # Pause before user starts typing (simulates reading/thinking time)
   pause_before_input: 2.0
-  
+
   # Pause after user finishes typing before pressing Enter
   pause_after_input: 1.0
-  
+
   # Enable two-phase spinner animation before LLM output
   spinner_enabled: true
-  
+
   # Phase 1: Connection phase text
   spinner_phase1_text: Connecting...
-  
+
   # Phase 2: Thinking phase duration range (random between min and max)
   spinner_phase2_max_duration: 2.0
   spinner_phase2_min_duration: 0.5
-  
+
   # Phase 2: Thinking phase text
   spinner_phase2_text: Thinking...
-  
+
   # Typing simulation: base delay per character
   typing_delay_per_char: 0.15
-  
+
   # Typing simulation: random variance to add realism
   typing_delay_variance: 0.05
