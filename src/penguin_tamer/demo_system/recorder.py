@@ -140,7 +140,7 @@ class DemoRecorder:
 
     def finalize_command_output(self, exit_code: int = 0, stderr: str = None, interrupted: bool = False):
         """Finalize accumulated command output chunks and add to session.
-        
+
         Args:
             exit_code: Command exit code
             stderr: Error output if any
