@@ -91,6 +91,7 @@ class DemoPlayer:
         play_first_input = self.play_first_input  # Use instance variable instead of config
         first_input_skipped = False
         previous_event_type = None
+        last_output_text = None  # Track last LLM output for placeholder logic
 
         try:
             for event in self.session.events:
@@ -98,6 +99,10 @@ class DemoPlayer:
                     break
 
                 event_type = event.get("type")
+
+                # Track last output text
+                if event_type == "output":
+                    last_output_text = event.get("text", "")
 
                 # Skip first input event if play_first_input is False
                 if not play_first_input and not first_input_skipped and event_type == "input":
@@ -115,8 +120,12 @@ class DemoPlayer:
                              previous_event_type is None)):
                         self._show_spinner()
 
-                self._play_event(event)
+                self._play_event(event, last_output_text)
                 previous_event_type = event_type
+            
+            # Show final prompt with placeholder after all events
+            if self.is_playing:
+                self._show_final_prompt(last_output_text)
         except KeyboardInterrupt:
             self.console.print("\n[yellow]Playback interrupted[/yellow]")
         finally:
@@ -170,28 +179,62 @@ class DemoPlayer:
         except KeyboardInterrupt:
             pass
 
-    def _play_event(self, event: Dict[str, Any]):
+    def _play_event(self, event: Dict[str, Any], last_output_text: str = None):
         """Play single event with appropriate timing and effects."""
         event_type = event.get("type")
         config = self.config.get("playback", {})
 
         if event_type == "input":
-            self._play_user_input(event, config)
+            self._play_user_input(event, config, last_output_text)
         elif event_type == "output":
             self._play_llm_output(event, config)
         elif event_type == "command":
             self._play_command_output(event, config)
 
-    def _play_user_input(self, event: Dict[str, Any], config: Dict[str, Any]):
+    def _play_user_input(self, event: Dict[str, Any], config: Dict[str, Any],
+                         last_output_text: str = None):
         """Play user input with typing simulation."""
         text = event.get("text", "")
 
         # Show prompt
         self.console.print("[bold #e07333]>>> [/bold #e07333]", end='')
 
+        # Check if last output has code blocks (look for [Code #N] pattern)
+        has_code_blocks = False
+        if last_output_text:
+            import re
+            has_code_blocks = bool(re.search(r'\[Code #\d+\]', last_output_text))
+
+        # Show placeholder
+        if has_code_blocks:
+            placeholder = (
+                "Number of the code block to execute or "
+                "the next question... Ctrl+C - exit"
+            )
+        else:
+            placeholder = "Your question... Ctrl+C - exit"
+
+        # Print placeholder, then move cursor back to start position
+        self.console.print(f"[dim italic]{placeholder}[/dim italic]", end='')
+        # Move cursor back to beginning of line, then forward 4 chars (past ">>> ")
+        # \r - return to start, \033[4C - move cursor forward 4 positions
+        print('\r\033[4C', end='', flush=True)
+
         # Pause before typing (simulating user reading/thinking)
         pause_before = config.get("pause_before_input", 0.5)
         time.sleep(pause_before)
+        
+        # Clear line and show prompt atomically to avoid cursor jump
+        import sys
+        from io import StringIO
+        # Capture Rich output to string
+        buffer = StringIO()
+        temp_console = Console(file=buffer, force_terminal=True, width=200)
+        temp_console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+        rendered = buffer.getvalue()
+        # Atomic operation: clear line + print colored prompt
+        sys.stdout.write('\r\033[K' + rendered)
+        sys.stdout.flush()
 
         # Simulate typing with realistic delays
         base_delay = config.get("typing_delay_per_char", 0.03)
@@ -219,6 +262,53 @@ class DemoPlayer:
         # Pause then press Enter
         time.sleep(config.get("pause_after_input", 0.5))
         self.console.print()
+
+    def _show_final_prompt(self, last_output_text: str = None):
+        """Show final prompt with placeholder, wait, then type 'quit'."""
+        config = self.config.get("playback", {})
+
+        # Show prompt
+        self.console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+
+        # Check if last output has code blocks
+        has_code_blocks = False
+        if last_output_text:
+            import re
+            has_code_blocks = bool(re.search(r'\[Code #\d+\]', last_output_text))
+
+        # Show placeholder
+        if has_code_blocks:
+            placeholder = (
+                "Number of the code block to execute or "
+                "the next question... Ctrl+C - exit"
+            )
+        else:
+            placeholder = "Your question... Ctrl+C - exit"
+
+        # Print placeholder, cursor stays at start
+        self.console.print(f"[dim italic]{placeholder}[/dim italic]", end='')
+        # Move cursor back to beginning of line, then forward 4 chars (past ">>> ")
+        # \r - return to start, \033[4C - move cursor forward 4 positions
+        print('\r\033[4C', end='', flush=True)
+
+        # Pause at final prompt
+        final_pause = config.get("final_prompt_pause", 4.0)
+        time.sleep(final_pause)
+        
+        # Clear line and show prompt atomically to avoid cursor jump
+        import sys
+        from io import StringIO
+        # Capture Rich output to string
+        buffer = StringIO()
+        temp_console = Console(file=buffer, force_terminal=True, width=200)
+        temp_console.print("[bold #e07333]>>> [/bold #e07333]", end='')
+        rendered = buffer.getvalue()
+        # Atomic operation: clear line + print colored prompt
+        sys.stdout.write('\r\033[K' + rendered)
+        sys.stdout.flush()
+
+        # Type 'quit' as whole word
+        self.console.print("quit", highlight=False)
 
     def _play_llm_output(self, event: Dict[str, Any], config: Dict[str, Any]):
         """Play LLM output with realistic streaming effect and markdown rendering."""

@@ -8,6 +8,9 @@ playback:
   # Pause after user finishes typing before pressing Enter
   pause_after_input: 1.0
 
+  # Final prompt pause before typing 'quit' at the end of session
+  final_prompt_pause: 4.0
+
   # Enable two-phase spinner animation before LLM output
   spinner_enabled: true
 
