@@ -147,13 +147,14 @@ def _add_command_to_context(
     chat_client.messages.append({"role": "system", "content": system_message})
 
 
-def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) -> bool:
+def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str, demo_manager=None) -> bool:
     """Execute direct shell command (starts with dot) and add to context.
 
     Args:
         console: Rich console for output
         chat_client: LLM client to add command context
         prompt: User input
+        demo_manager: Demo manager for recording (optional)
 
     Returns:
         True if command was handled, False otherwise
@@ -168,9 +169,17 @@ def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) 
 
     console.print(t("[dim]>>> Executing command:[/dim] {command}").format(command=command))
 
-    # Выполняем команду и получаем результат
-    result = get_execute_handler()(console, command)
+    # Start recording command with timing
+    if demo_manager:
+        demo_manager.start_command_recording(command)
+
+    # Выполняем команду и получаем результат (передаём demo_manager для записи чанков)
+    result = get_execute_handler()(console, command, demo_manager)
     console.print()
+
+    # Finalize command recording with timing
+    if demo_manager:
+        demo_manager.finalize_command_output()
 
     # Добавляем команду и результат в контекст
     _add_command_to_context(chat_client, command, result)
@@ -178,7 +187,9 @@ def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str) 
     return True
 
 
-def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt: str, code_blocks: list) -> bool:
+def _handle_code_block_execution(
+    console, chat_client: OpenRouterClient, prompt: str, code_blocks: list, demo_manager=None
+) -> bool:
     """Execute code block by number and add to context.
 
     Args:
@@ -186,6 +197,7 @@ def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt:
         chat_client: LLM client to add command context
         prompt: User input
         code_blocks: List of available code blocks
+        demo_manager: Demo manager for recording (optional)
 
     Returns:
         True if code block was executed, False otherwise
@@ -197,9 +209,17 @@ def _handle_code_block_execution(console, chat_client: OpenRouterClient, prompt:
     if 1 <= block_index <= len(code_blocks):
         code = code_blocks[block_index - 1]
 
-        # Выполняем блок кода и получаем результат
-        result = get_script_executor()(console, code_blocks, block_index)
+        # Start recording command with timing
+        if demo_manager:
+            demo_manager.start_command_recording(code)
+
+        # Выполняем блок кода и получаем результат (передаём demo_manager для записи чанков)
+        result = get_script_executor()(console, code_blocks, block_index, demo_manager)
         console.print()
+
+        # Finalize command recording with timing
+        if demo_manager:
+            demo_manager.finalize_command_output()
 
         # Добавляем команду и результат в контекст
         _add_command_to_context(chat_client, code, result, block_number=block_index)
@@ -313,11 +333,11 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
                 break
 
             # Handle direct command execution (with context)
-            if _handle_direct_command(console, chat_client, user_prompt):
+            if _handle_direct_command(console, chat_client, user_prompt, demo_manager):
                 continue
 
             # Handle code block execution (with context)
-            if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks):
+            if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks, demo_manager):
                 continue
 
             # Process as AI query

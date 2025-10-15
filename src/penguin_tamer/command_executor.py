@@ -78,13 +78,15 @@ class BaseCommandExecutor(ABC):
     def _process_stdout(
         self,
         process: subprocess.Popen,
-        stdout_lines: list
+        stdout_lines: list,
+        output_callback=None
     ) -> None:
         """Обрабатывает stdout в реальном времени.
 
         Args:
             process: Процесс для чтения
             stdout_lines: Список для накопления строк stdout
+            output_callback: Optional callback function to call for each line
         """
         if process.stdout:
             for line in process.stdout:
@@ -92,6 +94,9 @@ class BaseCommandExecutor(ABC):
                 if decoded:
                     stdout_lines.append(decoded)
                     print(decoded)  # Выводим сразу!
+                    if output_callback:
+                        # Добавляем \n для правильного воспроизведения
+                        output_callback(decoded + '\n')
 
     def _terminate_process(self, process: subprocess.Popen) -> None:
         """Завершает процесс при прерывании.
@@ -129,7 +134,7 @@ class BaseCommandExecutor(ABC):
             stderr='\n'.join(stderr_lines)
         )
 
-    def execute(self, code_block: str) -> subprocess.CompletedProcess:
+    def execute(self, code_block: str, output_callback=None) -> subprocess.CompletedProcess:
         """Шаблонный метод выполнения команды.
 
         Определяет общий алгоритм выполнения, делегируя специфичные
@@ -137,6 +142,7 @@ class BaseCommandExecutor(ABC):
 
         Args:
             code_block: Блок кода для выполнения
+            output_callback: Optional callback function to call for each output line
 
         Returns:
             subprocess.CompletedProcess: Результат выполнения команды
@@ -149,7 +155,7 @@ class BaseCommandExecutor(ABC):
 
         try:
             # Обрабатываем stdout в основном потоке
-            self._process_stdout(process, stdout_lines)
+            self._process_stdout(process, stdout_lines, output_callback)
 
             # Ждем завершения процесса
             process.wait()
@@ -270,13 +276,14 @@ class CommandExecutorFactory:
             return LinuxCommandExecutor()
 
 
-def execute_and_handle_result(console: Console, code: str) -> dict:
+def execute_and_handle_result(console: Console, code: str, demo_manager=None) -> dict:
     """
     Выполняет блок кода и обрабатывает результаты выполнения.
 
     Args:
         console (Console): Консоль для вывода
         code (str): Код для выполнения
+        demo_manager: Optional demo manager for recording output with timing
 
     Returns:
         dict: Результат выполнения с ключами:
@@ -301,8 +308,15 @@ def execute_and_handle_result(console: Console, code: str) -> dict:
         # Выполняем код через соответствующий исполнитель
         console.print(t("[dim]>>> Result:[/dim]"))
 
+        # Setup callback for recording if in demo mode
+        output_callback = None
+        if demo_manager and hasattr(demo_manager, 'record_command_chunk'):
+            def record_chunk(chunk):
+                demo_manager.record_command_chunk(chunk)
+            output_callback = record_chunk
+
         try:
-            process = executor.execute(code)
+            process = executor.execute(code, output_callback=output_callback)
 
             # Сохраняем результаты
             result['exit_code'] = process.returncode
@@ -330,7 +344,7 @@ def execute_and_handle_result(console: Console, code: str) -> dict:
     return result
 
 
-def run_code_block(console: Console, code_blocks: list, idx: int) -> dict:
+def run_code_block(console: Console, code_blocks: list, idx: int, demo_manager=None) -> dict:
     """
     Печатает номер и содержимое блока, выполняет его и выводит результат.
 
@@ -338,6 +352,7 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> dict:
         console (Console): Консоль для вывода
         code_blocks (list): Список блоков кода
         idx (int): Индекс выполняемого блока
+        demo_manager: Optional demo manager for recording output with timing
 
     Returns:
         dict: Результат выполнения (см. execute_and_handle_result)
@@ -363,4 +378,4 @@ def run_code_block(console: Console, code_blocks: list, idx: int) -> dict:
     console.print(code)
 
     # Выполняем код и обрабатываем результат
-    return execute_and_handle_result(console, code)
+    return execute_and_handle_result(console, code, demo_manager)

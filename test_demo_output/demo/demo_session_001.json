@@ -1,0 +1,27 @@
+{
+  "version": "2.0",
+  "events": [
+    {
+      "type": "input",
+      "text": ".echo test command"
+    },
+    {
+      "type": "command",
+      "command": "echo Line 1\necho Line 2\necho Line 3",
+      "chunks": [
+        {
+          "text": "Line 1\n",
+          "delay": 0.288926362991333
+        },
+        {
+          "text": "Line 2\n",
+          "delay": 0.28955841064453125
+        },
+        {
+          "text": "Line 3\n",
+          "delay": 0.2901604175567627
+        }
+      ]
+    }
+  ]
+}

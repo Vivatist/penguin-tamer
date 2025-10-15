@@ -125,11 +125,24 @@ class DemoPlayer:
         base_delay = config.get("typing_delay_per_char", 0.03)
         variance = config.get("typing_delay_variance", 0.02)
 
-        for char in text:
-            self.console.print(char, end='', highlight=False)
-            # Add variance to make it look more human
+        # Check if it's a dot command for special formatting
+        if text.startswith('.'):
+            # Type the dot in gray (dim)
+            self.console.print('.', end='', style='dim', highlight=False)
             delay = base_delay + random.uniform(-variance, variance)
             time.sleep(delay)
+            
+            # Type the rest in teal color (#007c6e)
+            for char in text[1:]:
+                self.console.print(char, end='', style='#007c6e', highlight=False)
+                delay = base_delay + random.uniform(-variance, variance)
+                time.sleep(delay)
+        else:
+            # Normal text - no special formatting
+            for char in text:
+                self.console.print(char, end='', highlight=False)
+                delay = base_delay + random.uniform(-variance, variance)
+                time.sleep(delay)
 
         # Press Enter
         self.console.print()
@@ -193,17 +206,35 @@ class DemoPlayer:
         self.console.print()  # Extra newline for spacing
 
     def _play_command_output(self, event: Dict[str, Any], config: Dict[str, Any]):
-        """Play command execution output."""
+        """Play command execution output with proper formatting and recorded timing."""
         command = event.get("command", "")
-        output = event.get("output", "")
+        
+        time.sleep(0.3)
 
-        time.sleep(0.5)
-
-        # Show command
+        # Show "Executing command" message (same as in main program)
         self.console.print(f"[dim]>>> Executing command:[/dim] {command}")
 
-        # Show output
-        if output:
+        # Check if we have chunks with timing or just plain output
+        chunks = event.get("chunks")
+        output = event.get("output")
+        
+        if chunks:
+            # Replay with recorded timing
+            last_delay = 0.0
+            for chunk_data in chunks:
+                chunk_text = chunk_data.get("text", "")
+                chunk_delay = chunk_data.get("delay", 0.0)
+                
+                # Wait for the time difference between this chunk and previous
+                delay_diff = chunk_delay - last_delay
+                if delay_diff > 0:
+                    time.sleep(delay_diff)
+                
+                # Print chunk without newline (already included in chunk)
+                print(chunk_text, end='', flush=True)
+                last_delay = chunk_delay
+        elif output:
+            # Show output exactly as it was (including errors and all text)
             self.console.print(output, highlight=False)
 
-        self.console.print()
+        self.console.print()  # Empty line after command output

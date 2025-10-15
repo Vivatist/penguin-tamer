@@ -3,8 +3,9 @@ Simplified demo recorder - records only actual input/output data.
 """
 
 import json
+import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from .models import DemoSession
 
@@ -27,6 +28,8 @@ class DemoRecorder:
         self.current_file: Optional[Path] = None
         self.is_recording = False
         self._current_output = []  # Accumulate LLM output chunks
+        self._current_command_chunks: List[Dict[str, Any]] = []  # Accumulate command output chunks
+        self._command_start_time: Optional[float] = None  # Track command start time
 
     def start_recording(self) -> Path:
         """
@@ -89,7 +92,7 @@ class DemoRecorder:
 
     def record_command_output(self, command: str, output: str):
         """
-        Record command execution output.
+        Record command execution output (simple version without timing).
 
         Args:
             command: Command that was executed
@@ -98,7 +101,50 @@ class DemoRecorder:
         if not self.is_recording or not self.session:
             return
 
-        self.session.add_command_output(command, output)
+        self.session.add_command_output(command, output=output)
+
+    def start_command_recording(self, command: str):
+        """
+        Start recording command output with timing.
+        
+        Args:
+            command: Command being executed
+        """
+        if not self.is_recording:
+            return
+            
+        self._current_command_chunks = []
+        self._command_start_time = time.time()
+        self._current_command = command
+
+    def record_command_chunk(self, chunk: str):
+        """
+        Record a chunk of command output with timestamp.
+        
+        Args:
+            chunk: Output chunk (typically a line)
+        """
+        if not self.is_recording or self._command_start_time is None:
+            return
+            
+        elapsed = time.time() - self._command_start_time
+        self._current_command_chunks.append({
+            "text": chunk,
+            "delay": elapsed
+        })
+
+    def finalize_command_output(self):
+        """Finalize accumulated command output chunks and add to session."""
+        if not self.is_recording or not self.session:
+            return
+
+        if self._current_command_chunks and hasattr(self, '_current_command'):
+            self.session.add_command_output(
+                self._current_command,
+                chunks=self._current_command_chunks
+            )
+            self._current_command_chunks = []
+            self._command_start_time = None
 
     def save_session(self) -> Optional[Path]:
         """
