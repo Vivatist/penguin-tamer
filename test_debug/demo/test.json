@@ -1,0 +1,21 @@
+{
+  "version": "2.0",
+  "events": [
+    {
+      "type": "input",
+      "text": "===FIRST INPUT==="
+    },
+    {
+      "type": "output",
+      "text": "First LLM response"
+    },
+    {
+      "type": "input",
+      "text": "===SECOND INPUT==="
+    },
+    {
+      "type": "output",
+      "text": "Second LLM response"
+    }
+  ]
+}

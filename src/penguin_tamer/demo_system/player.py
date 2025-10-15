@@ -86,11 +86,18 @@ class DemoPlayer:
             return
 
         self.is_playing = True
+        play_first_input = self.config.get("playback", {}).get("play_first_input", True)
+        first_input_skipped = False
 
         try:
             for event in self.session.events:
                 if not self.is_playing:
                     break
+
+                # Skip first input event if play_first_input is False
+                if not play_first_input and not first_input_skipped and event.get("type") == "input":
+                    first_input_skipped = True
+                    continue
 
                 self._play_event(event)
         except KeyboardInterrupt:

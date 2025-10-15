@@ -1,18 +1,7 @@
-# Simplified demo system configuration
-
 playback:
-  # Typing simulation (user input)
-  typing_delay_per_char: 0.1    # Delay per character (seconds)
-  typing_delay_variance: 0.05    # Random variance in typing speed
-
-  # Delays between events
-  pause_after_input: 0.5         # Pause after user enters text
-  output_delay: 1.0              # Delay before showing LLM output (thinking time)
-
-  # LLM streaming simulation with realistic variable delays
-  # Chunks are variable-sized (1-10 chars) with highly variable delays:
-  # - Fast bursts: 0.01-0.03s (40% of chunks)
-  # - Normal speed: chunk_delay ± 30% (35% of chunks)
-  # - Slow processing: 2-3x chunk_delay (20% of chunks)
-  # - Brief pauses: 4-6x chunk_delay (5% of chunks)
-  chunk_delay: 0.1             # Base delay for normal speed chunks
+  chunk_delay: 0.05
+  output_delay: 1.0
+  pause_after_input: 0.5
+  play_first_input: true
+  typing_delay_per_char: 0.15
+  typing_delay_variance: 0.05
