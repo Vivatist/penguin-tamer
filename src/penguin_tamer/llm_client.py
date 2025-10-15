@@ -274,7 +274,7 @@ class OpenRouterClient:
 
     def set_demo_manager(self, demo_manager):
         """Set demo manager for recording LLM chunks.
-        
+
         Args:
             demo_manager: Demo manager instance
         """

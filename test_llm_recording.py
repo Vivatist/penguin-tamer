@@ -21,7 +21,7 @@ def test_llm_recording():
         demo_file = (Path.home() / "AppData" / "Local" / "Packages" /
                      "PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0" / "LocalCache" /
                      "Local" / "penguin-tamer" / "penguin-tamer" / "demo" / "demo_session_005.json")
-    
+
     if not demo_file.exists():
         print("❌ Demo file demo_session_005.json not found.")
         print(f"   Looked in: {demo_file}")
@@ -48,7 +48,7 @@ def test_llm_recording():
     # Проверяем наличие LLM ответов
     if 'output' in event_types:
         print("\n✓ LLM outputs are recorded!")
-        
+
         # Показываем примеры
         output_events = [e for e in data['events'] if e.get('type') == 'output']
         for i, event in enumerate(output_events[:2]):  # Первые 2
