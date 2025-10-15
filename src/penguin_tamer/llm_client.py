@@ -182,6 +182,9 @@ class StreamProcessor:
             if first_chunk:
                 markdown = _create_markdown(first_chunk, theme_name)
                 live.update(markdown)
+                # Record first chunk for demo
+                if self.client._demo_manager:
+                    self.client._demo_manager.record_llm_chunk(first_chunk)
 
             # Process remaining chunks
             try:
@@ -197,6 +200,9 @@ class StreamProcessor:
                     if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
                         text = chunk.choices[0].delta.content
                         self.reply_parts.append(text)
+                        # Record chunk for demo
+                        if self.client._demo_manager:
+                            self.client._demo_manager.record_llm_chunk(text)
                         full_text = "".join(self.reply_parts)
                         markdown = _create_markdown(full_text, theme_name)
                         live.update(markdown)
@@ -260,10 +266,19 @@ class OpenRouterClient:
     # Internal state (not part of constructor)
     messages: List[Dict[str, str]] = field(init=False)
     _client: Optional[object] = field(default=None, init=False)
+    _demo_manager: Optional[object] = field(default=None, init=False)
 
     def __post_init__(self):
         """Initialize internal state after dataclass construction."""
         self.messages = self.system_message.copy()
+
+    def set_demo_manager(self, demo_manager):
+        """Set demo manager for recording LLM chunks.
+        
+        Args:
+            demo_manager: Demo manager instance
+        """
+        self._demo_manager = demo_manager
 
     def init_dialog_mode(self, educational_prompt: List[Dict[str, str]]) -> None:
         """Initialize dialog mode by adding educational prompt to messages.

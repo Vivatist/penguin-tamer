@@ -296,6 +296,9 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         demo_file=config.get("global", "demo_file")
     )
 
+    # Set demo manager in chat client for LLM chunk recording
+    chat_client.set_demo_manager(demo_manager)
+
     # If play mode - just play and exit
     if demo_manager.is_playing():
         demo_manager.play()
