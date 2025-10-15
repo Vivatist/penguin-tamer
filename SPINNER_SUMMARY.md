@@ -108,11 +108,11 @@ spinner_enabled: false
 def _show_spinner(self):
     """Show two-phase spinner before LLM output."""
     # Фаза 1
-    with self.console.status(f"[dim]{phase1_text}[/dim]", 
-                            spinner="dots", 
+    with self.console.status(f"[dim]{phase1_text}[/dim]",
+                            spinner="dots",
                             spinner_style="dim"):
         # Анимация в течение phase1_duration
-        
+
     # Фаза 2
     with self.console.status(f"[dim]{phase2_text}[/dim]",
                             spinner="dots",

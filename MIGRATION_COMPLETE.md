@@ -69,7 +69,7 @@ global:
 playback:
   # play_first_input: true  # ❌ Удалено
   # Управление отображением переместилось в основной конфиг
-  
+
   # Остались только технические параметры воспроизведения
   chunk_delay: 0.05
   pause_after_input: 0.5
@@ -196,5 +196,5 @@ demo_manager = create_demo_manager(..., play_first_input=False)
 
 ---
 
-**Дата**: Октябрь 2025  
+**Дата**: Октябрь 2025
 **Версия**: 2.1

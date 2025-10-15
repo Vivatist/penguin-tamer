@@ -189,6 +189,10 @@ class DemoPlayer:
         # Show prompt
         self.console.print("[bold #e07333]>>> [/bold #e07333]", end='')
 
+        # Pause before typing (simulating user reading/thinking)
+        pause_before = config.get("pause_before_input", 0.5)
+        time.sleep(pause_before)
+
         # Simulate typing with realistic delays
         base_delay = config.get("typing_delay_per_char", 0.03)
         variance = config.get("typing_delay_variance", 0.02)
@@ -212,8 +216,9 @@ class DemoPlayer:
                 delay = base_delay + random.uniform(-variance, variance)
                 time.sleep(delay)
 
-        # Press Enter (no newline, continue on same line)
+        # Pause then press Enter
         time.sleep(config.get("pause_after_input", 0.5))
+        self.console.print()
 
     def _play_llm_output(self, event: Dict[str, Any], config: Dict[str, Any]):
         """Play LLM output with realistic streaming effect and markdown rendering."""

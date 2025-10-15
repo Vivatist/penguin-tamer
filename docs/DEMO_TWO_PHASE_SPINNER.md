@@ -34,12 +34,12 @@ playback:
   spinner_enabled: true            # Включить/отключить спиннер
   spinner_phase_duration: 0.1      # Время кадра анимации (секунды)
   spinner_phase_variance: 0.03     # Отклонение времени кадра (секунды)
-  
+
   # Фаза 1: "Connecting..."
   spinner_phase1_text: "Connecting..."
   spinner_phase1_min_duration: 0.3 # Минимум (секунды)
   spinner_phase1_max_duration: 0.8 # Максимум (секунды)
-  
+
   # Фаза 2: "Thinking..."
   spinner_phase2_text: "Thinking..."
   spinner_phase2_min_duration: 0.5 # Минимум (секунды)

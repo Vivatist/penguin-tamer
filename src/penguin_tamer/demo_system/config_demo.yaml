@@ -1,6 +1,7 @@
 playback:
   chunk_delay: 0.05
-  pause_after_input: 2
+  pause_before_input: 2.0
+  pause_after_input: 1.0
   spinner_enabled: true
   spinner_phase1_text: Connecting...
   spinner_phase2_max_duration: 2.0
