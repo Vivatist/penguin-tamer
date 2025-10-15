@@ -41,13 +41,13 @@ class NullDemoManager:
     def record_command_output(self, command: str, output: str):
         pass
 
-    def start_command_recording(self, command: str):
+    def start_command_recording(self, command: str, block_number: int = None):
         pass
 
     def record_command_chunk(self, chunk: str):
         pass
 
-    def finalize_command_output(self):
+    def finalize_command_output(self, exit_code: int = 0, stderr: str = None, interrupted: bool = False):
         pass
 
     def play(self):
@@ -165,20 +165,20 @@ class DemoSystemManager:
         if self.recorder:
             self.recorder.record_command_output(command, output)
 
-    def start_command_recording(self, command: str):
+    def start_command_recording(self, command: str, block_number: int = None):
         """Start recording command output with timing."""
         if self.recorder:
-            self.recorder.start_command_recording(command)
+            self.recorder.start_command_recording(command, block_number)
 
     def record_command_chunk(self, chunk: str):
         """Record a chunk of command output with timestamp."""
         if self.recorder:
             self.recorder.record_command_chunk(chunk)
 
-    def finalize_command_output(self):
+    def finalize_command_output(self, exit_code: int = 0, stderr: str = None, interrupted: bool = False):
         """Finalize accumulated command output chunks."""
         if self.recorder:
-            self.recorder.finalize_command_output()
+            self.recorder.finalize_command_output(exit_code, stderr, interrupted)
 
     # === Playback methods ===
 

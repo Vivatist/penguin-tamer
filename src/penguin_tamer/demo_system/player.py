@@ -208,18 +208,29 @@ class DemoPlayer:
     def _play_command_output(self, event: Dict[str, Any], config: Dict[str, Any]):
         """Play command execution output with proper formatting and recorded timing."""
         command = event.get("command", "")
+        block_number = event.get("block_number")
+        exit_code = event.get("exit_code", 0)
+        stderr = event.get("stderr", "")
+        interrupted = event.get("interrupted", False)
 
         time.sleep(0.3)
 
-        # Show "Executing command" message (same as in main program)
-        self.console.print(f"[dim]>>> Executing command:[/dim] {command}")
+        # Show header (Running block or Executing command)
+        if block_number is not None:
+            self.console.print(f"[dim]>>> Running block #{block_number}:[/dim]")
+            self.console.print(command)
+        else:
+            self.console.print(f"[dim]>>> Executing command:[/dim] {command}")
+
+        # Show "Result:" header
+        self.console.print("[dim]>>> Result:[/dim]")
 
         # Check if we have chunks with timing or just plain output
         chunks = event.get("chunks")
         output = event.get("output")
 
         if chunks:
-            # Replay with recorded timing
+            # Replay stdout with recorded timing
             last_delay = 0.0
             for chunk_data in chunks:
                 chunk_text = chunk_data.get("text", "")
@@ -234,7 +245,19 @@ class DemoPlayer:
                 print(chunk_text, end='', flush=True)
                 last_delay = chunk_delay
         elif output:
-            # Show output exactly as it was (including errors and all text)
+            # Show output exactly as it was
             self.console.print(output, highlight=False)
+
+        # Show exit code
+        self.console.print(f"[dim]>>> Exit code: {exit_code}[/dim]")
+
+        # Show stderr if present
+        if stderr and not interrupted:
+            self.console.print("[dim italic]>>> Error:[/dim italic]")
+            self.console.print(f"[dim italic]{stderr}[/dim italic]")
+
+        # Show interruption message
+        if interrupted:
+            self.console.print("[dim]>>> Command interrupted by user (Ctrl+C)[/dim]")
 
         self.console.print()  # Empty line after command output

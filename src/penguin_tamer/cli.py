@@ -177,9 +177,13 @@ def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str, 
     result = get_execute_handler()(console, command, demo_manager)
     console.print()
 
-    # Finalize command recording with timing
+    # Finalize command recording with timing and metadata
     if demo_manager:
-        demo_manager.finalize_command_output()
+        demo_manager.finalize_command_output(
+            exit_code=result.get('exit_code', -1),
+            stderr=result.get('stderr', ''),
+            interrupted=result.get('interrupted', False)
+        )
 
     # Добавляем команду и результат в контекст
     _add_command_to_context(chat_client, command, result)
@@ -209,17 +213,21 @@ def _handle_code_block_execution(
     if 1 <= block_index <= len(code_blocks):
         code = code_blocks[block_index - 1]
 
-        # Start recording command with timing
+        # Start recording command with timing and block number
         if demo_manager:
-            demo_manager.start_command_recording(code)
+            demo_manager.start_command_recording(code, block_number=block_index)
 
         # Выполняем блок кода и получаем результат (передаём demo_manager для записи чанков)
         result = get_script_executor()(console, code_blocks, block_index, demo_manager)
         console.print()
 
-        # Finalize command recording with timing
+        # Finalize command recording with timing and metadata
         if demo_manager:
-            demo_manager.finalize_command_output()
+            demo_manager.finalize_command_output(
+                exit_code=result.get('exit_code', -1),
+                stderr=result.get('stderr', ''),
+                interrupted=result.get('interrupted', False)
+            )
 
         # Добавляем команду и результат в контекст
         _add_command_to_context(chat_client, code, result, block_number=block_index)

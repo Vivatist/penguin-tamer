@@ -26,19 +26,43 @@ class DemoSession:
             "text": text
         })
 
-    def add_command_output(self, command: str, output: str = None, chunks: List[Dict[str, Any]] = None) -> None:
+    def add_command_output(
+        self,
+        command: str,
+        output: str = None,
+        chunks: List[Dict[str, Any]] = None,
+        exit_code: int = None,
+        stderr: str = None,
+        block_number: int = None,
+        interrupted: bool = False
+    ) -> None:
         """Add command output event.
 
         Args:
             command: Command that was executed
             output: Full output text (for simple recording)
             chunks: List of chunks with timestamps (for realistic playback)
+            exit_code: Command exit code
+            stderr: Error output if any
+            block_number: Block number if executed as code block
+            interrupted: Whether command was interrupted
         """
         event = {
             "type": "command",
             "command": command
         }
 
+        # Add execution metadata
+        if exit_code is not None:
+            event["exit_code"] = exit_code
+        if stderr:
+            event["stderr"] = stderr
+        if block_number is not None:
+            event["block_number"] = block_number
+        if interrupted:
+            event["interrupted"] = interrupted
+
+        # Add output data
         if chunks is not None:
             event["chunks"] = chunks
         elif output is not None:

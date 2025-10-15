@@ -30,6 +30,7 @@ class DemoRecorder:
         self._current_output = []  # Accumulate LLM output chunks
         self._current_command_chunks: List[Dict[str, Any]] = []  # Accumulate command output chunks
         self._command_start_time: Optional[float] = None  # Track command start time
+        self._current_command_metadata: Dict[str, Any] = {}  # Store command metadata
 
     def start_recording(self) -> Path:
         """
@@ -103,19 +104,23 @@ class DemoRecorder:
 
         self.session.add_command_output(command, output=output)
 
-    def start_command_recording(self, command: str):
+    def start_command_recording(self, command: str, block_number: int = None):
         """
         Start recording command output with timing.
 
         Args:
             command: Command being executed
+            block_number: Optional block number if executed as code block
         """
         if not self.is_recording:
             return
 
         self._current_command_chunks = []
         self._command_start_time = time.time()
-        self._current_command = command
+        self._current_command_metadata = {
+            'command': command,
+            'block_number': block_number
+        }
 
     def record_command_chunk(self, chunk: str):
         """
@@ -133,18 +138,30 @@ class DemoRecorder:
             "delay": elapsed
         })
 
-    def finalize_command_output(self):
-        """Finalize accumulated command output chunks and add to session."""
+    def finalize_command_output(self, exit_code: int = 0, stderr: str = None, interrupted: bool = False):
+        """Finalize accumulated command output chunks and add to session.
+        
+        Args:
+            exit_code: Command exit code
+            stderr: Error output if any
+            interrupted: Whether command was interrupted
+        """
         if not self.is_recording or not self.session:
             return
 
-        if self._current_command_chunks and hasattr(self, '_current_command'):
+        if self._current_command_metadata:
             self.session.add_command_output(
-                self._current_command,
-                chunks=self._current_command_chunks
+                command=self._current_command_metadata.get('command', ''),
+                chunks=self._current_command_chunks if self._current_command_chunks else None,
+                output=None,  # We use chunks or nothing
+                exit_code=exit_code,
+                stderr=stderr,
+                block_number=self._current_command_metadata.get('block_number'),
+                interrupted=interrupted
             )
             self._current_command_chunks = []
             self._command_start_time = None
+            self._current_command_metadata = {}
 
     def save_session(self) -> Optional[Path]:
         """

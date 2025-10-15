@@ -1,0 +1,31 @@
+{
+  "version": "2.0",
+  "events": [
+    {
+      "type": "input",
+      "text": ".echo Success"
+    },
+    {
+      "type": "command",
+      "command": "echo Success",
+      "exit_code": 0,
+      "chunks": [
+        {
+          "text": "Success\n",
+          "delay": 0.06972074508666992
+        }
+      ]
+    },
+    {
+      "type": "input",
+      "text": "2"
+    },
+    {
+      "type": "command",
+      "command": "python nonexistent_file.py",
+      "exit_code": 2,
+      "stderr": "python: can't open file 'C:\\\\Users\\\\Andrey\\\\Coding\\\\penguin-tamer\\\\nonexistent_file.py': [Errno 2] No such file or directory",
+      "block_number": 2
+    }
+  ]
+}
