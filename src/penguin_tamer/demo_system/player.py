@@ -18,7 +18,9 @@ from .models import DemoSession
 class DemoPlayer:
     """Plays back recorded demo sessions with realistic timing."""
 
-    def __init__(self, console: Console, config_path: Optional[Path] = None, play_first_input: bool = True):
+    def __init__(
+            self, console: Console, config_path: Optional[Path] = None,
+            play_first_input: bool = True):
         """
         Initialize player.
 
@@ -122,7 +124,7 @@ class DemoPlayer:
 
                 self._play_event(event, last_output_text)
                 previous_event_type = event_type
-            
+
             # Show final prompt with placeholder after all events
             if self.is_playing:
                 self._show_final_prompt(last_output_text)
@@ -165,7 +167,8 @@ class DemoPlayer:
                 # Phase 1: Connecting
                 start_time = time.time()
                 while time.time() - start_time < phase1_duration:
-                    delay = phase_duration + random.uniform(-phase_variance, phase_variance)
+                    delay = phase_duration + random.uniform(-phase_variance,
+                                                            phase_variance)
                     delay = max(0.01, delay)
                     time.sleep(delay)
 
@@ -173,7 +176,8 @@ class DemoPlayer:
                 status.update(f"[dim]{phase2_text}[/dim]")
                 start_time = time.time()
                 while time.time() - start_time < phase2_duration:
-                    delay = phase_duration + random.uniform(-phase_variance, phase_variance)
+                    delay = phase_duration + random.uniform(-phase_variance,
+                                                            phase_variance)
                     delay = max(0.01, delay)
                     time.sleep(delay)
         except KeyboardInterrupt:
@@ -223,7 +227,7 @@ class DemoPlayer:
         # Pause before typing (simulating user reading/thinking)
         pause_before = config.get("pause_before_input", 0.5)
         time.sleep(pause_before)
-        
+
         # Clear line and show prompt atomically to avoid cursor jump
         import sys
         from io import StringIO
@@ -294,7 +298,7 @@ class DemoPlayer:
         # Pause at final prompt
         final_pause = config.get("final_prompt_pause", 4.0)
         time.sleep(final_pause)
-        
+
         # Clear line and show prompt atomically to avoid cursor jump
         import sys
         from io import StringIO
@@ -355,7 +359,8 @@ class DemoPlayer:
                     delay = random.uniform(0.01, 0.03)
                 elif delay_type == 'normal':
                     # Normal speed (base_chunk_delay ± 30%)
-                    delay = base_chunk_delay + random.uniform(-base_chunk_delay * 0.3, base_chunk_delay * 0.3)
+                    delay = base_chunk_delay + \
+                        random.uniform(-base_chunk_delay * 0.3, base_chunk_delay * 0.3)
                 elif delay_type == 'slow':
                     # Slower processing (2-3x base)
                     delay = base_chunk_delay * random.uniform(2.0, 3.0)
