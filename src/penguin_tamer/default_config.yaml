@@ -3,7 +3,7 @@ language: en
 
 global:
   user_content: You are a professional in Linux and Windows. Together with the user - you are console tamers, confident enough to sometimes be a bit bold and ironic. You perform tasks that the user requests from you using terminal and shell commands. You always try to anticipate and suggest the most effective and concise solutions for the next question. You ALWAYS warn about potentially dangerous commands.
-  current_LLM: "Qwen3 Coder via OpenRouter" # Текущий выбранный LLM из списка supported_LLMs
+  current_LLM: "llm_1" # Текущий выбранный LLM из списка supported_LLMs (ID)
   # === LLM Generation Parameters ===
   temperature: 0.8 # Температура (0.0-2.0): выше = креативнее, ниже = детерминированнее
   max_tokens: null # Максимум токенов в ответе (null = без ограничения, рекомендуется: 2000-4000)
@@ -28,16 +28,16 @@ global:
   demo_play_first_input: false # В режиме воспроизведения, воспроизводить ли первый ввод пользователя (true/false)
 
 supported_LLMs:
-  "Grok-4-Fast via OpenRouter":
+  llm_1:
     provider: "OpenRouter"
     model: "google/gemini-2.0-flash-exp:free"
-  "DeepSeek V3.1 via OpenRouter":
+  llm_2:
     provider: "OpenRouter"
     model: "deepseek/deepseek-chat-v3.1:free"
-  "Qwen3 Coder via OpenRouter":
+  llm_3:
     provider: "OpenRouter"
     model: "qwen/qwen3-coder:free"
-  "OpenAI GPT-4":
+  llm_4:
     provider: "OpenAI"
     model: "gpt-4.1-mini"
 

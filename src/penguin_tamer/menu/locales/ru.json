@@ -132,5 +132,13 @@
   "Failed to load models from provider": "Не удалось загрузить модели от провайдера",
   "Loaded {count} models": "Загружено моделей: {count}",
   "Error updating model list: {error}": "Ошибка обновления списка моделей: {error}",
-  "Provider is required": "Провайдер обязателен"
+  "Provider is required": "Провайдер обязателен",
+  "LLM added: {provider} / {model}": "LLM добавлена: {provider} / {model}",
+  "Edit LLM": "Редактировать LLM",
+  "LLM updated: {provider} / {model}": "LLM обновлена: {provider} / {model}",
+  "Delete LLM: {provider} / {model}?": "Удалить LLM: {provider} / {model}?",
+  "LLM deleted: {provider} / {model}": "LLM удалена: {provider} / {model}",
+  "LLM selected: {provider} / {model}. Warning: API key is missing!": "LLM выбрана: {provider} / {model}. Внимание: API ключ отсутствует!",
+  "LLM selected: {provider} / {model}": "LLM выбрана: {provider} / {model}"
 }
+

@@ -307,43 +307,68 @@ class ConfigManager:
         """
         return self.get_llm_effective_config(self.current_llm)
 
-    def add_llm(self, name: str, provider: str, model: str) -> None:
+    def _generate_llm_id(self) -> str:
         """
-        Добавляет новую LLM.
-
-        Args:
-            name: Имя LLM
-            provider: Провайдер
-            model: Модель LLM
+        Генерирует уникальный ID для новой LLM.
+        
+        Returns:
+            str: ID в формате "llm_N"
         """
         supported_llms = self.get("supported_LLMs") or {}
+        
+        # Находим максимальный номер среди существующих ID
+        max_num = 0
+        for llm_id in supported_llms.keys():
+            if llm_id.startswith("llm_"):
+                try:
+                    num = int(llm_id.split("_")[1])
+                    max_num = max(max_num, num)
+                except (IndexError, ValueError):
+                    continue
+        
+        # Возвращаем следующий номер
+        return f"llm_{max_num + 1}"
 
-        if name in supported_llms:
-            raise ValueError(f"LLM с именем '{name}' уже существует")
+    def add_llm(self, provider: str, model: str) -> str:
+        """
+        Добавляет новую LLM с автоматически сгенерированным ID.
 
-        supported_llms[name] = {
+        Args:
+            provider: Провайдер
+            model: Модель LLM
+            
+        Returns:
+            str: Сгенерированный ID новой LLM
+        """
+        supported_llms = self.get("supported_LLMs") or {}
+        
+        # Генерируем уникальный ID
+        llm_id = self._generate_llm_id()
+
+        supported_llms[llm_id] = {
             "provider": provider,
             "model": model
         }
 
         self.update_section("supported_LLMs", supported_llms)
+        return llm_id
 
-    def update_llm(self, name: str, provider: str = None, model: str = None) -> None:
+    def update_llm(self, llm_id: str, provider: str = None, model: str = None) -> None:
         """
         Обновляет конфигурацию LLM.
 
         Args:
-            name: Имя LLM для обновления
+            llm_id: ID LLM для обновления
             provider: Новый провайдер (опционально)
             model: Новая модель (опционально)
         """
         supported_llms = self.get("supported_LLMs") or {}
 
-        if name not in supported_llms:
-            raise ValueError(f"LLM с именем '{name}' не найдена")
+        if llm_id not in supported_llms:
+            raise ValueError(f"LLM с ID '{llm_id}' не найдена")
 
         # Создаем копию текущей конфигурации
-        current_config = supported_llms[name].copy()
+        current_config = supported_llms[llm_id].copy()
 
         if provider is not None:
             current_config["provider"] = provider
@@ -351,25 +376,25 @@ class ConfigManager:
             current_config["model"] = model
 
         # Обновляем всю секцию supported_LLMs
-        supported_llms[name] = current_config
+        supported_llms[llm_id] = current_config
         self.update_section("supported_LLMs", supported_llms)
 
-    def remove_llm(self, name: str) -> None:
+    def remove_llm(self, llm_id: str) -> None:
         """
         Удаляет LLM.
 
         Args:
-            name: Имя LLM для удаления
+            llm_id: ID LLM для удаления
         """
-        if name == self.current_llm:
+        if llm_id == self.current_llm:
             raise ValueError("Нельзя удалить текущую LLM")
 
         supported_llms = self.get("supported_LLMs") or {}
 
-        if name not in supported_llms:
-            raise ValueError(f"LLM с именем '{name}' не найдена")
+        if llm_id not in supported_llms:
+            raise ValueError(f"LLM с ID '{llm_id}' не найдена")
 
-        del supported_llms[name]
+        del supported_llms[llm_id]
         self.update_section("supported_LLMs", supported_llms)
 
     def reset_to_defaults(self) -> None:

@@ -19,18 +19,14 @@ class LLMEditDialog(ModalScreen):
     def __init__(
         self,
         title: str = "Добавление LLM",
-        name: str = "",
         provider: str = "",
         model: str = "",
-        name_editable: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.title_text = title
-        self.default_name = name
         self.default_provider = provider
         self.default_model = model
-        self.name_editable = name_editable
         self.result = None
         self.available_models = []  # Список моделей от провайдера
         self.loading_models = False
@@ -44,15 +40,6 @@ class LLMEditDialog(ModalScreen):
         yield Container(
             Static(self.title_text, classes="llm-dialog-title"),
             Container(
-                # LLM Name
-                Static(t("LLM Name:"), classes="llm-field-label"),
-                Input(
-                    value=self.default_name,
-                    id="llm-name-input",
-                    disabled=not self.name_editable,
-                    placeholder=t("Any, for example: GPT-4, Claude, Gemini")
-                ),
-                
                 # Provider Select
                 Static(t("Provider:"), classes="llm-field-label"),
                 Container(
@@ -87,12 +74,8 @@ class LLMEditDialog(ModalScreen):
 
     def on_mount(self) -> None:
         """Set focus when dialog opens."""
-        if self.name_editable:
-            name_input = self.query_one("#llm-name-input", Input)
-            name_input.focus()
-        else:
-            provider_select = self.query_one("#provider-select", Select)
-            provider_select.focus()
+        provider_select = self.query_one("#provider-select", Select)
+        provider_select.focus()
         
         # Если задан провайдер по умолчанию, загружаем его модели
         if self.default_provider:
@@ -197,19 +180,13 @@ class LLMEditDialog(ModalScreen):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "save-btn":
-            name_input = self.query_one("#llm-name-input", Input)
             provider_select = self.query_one("#provider-select", Select)
             model_select = self.query_one("#model-select", Select)
 
-            name = name_input.value.strip()
             provider = str(provider_select.value) if provider_select.value else ""
             model = str(model_select.value) if model_select.value else ""
 
             # Validation
-            if not name:
-                self.notify(t("LLM name is required"), severity="error")
-                name_input.focus()
-                return
             if not provider:
                 self.notify(t("Provider is required"), severity="error")
                 provider_select.focus()
@@ -220,7 +197,6 @@ class LLMEditDialog(ModalScreen):
                 return
 
             self.result = {
-                "name": name,
                 "provider": provider,
                 "model": model
             }

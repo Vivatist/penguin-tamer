@@ -195,10 +195,18 @@ class ConfigMenuApp(App):
                                     classes="param-control"
                                 )
 
-                            # Current LLM Info над таблицей
-                            current_llm = config.current_llm or t("Not selected")
+                            # Current LLM Info над таблицей (Provider + Model)
+                            current_llm_id = config.current_llm
+                            if current_llm_id:
+                                cfg = config.get_llm_config(current_llm_id) or {}
+                                provider = cfg.get("provider", "N/A")
+                                model = cfg.get("model", "N/A")
+                                current_llm_text = f"[#e07333]{provider}[/#e07333] / [#22c]{model}[/#22c]"
+                            else:
+                                current_llm_text = t("Not selected")
+                            
                             yield Static(
-                                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]",
+                                f"[bold]{t('Current LLM:')}[/bold] {current_llm_text}",
                                 id="system-info-display",
                                 classes="current-llm-label"
                             )
@@ -569,33 +577,35 @@ class ConfigMenuApp(App):
         # Update unified LLM table
         llm_table = self.query_one("#llm-table", DataTable)
 
-        # Save cursor position
+        # Save cursor position (теперь сохраняем по ID а не по имени)
         old_cursor_row = llm_table.cursor_row if keep_cursor_position else -1
-        old_llm_name = None
+        old_llm_id = None
         if old_cursor_row >= 0:
             try:
-                row = llm_table.get_row_at(old_cursor_row)
-                old_llm_name = str(row[1])  # Название LLM
+                # ID теперь не отображается в таблице, но мы можем получить его по индексу из списка
+                if old_cursor_row < len(llms):
+                    old_llm_id = llms[old_cursor_row]
             except Exception:
                 pass
 
         llm_table.clear(columns=True)
-        llm_table.add_columns(t(""), t("Name"), t("Provider"), t("Model"))
+        llm_table.add_column(t(""), width=3)
+        llm_table.add_column(t("Provider"), width=20)
+        llm_table.add_column(t("Model"), width=40)
 
         new_cursor_row = 0
-        for idx, llm_name in enumerate(llms):
-            cfg = config.get_llm_config(llm_name) or {}
-            is_current = "✓" if llm_name == current else ""
+        for idx, llm_id in enumerate(llms):
+            cfg = config.get_llm_config(llm_id) or {}
+            is_current = "✓" if llm_id == current else ""
             llm_table.add_row(
                 is_current,
-                llm_name,
                 cfg.get("provider", "N/A"),
                 cfg.get("model", "N/A"),
             )
             # Запоминаем позицию для текущей LLM или старой LLM
-            if keep_cursor_position and old_llm_name and llm_name == old_llm_name:
+            if keep_cursor_position and old_llm_id and llm_id == old_llm_id:
                 new_cursor_row = idx
-            elif not keep_cursor_position and llm_name == current:
+            elif not keep_cursor_position and llm_id == current:
                 # При первой загрузке устанавливаем курсор на текущую LLM
                 new_cursor_row = idx
 
@@ -693,40 +703,48 @@ class ConfigMenuApp(App):
             return
 
         try:
-            row = table.get_row_at(table.cursor_row)
-            llm_name = str(row[1])  # Название во втором столбце (после галочки)
+            # Получаем ID LLM по индексу строки
+            llms = config.get_available_llms()
+            if table.cursor_row >= len(llms):
+                return
+            llm_id = llms[table.cursor_row]
 
             # Only update if it's a different LLM
-            if llm_name == config.current_llm:
+            if llm_id == config.current_llm:
                 return
 
-            config.current_llm = llm_name
+            config.current_llm = llm_id
             config.save()
             self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
 
-            # Update current LLM display (только название LLM, без путей)
+            # Update current LLM display (Provider + Model)
+            cfg = config.get_llm_config(llm_id) or {}
+            provider = cfg.get("provider", "N/A")
+            model = cfg.get("model", "N/A")
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
-                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{llm_name}[/#e07333]"
+                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{provider}[/#e07333] / [#22c]{model}[/#22c]"
             )
 
             self.refresh_status()
 
             # Check if API key exists and show appropriate notification
-            llm_config = config.get_llm_config(llm_name)
+            llm_config = config.get_llm_effective_config(llm_id)
             api_key = llm_config.get("api_key", "").strip() if llm_config else ""
 
             if not api_key:
                 # Warning: No API key
                 self.notify(
-                    t("LLM '{name}' selected. Warning: API key is missing!", name=llm_name),
+                    t("LLM selected: {provider} / {model}. Warning: API key is missing!", 
+                      provider=provider, model=model),
                     severity="warning",
                     timeout=5
                 )
             else:
                 # Success: LLM selected with API key
                 self.notify(
-                    t("LLM '{name}' selected", name=llm_name),
+                    t("LLM selected: {provider} / {model}", 
+                      provider=provider, model=model),
                     severity="information",
                     timeout=3
                 )
@@ -738,14 +756,18 @@ class ConfigMenuApp(App):
         """Add new LLM."""
         def handle_result(result):
             if result:
-                config.add_llm(
-                    result["name"],
+                llm_id = config.add_llm(
                     result["provider"],
                     result["model"]
                 )
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(t("LLM '{name}' added", name=result['name']), severity="information")
+                self.notify(
+                    t("LLM added: {provider} / {model}", 
+                      provider=result['provider'],
+                      model=result['model']),
+                    severity="information"
+                )
 
         self.push_screen(
             LLMEditDialog(title=t("Add LLM")),
@@ -763,28 +785,35 @@ class ConfigMenuApp(App):
         if table.cursor_row < 0:
             self.notify(t("Select LLM to edit"), severity="warning")
             return
-        row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])  # Название во втором столбце (после галочки)
-        cfg = config.get_llm_config(llm_name) or {}
+        
+        # Получаем ID LLM по индексу строки
+        llms = config.get_available_llms()
+        if table.cursor_row >= len(llms):
+            return
+        llm_id = llms[table.cursor_row]
+        cfg = config.get_llm_config(llm_id) or {}
 
         def handle_result(result):
             if result:
                 config.update_llm(
-                    llm_name,
+                    llm_id,
                     provider=result["provider"],
                     model=result["model"]
                 )
-                self.update_llm_tables()
+                self.update_llm_tables(keep_cursor_position=True)
                 self.refresh_status()
-                self.notify(t("LLM '{name}' updated", name=llm_name), severity="information")
+                self.notify(
+                    t("LLM updated: {provider} / {model}", 
+                      provider=result['provider'],
+                      model=result['model']),
+                    severity="information"
+                )
 
         self.push_screen(
             LLMEditDialog(
-                title=t("Edit {name}", name=llm_name),
-                name=llm_name,
+                title=t("Edit LLM"),
                 provider=cfg.get("provider", ""),
-                model=cfg.get("model", ""),
-                name_editable=False  # При редактировании имя не меняется
+                model=cfg.get("model", "")
             ),
             handle_result
         )
@@ -800,22 +829,39 @@ class ConfigMenuApp(App):
         if table.cursor_row < 0:
             self.notify(t("Select LLM to delete"), severity="warning")
             return
-        row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])  # Название во втором столбце (после галочки)
+        
+        # Получаем ID LLM по индексу строки
+        llms = config.get_available_llms()
+        if table.cursor_row >= len(llms):
+            return
+        llm_id = llms[table.cursor_row]
+        cfg = config.get_llm_config(llm_id) or {}
 
-        if llm_name == config.current_llm:
+        if llm_id == config.current_llm:
             self.notify(t("Cannot delete current LLM"), severity="error")
             return
 
         def handle_confirm(confirm):
             if confirm:
-                config.remove_llm(llm_name)
+                config.remove_llm(llm_id)
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(t("LLM '{name}' deleted", name=llm_name), severity="information")
+                provider = cfg.get("provider", "")
+                model = cfg.get("model", "")
+                self.notify(
+                    t("LLM deleted: {provider} / {model}", 
+                      provider=provider, 
+                      model=model),
+                    severity="information"
+                )
 
+        provider = cfg.get("provider", "")
+        model = cfg.get("model", "")
         self.push_screen(
-            ConfirmDialog(t("Delete LLM '{name}'?", name=llm_name), title=t("Confirmation")),
+            ConfirmDialog(
+                t("Delete LLM: {provider} / {model}?", provider=provider, model=model),
+                title=t("Confirmation")
+            ),
             handle_confirm,
         )
 
