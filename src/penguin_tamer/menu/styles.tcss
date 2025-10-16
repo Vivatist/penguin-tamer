@@ -240,9 +240,35 @@ LLMEditDialog {
     margin-bottom: 1;
 }
 
+.llm-fields-container Select {
+    width: 100%;
+    margin-bottom: 1;
+}
+
 .llm-fields-container Input > .input--placeholder {
     color: $text 30%;
     text-style: italic;
+}
+
+.provider-select-container {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1;
+}
+
+.provider-select-container Select {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.provider-select-container LoadingIndicator {
+    width: 100%;
+    height: 1;
+    margin-top: 0;
+}
+
+.provider-select-container .hidden {
+    display: none;
 }
 
 .llm-dialog-buttons {
@@ -382,4 +408,48 @@ ApiKeyMissingDialog {
 .api-key-dialog-button-container Button {
     min-width: 15;
     margin: 0 2;
+}
+
+/* Provider Manager Modal Screen */
+.provider-manager-container {
+    width: 90;
+    height: auto;
+    background: $surface;
+    border: thick $primary;
+    padding: 2;
+}
+
+ProviderManagerScreen {
+    align: center middle;
+}
+
+.provider-manager-title {
+    width: 100%;
+    content-align: center middle;
+    text-style: bold;
+    color: $accent;
+    margin-bottom: 2;
+}
+
+.provider-table-container {
+    width: 100%;
+    height: auto;
+    margin-bottom: 2;
+}
+
+.provider-table-container DataTable {
+    max-height: 20;
+    height: auto;
+}
+
+.provider-manager-buttons {
+    width: 100%;
+    height: auto;
+    align: center middle;
+    margin-top: 1;
+}
+
+.provider-manager-buttons Button {
+    margin: 0 1;
+    min-width: 12;
 }

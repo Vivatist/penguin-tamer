@@ -42,16 +42,18 @@ from penguin_tamer.text_utils import format_api_key_display
 if __name__ == "__main__":
     # При прямом запуске используем абсолютные импорты
     from penguin_tamer.menu.widgets import DoubleClickDataTable, ResponsiveButtonRow
-    from penguin_tamer.menu.dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog
+    from penguin_tamer.menu.dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog, ProviderEditDialog
     from penguin_tamer.menu.info_panel import InfoPanel
     from penguin_tamer.menu.intro_screen import show_intro
+    from penguin_tamer.menu.provider_manager import ProviderManagerScreen
     from penguin_tamer.menu.locales.menu_i18n import menu_translator, t
 else:
     # При импорте как модуль используем относительные импорты
     from .widgets import DoubleClickDataTable, ResponsiveButtonRow
-    from .dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog
+    from .dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog, ProviderEditDialog
     from .info_panel import InfoPanel
     from .intro_screen import show_intro
+    from .provider_manager import ProviderManagerScreen
     from .locales.menu_i18n import menu_translator, t
 
 # Initialize menu translator with current language BEFORE class definition
@@ -224,6 +226,7 @@ class ConfigMenuApp(App):
                                     (t("Add"), "add-llm-btn", "success"),
                                     (t("Settings"), "edit-llm-btn", "success"),
                                     (t("Delete"), "delete-llm-btn", "error"),
+                                    (t("Providers"), "providers-btn", "primary"),
                                 ],
                                 classes="button-row"
                             )
@@ -656,6 +659,8 @@ class ConfigMenuApp(App):
             self.edit_llm()
         elif btn_id == "delete-llm-btn":
             self.delete_llm()
+        elif btn_id == "providers-btn":
+            self.open_provider_manager()
 
         # User Content
         elif btn_id == "save-content-btn":
@@ -827,6 +832,10 @@ class ConfigMenuApp(App):
             ConfirmDialog(t("Delete LLM '{name}'?", name=llm_name), title=t("Confirmation")),
             handle_confirm,
         )
+
+    def open_provider_manager(self) -> None:
+        """Open provider manager modal screen."""
+        self.push_screen(ProviderManagerScreen())
 
     # Parameter Methods
     def set_temperature(self) -> None:
