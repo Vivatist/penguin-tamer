@@ -24,7 +24,12 @@ class ProviderManagerScreen(ModalScreen):
         yield Container(
             Static(t("Provider Management"), classes="provider-manager-title"),
             Container(
-                DataTable(id="provider-table", cursor_type="row", zebra_stripes=True),
+                DataTable(
+                    id="provider-table",
+                    cursor_type="row",
+                    zebra_stripes=True,
+                    show_header=True
+                ),
                 classes="provider-table-container"
             ),
             Horizontal(
@@ -49,10 +54,9 @@ class ProviderManagerScreen(ModalScreen):
         old_cursor_row = table.cursor_row if table.row_count > 0 else 0
         
         table.clear(columns=True)
-        table.add_columns(
-            t("Provider Name"),
-            t("API Key")
-        )
+        # Добавляем колонки с указанием ширины
+        table.add_column(t("Provider Name"), width=30)
+        table.add_column(t("API Key"), width=32)
 
         providers = config.get("supported_Providers") or {}
         

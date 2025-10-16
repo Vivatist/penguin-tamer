@@ -419,7 +419,7 @@ ApiKeyMissingDialog {
 
 /* Provider Manager Modal Screen */
 .provider-manager-container {
-    width: 90;
+    width: 70;
     height: auto;
     background: $surface;
     border: thick $primary;
@@ -435,25 +435,26 @@ ProviderManagerScreen {
     content-align: center middle;
     text-style: bold;
     color: $accent;
-    margin-bottom: 2;
+    margin-bottom: 1;
 }
 
 .provider-table-container {
     width: 100%;
     height: auto;
-    margin-bottom: 2;
+    margin-bottom: 1;
 }
 
 .provider-table-container DataTable {
     max-height: 20;
     height: auto;
+    width: 100%;
 }
 
 .provider-manager-buttons {
     width: 100%;
     height: auto;
     align: center middle;
-    margin-top: 1;
+    margin-top: 0;
 }
 
 .provider-manager-buttons Button {
