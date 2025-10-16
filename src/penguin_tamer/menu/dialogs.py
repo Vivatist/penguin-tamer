@@ -20,18 +20,16 @@ class LLMEditDialog(ModalScreen):
         self,
         title: str = "Добавление LLM",
         name: str = "",
+        provider: str = "",
         model: str = "",
-        api_url: str = "",
-        api_key: str = "",
         name_editable: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.title_text = title
         self.default_name = name
+        self.default_provider = provider
         self.default_model = model
-        self.default_api_url = api_url
-        self.default_api_key = api_key
         self.name_editable = name_editable
         self.result = None
         self.available_models = []  # Список моделей от провайдера
@@ -60,7 +58,7 @@ class LLMEditDialog(ModalScreen):
                 Container(
                     Select(
                         provider_options,
-                        value="",
+                        value=self.default_provider if self.default_provider else "",
                         id="provider-select",
                         allow_blank=False,
                     ),
@@ -76,26 +74,6 @@ class LLMEditDialog(ModalScreen):
                     id="model-select",
                     allow_blank=False,
                     disabled=True
-                ),
-                
-                # API_URL
-                Static(t("API_URL:"), classes="llm-field-label"),
-                Input(
-                    value=self.default_api_url,
-                    id="llm-url-input",
-                    placeholder=t("For example: https://api.openai.com/v1")
-                ),
-                
-                # API_KEY
-                Static(t("API_KEY:"), classes="llm-field-label"),
-                Input(
-                    value="",
-                    id="llm-key-input",
-                    placeholder=(
-                        t("Current: {apikey}", apikey=format_api_key_display(self.default_api_key))
-                        if self.default_api_key
-                        else t("Optional: Leave empty to use provider key")
-                    )
                 ),
                 classes="llm-fields-container"
             ),
@@ -115,37 +93,36 @@ class LLMEditDialog(ModalScreen):
         else:
             provider_select = self.query_one("#provider-select", Select)
             provider_select.focus()
+        
+        # Если задан провайдер по умолчанию, загружаем его модели
+        if self.default_provider:
+            self.load_provider_data(self.default_provider)
 
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle select changes."""
         if event.select.id == "provider-select" and event.value:
-            # Провайдер выбран - заполняем поля
+            # Провайдер выбран - загружаем модели
             self.load_provider_data(str(event.value))
         elif event.select.id == "model-select" and event.value:
             # Модель выбрана - ничего не делаем, просто запоминаем
             pass
 
     def load_provider_data(self, provider_name: str) -> None:
-        """Загружает данные провайдера и заполняет поля."""
+        """Загружает данные провайдера и запускает загрузку моделей."""
+        providers = config.get("supported_Providers") or {}
+        provider_config = providers.get(provider_name, {})
+        
+    def load_provider_data(self, provider_name: str) -> None:
+        """Загружает данные провайдера и запускает загрузку моделей."""
         providers = config.get("supported_Providers") or {}
         provider_config = providers.get(provider_name, {})
         
         if not provider_config:
             return
         
-        # Заполняем API URL
-        api_url = provider_config.get("api_url", "")
-        url_input = self.query_one("#llm-url-input", Input)
-        url_input.value = api_url
-        
-        # Заполняем API KEY (если есть на уровне провайдера)
-        api_key = provider_config.get("api_key", "")
-        if api_key and not self.default_api_key:  # Не перезаписываем существующий ключ
-            key_input = self.query_one("#llm-key-input", Input)
-            key_input.placeholder = t("Using provider key: {apikey}", apikey=format_api_key_display(api_key))
-        
         # Запускаем загрузку моделей
         api_list_url = provider_config.get("api_list", "")
+        api_key = provider_config.get("api_key", "")
         if api_list_url:
             self.fetch_models(api_list_url, api_key)
 
@@ -221,34 +198,31 @@ class LLMEditDialog(ModalScreen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "save-btn":
             name_input = self.query_one("#llm-name-input", Input)
+            provider_select = self.query_one("#provider-select", Select)
             model_select = self.query_one("#model-select", Select)
-            url_input = self.query_one("#llm-url-input", Input)
-            key_input = self.query_one("#llm-key-input", Input)
 
             name = name_input.value.strip()
+            provider = str(provider_select.value) if provider_select.value else ""
             model = str(model_select.value) if model_select.value else ""
-            api_url = url_input.value.strip()
-            api_key = key_input.value.strip()
 
             # Validation
             if not name:
                 self.notify(t("LLM name is required"), severity="error")
                 name_input.focus()
                 return
+            if not provider:
+                self.notify(t("Provider is required"), severity="error")
+                provider_select.focus()
+                return
             if not model:
                 self.notify(t("Model is required"), severity="error")
                 model_select.focus()
                 return
-            if not api_url:
-                self.notify(t("API URL is required"), severity="error")
-                url_input.focus()
-                return
 
             self.result = {
                 "name": name,
-                "model": model,
-                "api_url": api_url,
-                "api_key": api_key
+                "provider": provider,
+                "model": model
             }
         self.dismiss(self.result)
 

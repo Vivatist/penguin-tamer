@@ -379,7 +379,7 @@ def _create_chat_client(console):
     # Убеждаемся, что i18n инициализирован перед созданием клиента
     _ensure_i18n()
 
-    llm_config = config.get_current_llm_config()
+    llm_config = config.get_current_llm_effective_config()
 
     # Создаём полную конфигурацию LLM (подключение + генерация)
     full_llm_config = LLMConfig(
@@ -427,7 +427,7 @@ def main() -> None:
 
         # Check if API key exists for current LLM before proceeding
         try:
-            llm_config = config.get_current_llm_config()
+            llm_config = config.get_current_llm_effective_config()
             api_key = llm_config.get("api_key", "").strip()
 
             if not api_key:
@@ -437,7 +437,7 @@ def main() -> None:
 
                 # After settings closed, check again if key was added
                 config.reload()
-                llm_config = config.get_current_llm_config()
+                llm_config = config.get_current_llm_effective_config()
                 api_key = llm_config.get("api_key", "").strip()
 
                 if not api_key:

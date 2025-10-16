@@ -29,21 +29,17 @@ global:
 
 supported_LLMs:
   "Grok-4-Fast via OpenRouter":
+    provider: "OpenRouter"
     model: "google/gemini-2.0-flash-exp:free"
-    api_url: "https://openrouter.ai/api/v1"
-    api_key: ""
   "DeepSeek V3.1 via OpenRouter":
+    provider: "OpenRouter"
     model: "deepseek/deepseek-chat-v3.1:free"
-    api_url: "https://openrouter.ai/api/v1"
-    api_key: ""
   "Qwen3 Coder via OpenRouter":
+    provider: "OpenRouter"
     model: "qwen/qwen3-coder:free"
-    api_url: "https://openrouter.ai/api/v1"
-    api_key: ""
-  OpenAI:
-    model: gpt-4.1-mini
-    api_url: https://api.openai.com/v1
-    api_key: "" # Your OpenAI API key here
+  "OpenAI GPT-4":
+    provider: "OpenAI"
+    model: "gpt-4.1-mini"
 
 supported_Providers:
   OpenRouter:

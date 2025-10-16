@@ -68,6 +68,8 @@
   "Add LLM": "Добавление LLM",
   "Confirmation": "Подтверждение",
   "Name": "Имя",
+  "Provider": "Провайдер",
+  "Model": "Модель",
   "Model ID": "Model ID",
   "API URL": "API URL",
   "API Key": "API Key",
@@ -129,5 +131,6 @@
   "No models available": "Нет доступных моделей",
   "Failed to load models from provider": "Не удалось загрузить модели от провайдера",
   "Loaded {count} models": "Загружено моделей: {count}",
-  "Error updating model list: {error}": "Ошибка обновления списка моделей: {error}"
+  "Error updating model list: {error}": "Ошибка обновления списка моделей: {error}",
+  "Provider is required": "Провайдер обязателен"
 }

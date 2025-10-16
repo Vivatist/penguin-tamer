@@ -273,15 +273,48 @@ class ConfigManager:
         """
         return self.get_llm_config(self.current_llm)
 
-    def add_llm(self, name: str, model: str, api_url: str, api_key: str = "") -> None:
+    def get_llm_effective_config(self, llm_name: str) -> Dict[str, Any]:
+        """
+        Возвращает эффективную конфигурацию LLM с данными от провайдера.
+        
+        Args:
+            llm_name: Имя LLM
+        
+        Returns:
+            Dict с полями: provider, model, api_url, api_key
+        """
+        llm_config = self.get_llm_config(llm_name)
+        if not llm_config:
+            return {}
+        
+        provider_name = llm_config.get("provider", "")
+        providers = self.get("supported_Providers") or {}
+        provider_config = providers.get(provider_name, {})
+        
+        return {
+            "provider": provider_name,
+            "model": llm_config.get("model", ""),
+            "api_url": provider_config.get("api_url", ""),
+            "api_key": provider_config.get("api_key", "")
+        }
+
+    def get_current_llm_effective_config(self) -> Dict[str, Any]:
+        """
+        Возвращает эффективную конфигурацию текущей LLM.
+        
+        Returns:
+            Dict с полями: provider, model, api_url, api_key
+        """
+        return self.get_llm_effective_config(self.current_llm)
+
+    def add_llm(self, name: str, provider: str, model: str) -> None:
         """
         Добавляет новую LLM.
 
         Args:
             name: Имя LLM
+            provider: Провайдер
             model: Модель LLM
-            api_url: API URL
-            api_key: API ключ (опционально)
         """
         supported_llms = self.get("supported_LLMs") or {}
 
@@ -289,22 +322,20 @@ class ConfigManager:
             raise ValueError(f"LLM с именем '{name}' уже существует")
 
         supported_llms[name] = {
-            "model": model,
-            "api_url": api_url,
-            "api_key": api_key
+            "provider": provider,
+            "model": model
         }
 
         self.update_section("supported_LLMs", supported_llms)
 
-    def update_llm(self, name: str, model: str = None, api_url: str = None, api_key: str = None) -> None:
+    def update_llm(self, name: str, provider: str = None, model: str = None) -> None:
         """
         Обновляет конфигурацию LLM.
 
         Args:
             name: Имя LLM для обновления
+            provider: Новый провайдер (опционально)
             model: Новая модель (опционально)
-            api_url: Новый API URL (опционально)
-            api_key: Новый API ключ (опционально)
         """
         supported_llms = self.get("supported_LLMs") or {}
 
@@ -314,12 +345,10 @@ class ConfigManager:
         # Создаем копию текущей конфигурации
         current_config = supported_llms[name].copy()
 
+        if provider is not None:
+            current_config["provider"] = provider
         if model is not None:
             current_config["model"] = model
-        if api_url is not None:
-            current_config["api_url"] = api_url
-        if api_key is not None:
-            current_config["api_key"] = api_key
 
         # Обновляем всю секцию supported_LLMs
         supported_llms[name] = current_config

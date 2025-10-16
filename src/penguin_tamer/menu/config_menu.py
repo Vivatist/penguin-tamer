@@ -580,7 +580,7 @@ class ConfigMenuApp(App):
                 pass
 
         llm_table.clear(columns=True)
-        llm_table.add_columns(t(""), t("Name"), t("Model ID"), t("API Key"), t("API URL"))
+        llm_table.add_columns(t(""), t("Name"), t("Provider"), t("Model"))
 
         new_cursor_row = 0
         for idx, llm_name in enumerate(llms):
@@ -589,9 +589,8 @@ class ConfigMenuApp(App):
             llm_table.add_row(
                 is_current,
                 llm_name,
+                cfg.get("provider", "N/A"),
                 cfg.get("model", "N/A"),
-                format_api_key_display(cfg.get("api_key", "")),
-                cfg.get("api_url", "N/A"),
             )
             # Запоминаем позицию для текущей LLM или старой LLM
             if keep_cursor_position and old_llm_name and llm_name == old_llm_name:
@@ -741,9 +740,8 @@ class ConfigMenuApp(App):
             if result:
                 config.add_llm(
                     result["name"],
-                    result["model"],
-                    result["api_url"],
-                    result["api_key"]
+                    result["provider"],
+                    result["model"]
                 )
                 self.update_llm_tables()
                 self.refresh_status()
@@ -771,13 +769,10 @@ class ConfigMenuApp(App):
 
         def handle_result(result):
             if result:
-                # Если API ключ не был изменен (пустой), оставляем старый
-                api_key_to_save = result["api_key"] if result["api_key"] else cfg.get("api_key", "")
                 config.update_llm(
                     llm_name,
-                    model=result["model"],
-                    api_url=result["api_url"],
-                    api_key=api_key_to_save
+                    provider=result["provider"],
+                    model=result["model"]
                 )
                 self.update_llm_tables()
                 self.refresh_status()
@@ -787,9 +782,8 @@ class ConfigMenuApp(App):
             LLMEditDialog(
                 title=t("Edit {name}", name=llm_name),
                 name=llm_name,
+                provider=cfg.get("provider", ""),
                 model=cfg.get("model", ""),
-                api_url=cfg.get("api_url", ""),
-                api_key=cfg.get("api_key", ""),
                 name_editable=False  # При редактировании имя не меняется
             ),
             handle_result
