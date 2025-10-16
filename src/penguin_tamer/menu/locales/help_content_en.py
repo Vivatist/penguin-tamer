@@ -512,9 +512,9 @@ Select language for menu and messages.
 [bold]Note:[/bold]
 Communication language with LLM depends on your prompt, not this setting.""",
 
-    "theme-select": """[bold cyan]COLOR SCHEME[/bold cyan]
+    "theme-select": """[bold cyan]LLM DIALOG THEME[/bold cyan]
 
-Select interface color scheme.
+Select theme for LLM dialog rendering.
 
 [bold]Available themes:[/bold]
 • Classic (default) - standard theme

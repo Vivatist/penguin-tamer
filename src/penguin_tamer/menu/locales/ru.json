@@ -76,7 +76,7 @@
   "Detailed information about LLM requests": "Подробная информация о запросах к LLM",
   "Reset settings": "Сброс настроек",
 
-  "Color scheme": "Цветовая схема",
+  "Color scheme": "Тема оформления диалогов нейросети",
   "Markdown rendering theme": "Тема отображения Markdown",
   "Classic": "Классический",
 
@@ -155,7 +155,7 @@
   "Debug mode {status}": "Режим отладки {status}",
   "Theme changed to: {theme}. Restart required.": "Тема изменена на: {theme}. Требуется перезапуск.",
   "Settings reset. Restart required to apply.": "Настройки сброшены. Требуется перезапуск для применения.",
-  "LLM theme. Restart required": "Тема оформления ответов нейросети\nТребуется перезапуск",
+  "LLM dialog theme": "Тема оформления диалогов нейросети",
 
   "Select LLM to edit": "Выберите LLM для редактирования",
   "Select LLM to delete": "Выберите LLM для удаления",

@@ -415,7 +415,7 @@ class ConfigMenuApp(App):
                             current_theme = config.get("global", "markdown_theme", "default")
                             with Horizontal(classes="setting-row"):
                                 yield Static(
-                                    f"{t('Color scheme')}\n[dim]{t('Restart required')}[/dim]",
+                                    f"{t('LLM dialog theme')}\n[dim]{t('Restart required')}[/dim]",
                                     classes="param-label"
                                 )
                                 yield Select(
