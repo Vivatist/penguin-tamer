@@ -76,7 +76,7 @@ playback:
 ```
 >>> Your question... Ctrl+C - exit
     [пауза 2 секунды]
->>> 
+>>>
     [выход]
 ```
 

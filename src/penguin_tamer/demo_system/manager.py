@@ -16,25 +16,25 @@ from .player import DemoPlayer
 def _ensure_demo_config(config_dir: Path) -> None:
     """
     Ensure demo config file exists in user config directory.
-    
+
     Creates demo/ folder and copies config_demo.yaml on first run.
-    
+
     Args:
         config_dir: User config directory path
     """
     demo_dir = config_dir / "demo"
     user_config_path = demo_dir / "config_demo.yaml"
-    
+
     # If config already exists, do nothing
     if user_config_path.exists():
         return
-    
+
     # Create demo directory if it doesn't exist
     demo_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Copy default config from package to user config directory
     package_config_path = Path(__file__).parent / "config_demo.yaml"
-    
+
     if package_config_path.exists():
         try:
             shutil.copy2(package_config_path, user_config_path)

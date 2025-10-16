@@ -322,8 +322,8 @@ class DemoPlayer:
         sys.stdout.write('\r\033[K' + rendered)
         sys.stdout.flush()
 
-        # Type finish_string as whole word
-        self.console.print(finish_string, highlight=False)
+        # Type finish_string as whole word (without newline)
+        self.console.print(finish_string, highlight=False, end="")
 
         # Pause after typing finish_string before exiting
         time.sleep(1.0)
