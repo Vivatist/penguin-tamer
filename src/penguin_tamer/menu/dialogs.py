@@ -30,6 +30,7 @@ class LLMEditDialog(ModalScreen):
         self.result = None
         self.available_models = []  # Список моделей от провайдера
         self.loading_models = False
+        self.current_filter = None  # Текущий фильтр моделей
 
     def compose(self) -> ComposeResult:
         # Получаем список провайдеров для Select
@@ -109,37 +110,34 @@ class LLMEditDialog(ModalScreen):
         providers = config.get("supported_Providers") or {}
         provider_config = providers.get(provider_name, {})
         
-    def load_provider_data(self, provider_name: str) -> None:
-        """Загружает данные провайдера и запускает загрузку моделей."""
-        providers = config.get("supported_Providers") or {}
-        provider_config = providers.get(provider_name, {})
-        
         if not provider_config:
             return
         
         # Запускаем загрузку моделей
         api_list_url = provider_config.get("api_list", "")
         api_key = provider_config.get("api_key", "")
+        model_filter = provider_config.get("filter", None)
         if api_list_url:
-            self.fetch_models(api_list_url, api_key)
+            self.fetch_models(api_list_url, api_key, model_filter)
 
     @work(exclusive=True, thread=True)
-    def fetch_models(self, api_list_url: str, api_key: str) -> None:
+    def fetch_models(self, api_list_url: str, api_key: str, model_filter: str = None) -> None:
         """Загружает список моделей от провайдера (в отдельном потоке)."""
         from penguin_tamer.menu.provider_utils import fetch_models_from_provider, format_model_for_select
         
         # Показываем индикатор загрузки
         self.loading_models = True
+        self.current_filter = model_filter
         self.app.call_from_thread(self.show_loading, True)
         
-        # Запрашиваем модели
-        models = fetch_models_from_provider(api_list_url, api_key)
+        # Запрашиваем модели с применением фильтра
+        models = fetch_models_from_provider(api_list_url, api_key, model_filter)
         self.available_models = models
         
         # Скрываем индикатор загрузки и обновляем список
         self.loading_models = False
         self.app.call_from_thread(self.show_loading, False)
-        self.app.call_from_thread(self.update_model_select, models)
+        self.app.call_from_thread(self.update_model_select, models, model_filter)
 
     def show_loading(self, show: bool) -> None:
         """Показывает/скрывает индикатор загрузки."""
@@ -152,7 +150,7 @@ class LLMEditDialog(ModalScreen):
         except Exception:
             pass
 
-    def update_model_select(self, models: list) -> None:
+    def update_model_select(self, models: list, model_filter: str = None) -> None:
         """Обновляет список моделей в Select."""
         from penguin_tamer.menu.provider_utils import format_model_for_select
         
@@ -181,8 +179,14 @@ class LLMEditDialog(ModalScreen):
                             model_select.value = option_value
                             break
                 
+                # Формируем сообщение с учётом фильтра
+                if model_filter:
+                    message = t("Loaded {count} filtered models (filter: '{filter}')", count=len(models), filter=model_filter)
+                else:
+                    message = t("Loaded {count} models", count=len(models))
+                
                 self.notify(
-                    t("Loaded {count} models", count=len(models)),
+                    message,
                     severity="information",
                     timeout=2
                 )
@@ -303,6 +307,7 @@ class ProviderEditDialog(ModalScreen):
         api_list: str = "",
         api_url: str = "",
         api_key: str = "",
+        model_filter: str = "",
         name_editable: bool = True,
         **kwargs,
     ):
@@ -312,6 +317,7 @@ class ProviderEditDialog(ModalScreen):
         self.default_api_list = api_list
         self.default_api_url = api_url
         self.default_api_key = api_key
+        self.default_filter = model_filter
         self.name_editable = name_editable
         self.result = None
 
@@ -326,17 +332,23 @@ class ProviderEditDialog(ModalScreen):
                     disabled=not self.name_editable,
                     placeholder=t("For example: OpenRouter, OpenAI")
                 ),
-                Static(t("API List URL:"), classes="llm-field-label"),
-                Input(
-                    value=self.default_api_list,
-                    id="provider-api-list-input",
-                    placeholder=t("For example: https://openrouter.ai/api/v1/models")
-                ),
                 Static(t("API_URL:"), classes="llm-field-label"),
                 Input(
                     value=self.default_api_url,
                     id="provider-url-input",
                     placeholder=t("For example: https://openrouter.ai/api/v1")
+                ),
+                Static(t("API List URL:"), classes="llm-field-label"),
+                Input(
+                    value=self.default_api_list,
+                    id="provider-api-list-input",
+                    placeholder=t("Optional. To get list of models")
+                ),
+                Static(t("Filter:"), classes="llm-field-label"),
+                Input(
+                    value=self.default_filter,
+                    id="provider-filter-input",
+                    placeholder=t("Optional. Filter models by name")
                 ),
                 Static(t("API_KEY:"), classes="llm-field-label"),
                 Input(
@@ -375,11 +387,13 @@ class ProviderEditDialog(ModalScreen):
         if event.button.id == "save-btn":
             name_input = self.query_one("#provider-name-input", Input)
             api_list_input = self.query_one("#provider-api-list-input", Input)
+            filter_input = self.query_one("#provider-filter-input", Input)
             url_input = self.query_one("#provider-url-input", Input)
             key_input = self.query_one("#provider-key-input", Input)
 
             name = name_input.value.strip()
-            api_list = api_list_input.value.strip()
+            api_list = api_list_input.value.strip() or None  # Пустая строка → None
+            model_filter = filter_input.value.strip() or None  # Пустая строка → None
             api_url = url_input.value.strip()
             api_key = key_input.value.strip()
 
@@ -387,10 +401,6 @@ class ProviderEditDialog(ModalScreen):
             if not name:
                 self.notify(t("Provider name is required"), severity="error")
                 name_input.focus()
-                return
-            if not api_list:
-                self.notify(t("API List URL is required"), severity="error")
-                api_list_input.focus()
                 return
             if not api_url:
                 self.notify(t("API URL is required"), severity="error")
@@ -401,6 +411,7 @@ class ProviderEditDialog(ModalScreen):
                 "name": name,
                 "api_list": api_list,
                 "api_url": api_url,
-                "api_key": api_key
+                "api_key": api_key,
+                "filter": model_filter
             }
         self.dismiss(self.result)

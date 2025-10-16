@@ -97,7 +97,8 @@ class ProviderManagerScreen(ModalScreen):
                 providers[result["name"]] = {
                     "api_list": result["api_list"],
                     "api_url": result["api_url"],
-                    "api_key": result["api_key"]
+                    "api_key": result["api_key"],
+                    "filter": result.get("filter", None)
                 }
                 config.update_section("supported_Providers", providers)
                 config.save()
@@ -131,7 +132,8 @@ class ProviderManagerScreen(ModalScreen):
                 providers[provider_name] = {
                     "api_list": result["api_list"],
                     "api_url": result["api_url"],
-                    "api_key": api_key_to_save
+                    "api_key": api_key_to_save,
+                    "filter": result.get("filter", None)
                 }
                 config.update_section("supported_Providers", providers)
                 config.save()
@@ -145,6 +147,7 @@ class ProviderManagerScreen(ModalScreen):
                 api_list=provider_config.get("api_list", ""),
                 api_url=provider_config.get("api_url", ""),
                 api_key=provider_config.get("api_key", ""),
+                model_filter=provider_config.get("filter", "") or "",
                 name_editable=False  # При редактировании имя не меняется
             ),
             handle_result

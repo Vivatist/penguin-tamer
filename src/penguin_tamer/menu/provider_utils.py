@@ -6,13 +6,15 @@ import requests
 from typing import List, Dict, Optional
 
 
-def fetch_models_from_provider(api_list_url: str, api_key: str = "") -> List[Dict[str, str]]:
+def fetch_models_from_provider(api_list_url: str, api_key: str = "", model_filter: Optional[str] = None) -> List[Dict[str, str]]:
     """
     Запрашивает список моделей у провайдера.
     
     Args:
         api_list_url: URL для получения списка моделей
         api_key: API ключ для аутентификации (опционально)
+        model_filter: Фильтр для моделей (опционально). Если указан, будут возвращены только модели,
+                     содержащие эту подстроку в id или name (регистронезависимо)
     
     Returns:
         Список словарей с информацией о моделях [{"id": "model-id", "name": "Model Name"}, ...]
@@ -59,6 +61,14 @@ def fetch_models_from_provider(api_list_url: str, api_key: str = "") -> List[Dic
                     model_id = item["id"]
                     model_name = item.get("name", model_id)
                     models.append({"id": model_id, "name": model_name})
+        
+        # Применяем фильтр если он указан
+        if model_filter:
+            filter_lower = model_filter.lower()
+            models = [
+                model for model in models
+                if filter_lower in model["id"].lower() or filter_lower in model["name"].lower()
+            ]
         
         return models
     

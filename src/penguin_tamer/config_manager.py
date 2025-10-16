@@ -82,31 +82,45 @@ class ConfigManager:
     def _ensure_config_exists(self) -> None:
         """
         Убеждается, что файл конфигурации существует.
-        Если config.yaml не найден, копирует default_config.yaml.
+        Если config.yaml не найден, копирует default_config.yaml с сохранением комментариев.
         """
         if not self.user_config_path.exists():
             if self._default_config_path.exists():
                 try:
+                    # Копируем default_config.yaml в user config
                     shutil.copy2(self._default_config_path, self.user_config_path)
-                    # After creating user config from defaults, set language based on system locale
-                    try:
-                        with open(self.user_config_path, 'r', encoding='utf-8') as f:
-                            cfg = yaml.safe_load(f) or {}
-                        sys_lang = detect_system_language(["en", "ru"]) or "en"
-                        cfg["language"] = sys_lang
-
-                        # Установить локализованный user_content при создании конфига
-                        if "global" not in cfg:
-                            cfg["global"] = {}
-                        cfg["global"]["user_content"] = get_default_user_content(sys_lang)
-
-                        with open(self.user_config_path, 'w', encoding='utf-8') as f:
-                            yaml.safe_dump(
-                                cfg, f, indent=2, allow_unicode=True,
-                                default_flow_style=False, sort_keys=False
-                            )
-                    except Exception:
-                        pass
+                    
+                    # Определяем системный язык и локализованный контент
+                    sys_lang = detect_system_language(["en", "ru"]) or "en"
+                    localized_content = get_default_user_content(sys_lang)
+                    
+                    # Читаем скопированный файл как текст для сохранения комментариев
+                    with open(self.user_config_path, 'r', encoding='utf-8') as f:
+                        config_text = f.read()
+                    
+                    # Заменяем язык (первая строка с "language:")
+                    import re
+                    config_text = re.sub(
+                        r'^language:\s*\w+',
+                        f'language: {sys_lang}',
+                        config_text,
+                        count=1,
+                        flags=re.MULTILINE
+                    )
+                    
+                    # Заменяем user_content (многострочное значение)
+                    # Ищем строку "user_content:" и заменяем её значение
+                    config_text = re.sub(
+                        r'(user_content:\s*)[^\n]+',
+                        f'\\1{localized_content}',
+                        config_text,
+                        count=1
+                    )
+                    
+                    # Сохраняем изменённый файл с комментариями
+                    with open(self.user_config_path, 'w', encoding='utf-8') as f:
+                        f.write(config_text)
+                        
                 except Exception as e:
                     raise RuntimeError(f"Не удалось создать файл конфигурации: {e}")
             else:
