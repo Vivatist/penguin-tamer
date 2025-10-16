@@ -8,8 +8,12 @@ playback:
   # Pause after user finishes typing before pressing Enter
   pause_after_input: 1.0
 
-  # Final prompt pause before typing 'quit' at the end of session
+  # Final prompt pause before finishing session
   final_prompt_pause: 4.0
+
+  # String to type at the end of session (e.g., 'quit', 'exit')
+  # If empty, session ends without typing anything
+  finish_string: quit
 
   # Enable two-phase spinner animation before LLM output
   spinner_enabled: true

@@ -48,7 +48,8 @@ class DemoPlayer:
                 "typing_delay_variance": 0.02,
                 "pause_after_input": 0.5,
                 "output_delay": 1.0,
-                "char_delay": 0.01
+                "char_delay": 0.01,
+                "finish_string": "quit"
             }
         }
 
@@ -268,8 +269,11 @@ class DemoPlayer:
         self.console.print()
 
     def _show_final_prompt(self, last_output_text: str = None):
-        """Show final prompt with placeholder, wait, then type 'quit'."""
+        """Show final prompt with placeholder, wait, then type finish_string if set."""
         config = self.config.get("playback", {})
+
+        # Get finish_string from config
+        finish_string = config.get("finish_string", "").strip()
 
         # Show prompt
         self.console.print("[bold #e07333]>>> [/bold #e07333]", end='')
@@ -299,6 +303,13 @@ class DemoPlayer:
         final_pause = config.get("final_prompt_pause", 4.0)
         time.sleep(final_pause)
 
+        # If finish_string is empty, just end without typing anything
+        if not finish_string:
+            # Clear the line and leave cursor at prompt
+            print('\r\033[K', end='', flush=True)
+            self.console.print("[bold #e07333]>>> [/bold #e07333]")
+            return
+
         # Clear line and show prompt atomically to avoid cursor jump
         import sys
         from io import StringIO
@@ -311,8 +322,11 @@ class DemoPlayer:
         sys.stdout.write('\r\033[K' + rendered)
         sys.stdout.flush()
 
-        # Type 'quit' as whole word
-        self.console.print("quit", highlight=False)
+        # Type finish_string as whole word
+        self.console.print(finish_string, highlight=False)
+
+        # Pause after typing finish_string before exiting
+        time.sleep(1.0)
 
     def _play_llm_output(self, event: Dict[str, Any], config: Dict[str, Any]):
         """Play LLM output with realistic streaming effect and markdown rendering."""

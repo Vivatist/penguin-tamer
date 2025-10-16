@@ -4,12 +4,43 @@ Simplified Demo System Manager - unified interface for recording and playback.
 Uses Null Object Pattern for seamless integration without if-checks.
 """
 
+import shutil
 from pathlib import Path
 from typing import Optional
 from rich.console import Console
 
 from .recorder import DemoRecorder
 from .player import DemoPlayer
+
+
+def _ensure_demo_config(config_dir: Path) -> None:
+    """
+    Ensure demo config file exists in user config directory.
+    
+    Creates demo/ folder and copies config_demo.yaml on first run.
+    
+    Args:
+        config_dir: User config directory path
+    """
+    demo_dir = config_dir / "demo"
+    user_config_path = demo_dir / "config_demo.yaml"
+    
+    # If config already exists, do nothing
+    if user_config_path.exists():
+        return
+    
+    # Create demo directory if it doesn't exist
+    demo_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Copy default config from package to user config directory
+    package_config_path = Path(__file__).parent / "config_demo.yaml"
+    
+    if package_config_path.exists():
+        try:
+            shutil.copy2(package_config_path, user_config_path)
+        except Exception:
+            # If copy fails, silently continue - player will use defaults
+            pass
 
 
 class NullDemoManager:
@@ -94,6 +125,9 @@ class DemoSystemManager:
         self.recorder: Optional[DemoRecorder] = None
         self.player: Optional[DemoPlayer] = None
 
+        # Ensure demo config exists in user config directory
+        _ensure_demo_config(config_dir)
+
         self._initialize()
 
     def _initialize(self):
@@ -104,8 +138,8 @@ class DemoSystemManager:
             self.console.print(f"[yellow]📹 Demo recording started: {recording_file}[/yellow]")
 
         elif self.mode == "play":
-            # config_demo.yaml is in the same directory as this file
-            config_demo_path = Path(__file__).parent / "config_demo.yaml"
+            # Use config from user's demo/ directory (created by _ensure_demo_config)
+            config_demo_path = self.config_dir / "demo" / "config_demo.yaml"
             self.player = DemoPlayer(self.console, config_demo_path, self.play_first_input)
 
             # Determine which file to play
