@@ -51,22 +51,16 @@ class ProviderManagerScreen(ModalScreen):
         table.clear(columns=True)
         table.add_columns(
             t("Provider Name"),
-            t("API List URL"),
-            t("API URL"),
             t("API Key")
         )
 
         providers = config.get("supported_Providers") or {}
         
         for provider_name, provider_config in providers.items():
-            api_list = provider_config.get("api_list", "N/A")
-            api_url = provider_config.get("api_url", "N/A")
             api_key = format_api_key_display(provider_config.get("api_key", ""))
             
             table.add_row(
                 provider_name,
-                api_list,
-                api_url,
                 api_key
             )
         

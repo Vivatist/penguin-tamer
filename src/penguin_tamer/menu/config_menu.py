@@ -195,32 +195,15 @@ class ConfigMenuApp(App):
                                     classes="param-control"
                                 )
 
-                            yield Static("")
-
-                            # System Info
-                            if hasattr(config, 'config_path'):
-                                config_dir = Path(config.config_path).parent
-                            else:
-                                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
-                            bin_path = Path(sys.executable).parent
+                            # Current LLM Info над таблицей
                             current_llm = config.current_llm or t("Not selected")
-
                             yield Static(
-                                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
-                                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
-                                f"[bold]{t('Binary folder:')}[/bold] {bin_path}",
-                                classes="system-info-panel",
-                                id="system-info-display"
-                            )
-
-                            yield Static("")
-                            yield Static(
-                                f"[bold]{t('Neural network setup')}[/bold]\n"
-                                f"[dim]{t('Select the used neural network or add your own')}[/dim]"
+                                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]",
+                                id="system-info-display",
+                                classes="current-llm-label"
                             )
                             llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
-                            yield Static("")
                             yield ResponsiveButtonRow(
                                 buttons_data=[
                                     (t("Add"), "add-llm-btn", "success"),
@@ -365,6 +348,22 @@ class ConfigMenuApp(App):
                                 f"[dim]{t('Application behavior (press Enter to save)')}[/dim]",
                                 classes="tab-header",
                             )
+
+                            # System Paths Info
+                            if hasattr(config, 'config_path'):
+                                config_dir = Path(config.config_path).parent
+                            else:
+                                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+                            bin_path = Path(sys.executable).parent
+
+                            yield Static(
+                                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
+                                f"[bold]{t('Binary folder:')}[/bold] {bin_path}",
+                                classes="system-info-panel",
+                                id="system-paths-display"
+                            )
+
+                            yield Static("")
 
                             # Stream Delay
                             stream_delay = config.get("global", "sleep_time", 0.01)
@@ -706,17 +705,10 @@ class ConfigMenuApp(App):
             config.save()
             self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
 
-            # Update system info panel with new current LLM
-            if hasattr(config, 'config_path'):
-                config_dir = Path(config.config_path).parent
-            else:
-                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
-            bin_path = Path(sys.executable).parent
+            # Update current LLM display (только название LLM, без путей)
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
-                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{llm_name}[/#e07333]\n\n"
-                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
-                f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
+                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{llm_name}[/#e07333]"
             )
 
             self.refresh_status()
@@ -1135,20 +1127,24 @@ class ConfigMenuApp(App):
             current_theme = config.get("global", "markdown_theme", "default")
             theme_select.value = current_theme
 
-            # Обновляем панель с системной информацией и текущей LLM
+            # Обновляем отображение текущей LLM на вкладке "Общие"
+            current_llm = config.current_llm or t("Not selected")
+            system_info_display = self.query_one("#system-info-display", Static)
+            system_info_display.update(
+                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]"
+            )
+
+            # Обновляем отображение путей на вкладке "Система"
             if hasattr(config, 'config_path'):
                 config_dir = Path(config.config_path).parent
             else:
                 config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
             bin_path = Path(sys.executable).parent
-            current_llm = config.current_llm or t("Not selected")
-
-            system_info_display = self.query_one("#system-info-display", Static)
-            system_info_display.update(
-                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
+            
+            system_paths_display = self.query_one("#system-paths-display", Static)
+            system_paths_display.update(
                 f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
                 f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
-
             )
 
         except Exception:

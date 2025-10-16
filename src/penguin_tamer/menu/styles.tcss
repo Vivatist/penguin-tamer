@@ -48,8 +48,8 @@ TabPane {
 .setting-row {
     height: 3;
     align: left middle;
-    margin-bottom: 1;
-    margin-top: 1;
+    margin-bottom: 0;
+    margin-top: 0;
 }
 
 .setting-spacer {
@@ -94,6 +94,13 @@ TabPane {
     text-style: bold;
     content-align: center middle;
     margin-bottom: 1;
+}
+
+.current-llm-label {
+    width: 100%;
+    margin-top: 1;
+    margin-bottom: 0;
+    padding: 0;
 }
 
 DataTable {
