@@ -1058,8 +1058,13 @@ class ConfigMenuApp(App):
 
     def show_api_key_missing_dialog(self) -> None:
         """Show modal dialog informing about missing API key."""
+        def handle_dialog_close(result):
+            """After closing the dialog, open provider manager."""
+            if result:
+                self.open_provider_manager()
+        
         dialog = ApiKeyMissingDialog(t)
-        self.push_screen(dialog)
+        self.push_screen(dialog, handle_dialog_close)
 
     def action_refresh_status(self) -> None:
         """Refresh status action."""

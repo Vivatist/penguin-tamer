@@ -98,6 +98,7 @@
   "English": "English",
   "Русский": "Русский",
   "API Key Required": "Требуется API ключ",
+  "You have entered `Penguin Tamer` configuration because the selected LLM does not have an `API_KEY`. Add a key to any provider by clicking the `Edit` button. Don't forget to select the corresponding neural network afterwards. Good luck!": "Вы оказались в конфигурации Penguin Tamer, потому что у выбранной LLM отсутствует API_KEY. Добавьте ключ любому провайдеру нажав кнопку Изменить. Не забудьте затем выбрать соответствующую нейросеть. Удачи!",
   "OK": "OK",
   "Add execution results to context": "Добавлять результаты выполнения в контекст",
   "Include command outputs in conversation. Disable to save tokens.": "Включать выводы команд в беседу. Отключите для экономии токенов.",

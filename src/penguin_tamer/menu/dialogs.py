@@ -268,8 +268,9 @@ class ApiKeyMissingDialog(ModalScreen):
                 Static(
                     self.t(
                         "You have entered `Penguin Tamer` configuration "
-                        "because the default LLM does not have an `API_KEY`. "
-                        "To continue working, select any LLM and add the key by clicking the `Settings` button."
+                        "because the selected LLM does not have an `API_KEY`. "
+                        "Add a key to any provider by clicking the `Edit` button. "
+                        "Don't forget to select the corresponding neural network afterwards. Good luck!"
                     ),
                     classes="api-key-dialog-message"
                 ),
@@ -359,7 +360,11 @@ class ProviderEditDialog(ModalScreen):
 
     def on_mount(self) -> None:
         """Set focus to first input when dialog opens."""
-        if self.name_editable:
+        # Если отсутствует API ключ, фокус на поле ввода ключа
+        if not self.default_api_key:
+            api_key_input = self.query_one("#provider-key-input", Input)
+            api_key_input.focus()
+        elif self.name_editable:
             name_input = self.query_one("#provider-name-input", Input)
             name_input.focus()
         else:
