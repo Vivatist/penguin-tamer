@@ -139,6 +139,10 @@
   "Delete LLM: {provider} / {model}?": "Удалить LLM: {provider} / {model}?",
   "LLM deleted: {provider} / {model}": "LLM удалена: {provider} / {model}",
   "LLM selected: {provider} / {model}. Warning: API key is missing!": "LLM выбрана: {provider} / {model}. Внимание: API ключ отсутствует!",
-  "LLM selected: {provider} / {model}": "LLM выбрана: {provider} / {model}"
+  "LLM selected: {provider} / {model}": "LLM выбрана: {provider} / {model}",
+  "Model (select or type manually):": "Модель (выберите или введите вручную):",
+  "Select from available models:": "Выберите из списка доступных моделей:",
+  "Or enter model name manually:": "Или введите название модели вручную:",
+  "e.g., gpt-4o, claude-3-opus, llama-3-70b": "например: gpt-4o, claude-3-opus, llama-3-70b"
 }
 

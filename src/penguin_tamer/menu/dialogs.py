@@ -54,12 +54,21 @@ class LLMEditDialog(ModalScreen):
                 ),
                 
                 # Model Select (динамически заполняется)
-                Static(t("Model:"), classes="llm-field-label"),
+                Static(t("Select from available models:"), classes="llm-field-label"),
                 Select(
                     [(t("Select provider first..."), "")],
                     value="",
                     id="model-select",
                     allow_blank=False,
+                    disabled=True
+                ),
+                
+                # Manual Model Input
+                Static(t("Or enter model name manually:"), classes="llm-field-label"),
+                Input(
+                    value=self.default_model if self.default_model else "",
+                    id="model-input",
+                    placeholder=t("e.g., gpt-4o, claude-3-opus, llama-3-70b"),
                     disabled=True
                 ),
                 classes="llm-fields-container"
@@ -77,18 +86,23 @@ class LLMEditDialog(ModalScreen):
         provider_select = self.query_one("#provider-select", Select)
         provider_select.focus()
         
-        # Если задан провайдер по умолчанию, загружаем его модели
+        # Если задан провайдер по умолчанию, загружаем его модели и активируем input
         if self.default_provider:
             self.load_provider_data(self.default_provider)
+            model_input = self.query_one("#model-input", Input)
+            model_input.disabled = False
 
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle select changes."""
         if event.select.id == "provider-select" and event.value:
-            # Провайдер выбран - загружаем модели
+            # Провайдер выбран - загружаем модели и активируем ручной ввод
             self.load_provider_data(str(event.value))
+            model_input = self.query_one("#model-input", Input)
+            model_input.disabled = False
         elif event.select.id == "model-select" and event.value:
-            # Модель выбрана - ничего не делаем, просто запоминаем
-            pass
+            # Модель выбрана из списка - копируем в Input для возможности редактирования
+            model_input = self.query_one("#model-input", Input)
+            model_input.value = str(event.value)
 
     def load_provider_data(self, provider_name: str) -> None:
         """Загружает данные провайдера и запускает загрузку моделей."""
@@ -181,10 +195,11 @@ class LLMEditDialog(ModalScreen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "save-btn":
             provider_select = self.query_one("#provider-select", Select)
-            model_select = self.query_one("#model-select", Select)
+            model_input = self.query_one("#model-input", Input)
 
             provider = str(provider_select.value) if provider_select.value else ""
-            model = str(model_select.value) if model_select.value else ""
+            # Приоритет у ручного ввода, если он не пустой
+            model = model_input.value.strip()
 
             # Validation
             if not provider:
@@ -193,7 +208,7 @@ class LLMEditDialog(ModalScreen):
                 return
             if not model:
                 self.notify(t("Model is required"), severity="error")
-                model_select.focus()
+                model_input.focus()
                 return
 
             self.result = {
