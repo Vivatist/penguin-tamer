@@ -78,5 +78,15 @@
   "Open interactive settings menu.": "Открыть интерактивное меню настроек.",
   "Your prompt to the AI.": "Ваш запрос к ИИ.",
   "[red]No session loaded[/red]": "[red]Сессия не загружена[/red]",
-  "\n[yellow]Playback interrupted[/yellow]": "\n[yellow]Воспроизведение прервано[/yellow]"
+  "\n[yellow]Playback interrupted[/yellow]": "\n[yellow]Воспроизведение прервано[/yellow]",
+  "Connection error: Unable to connect to API. Please check your internet connection.": "Ошибка подключения: Не удаётся подключиться к API. Проверьте интернет-соединение.",
+  "Error 401: Authentication failed. Check your API_KEY. [link={link}]How to get a key?[/link]": "Ошибка 401: Ошибка аутентификации. Проверьте ваш API_KEY. [link={link}]Как получить ключ?[/link]",
+  "Error 429: Exceeding the quota. Message from the provider: {body_msg}. You can change LLM in settings: 'pt -s'": "Ошибка 429: Превышение квоты. Сообщение от провайдера: {body_msg}. Вы можете сменить LLM в настройках: 'pt -s'",
+  "Request timeout: The request took too long. Please try again.": "Тайм-аут запроса: Запрос занял слишком много времени. Попробуйте снова.",
+  "Error 400: {body_msg}. Check model name.": "Ошибка 400: {body_msg}. Проверьте имя модели.",
+  "Error 403: Your region is not supported. Use VPN or change the LLM. You can change LLM in settings: 'pt -s'": "Ошибка 403: Ваш регион не поддерживается. Используйте VPN или смените LLM. Вы можете сменить LLM в настройках: 'pt -s'",
+  "Error 404: Resource not found. Check API_URL and Model in settings.": "Ошибка 404: Ресурс не найден. Проверьте API_URL и Model в настройках.",
+  "Error API: {error}. Check the LLM settings, there may be an incorrect API_URL": "Ошибка API: {error}. Проверьте настройки LLM, возможно неправильный API_URL",
+  "Please check your API_KEY. See provider docs for obtaining a key. [link={link}]How to get a key?[/link]": "Пожалуйста, проверьте ваш API_KEY. См. документацию провайдера для получения ключа. [link={link}]Как получить ключ?[/link]",
+  "Access denied: You don't have permission to access this resource.": "Доступ запрещён: У вас нет прав для доступа к этому ресурсу."
 }
