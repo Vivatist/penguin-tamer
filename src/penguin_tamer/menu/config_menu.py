@@ -216,8 +216,8 @@ class ConfigMenuApp(App):
                                 buttons_data=[
                                     (t("Add"), "add-llm-btn", "success"),
                                     (t("Settings"), "edit-llm-btn", "success"),
+                                    (t("Providers"), "providers-btn", "success"),
                                     (t("Delete"), "delete-llm-btn", "error"),
-                                    (t("Providers"), "providers-btn", "primary"),
                                 ],
                                 classes="button-row"
                             )

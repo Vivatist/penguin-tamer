@@ -34,9 +34,9 @@ class ProviderManagerScreen(ModalScreen):
             ),
             Horizontal(
                 Button(t("Add"), variant="success", id="add-provider-btn"),
-                Button(t("Edit"), variant="primary", id="edit-provider-btn"),
+                Button(t("Edit"), variant="success", id="edit-provider-btn"),
                 Button(t("Delete"), variant="error", id="delete-provider-btn"),
-                Button(t("Close"), variant="default", id="close-provider-btn"),
+                Button(t("Close"), variant="success", id="close-provider-btn"),
                 classes="provider-manager-buttons",
             ),
             classes="provider-manager-container",
