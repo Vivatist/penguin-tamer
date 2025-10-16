@@ -193,6 +193,11 @@ class StreamProcessor:
                         raise KeyboardInterrupt("Stream interrupted")
 
                     if not hasattr(chunk, 'choices') or not chunk.choices:
+                        # Check for usage statistics in non-content chunks
+                        if hasattr(chunk, 'usage') and chunk.usage:
+                            self.client.total_prompt_tokens += getattr(chunk.usage, 'prompt_tokens', 0)
+                            self.client.total_completion_tokens += getattr(chunk.usage, 'completion_tokens', 0)
+                            self.client.total_requests += 1
                         continue
                     if not hasattr(chunk.choices[0], 'delta'):
                         continue
@@ -267,6 +272,11 @@ class OpenRouterClient:
     messages: List[Dict[str, str]] = field(init=False)
     _client: Optional[object] = field(default=None, init=False)
     _demo_manager: Optional[object] = field(default=None, init=False)
+    
+    # Token usage statistics
+    total_prompt_tokens: int = field(default=0, init=False)
+    total_completion_tokens: int = field(default=0, init=False)
+    total_requests: int = field(default=0, init=False)
 
     def __post_init__(self):
         """Initialize internal state after dataclass construction."""
@@ -480,3 +490,24 @@ class OpenRouterClient:
             parts.append(f"  {key}={val!r},")
         parts.append(")")
         return "\n".join(parts)
+
+    def print_token_statistics(self) -> None:
+        """Print token usage statistics for the entire session.
+        
+        Only prints if debug mode is enabled and there were any requests.
+        """
+        if not config.get("global", "debug_mode", False):
+            return
+            
+        if self.total_requests == 0:
+            return
+            
+        total_tokens = self.total_prompt_tokens + self.total_completion_tokens
+        
+        self.console.print("\n[bold cyan]═══ Token Usage Statistics ═══[/bold cyan]")
+        self.console.print(f"[cyan]Total requests:[/cyan] {self.total_requests}")
+        self.console.print(f"[cyan]Prompt tokens:[/cyan] {self.total_prompt_tokens:,}")
+        self.console.print(f"[cyan]Completion tokens:[/cyan] {self.total_completion_tokens:,}")
+        self.console.print(f"[bold cyan]Total tokens:[/bold cyan] {total_tokens:,}")
+        self.console.print("[bold cyan]═══════════════════════════════[/bold cyan]\n")
+

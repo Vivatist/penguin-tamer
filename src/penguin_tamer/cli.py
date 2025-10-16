@@ -364,6 +364,9 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
         except Exception as e:
             console.print(connection_error(e))
 
+    # Print token statistics if debug mode is enabled
+    chat_client.print_token_statistics()
+
     # Finalize demo recording
     demo_manager.finalize()
 
