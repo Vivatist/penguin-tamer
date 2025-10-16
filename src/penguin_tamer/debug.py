@@ -33,10 +33,9 @@ def debug_print_messages(
     phase: str = "request"
 ) -> None:
     """
-    Выводит полную JSON структуру сообщений для LLM в удобном читаемом формате.
+    Выводит полную JSON структуру API запроса в режиме отладки.
 
-    Показывает сырые данные каждого сообщения как красиво отформатированный JSON
-    с подсветкой синтаксиса, разделённые по отдельным панелям.
+    Показывает чистый JSON с подсветкой синтаксиса без рамок и панелей.
 
     Args:
         messages: Список сообщений в формате OpenAI (role, content)
@@ -52,7 +51,6 @@ def debug_print_messages(
         ... )
     """
     Console = get_console()
-    Panel = get_panel()
     Syntax = get_syntax()
 
     console = Console()
@@ -78,125 +76,42 @@ def debug_print_messages(
         stop = None
         seed = None
 
-    # Заголовок с основными параметрами
-    phase_info = {
-        "request": (">>> Raw LLM Request Data", ">>> Complete API Request"),
-        "response": ("<<< LLM Response Data", "<<< Full Conversation State")
-    }
-
-    main_title, api_title = phase_info.get(phase, phase_info["request"])
-    title_parts = [main_title]
-    if model:
-        title_parts.append(f"Model: {model}")
-
-    title = " | ".join(title_parts)
-
-    console.print("\n" + "=" * 90)
-    console.print(f"[cyan]{title}[/cyan]")
-    console.print("=" * 90 + "\n")
-
     # Создаём полную структуру API запроса
     api_request = {
         "model": model,
         "messages": messages,
-        "stream": True  # Всегда используется в penguin-tamer
+        "stream": True,
+        "stream_options": {"include_usage": True}
     }
 
-    # Добавляем ВСЕ параметры генерации для полноты картины debug режима
+    # Добавляем параметры генерации
     api_request["temperature"] = temperature
-    api_request["max_tokens"] = max_tokens
-    api_request["top_p"] = top_p
-    api_request["frequency_penalty"] = frequency_penalty
-    api_request["presence_penalty"] = presence_penalty
-    api_request["stop"] = stop
-    api_request["seed"] = seed
+    if max_tokens is not None:
+        api_request["max_tokens"] = max_tokens
+    if top_p is not None:
+        api_request["top_p"] = top_p
+    if frequency_penalty is not None:
+        api_request["frequency_penalty"] = frequency_penalty
+    if presence_penalty is not None:
+        api_request["presence_penalty"] = presence_penalty
+    if stop is not None:
+        api_request["stop"] = stop
+    if seed is not None:
+        api_request["seed"] = seed
 
-    # Панель с полным API запросом/ответом
+    # Простой заголовок
+    phase_title = ">>> API Request" if phase == "request" else "<<< API Response"
+    console.print(f"\n[cyan]{phase_title}[/cyan]")
+
+    # Выводим чистый JSON с подсветкой синтаксиса
     full_request_json = json.dumps(api_request, ensure_ascii=False, indent=2)
     api_syntax = Syntax(
         full_request_json,
         "json",
         theme="monokai",
-        line_numbers=True,
+        line_numbers=False,
         word_wrap=True,
         background_color="default"
     )
-
-    # Разные цвета для request/response
-    border_color = "yellow" if phase == "request" else "green"
-    title_color = "yellow" if phase == "request" else "green"
-
-    api_panel = Panel(
-        api_syntax,
-        title=f"[{title_color}]{api_title}[/{title_color}]",
-        border_style=border_color,
-        padding=(1, 1)
-    )
-    console.print(api_panel)
-    console.print()
-
-    # Роли с цветами и префиксами
-    role_colors = {
-        "system": "magenta",
-        "user": "green",
-        "assistant": "blue"
-    }
-
-    role_icons = {
-        "system": "[SYS]",
-        "user": "[USER]",
-        "assistant": "[AI]"
-    }
-
-    # Выводим каждое сообщение как отдельный JSON
-    console.print(f"[white]>>> Messages Breakdown ({len(messages)} total):[/white]")
-    console.print()
-
-    for idx, msg in enumerate(messages, 1):
-        role = msg.get("role", "unknown")
-        role_color = role_colors.get(role, "white")
-        role_icon = role_icons.get(role, "[?]")
-
-        # Создаём структуру сообщения с форматированным содержимым
-        content = msg.get("content", "")
-        content_length = len(content)
-
-        # Создаем красиво отформатированное представление сообщения
-        formatted_message = f"[{role_color}]Role:[/{role_color}] {role}\n"
-        formatted_message += f"[{role_color}]Content:[/{role_color}]\n"
-
-        # Добавляем содержимое с отступом, сохраняя форматирование
-        if content:
-            # Разбиваем на строки и добавляем отступ
-            content_lines = content.split('\n')
-            for line in content_lines:
-                formatted_message += f"  {line}\n"
-        else:
-            formatted_message += "  [dim](empty)[/dim]\n"
-
-        # Заголовок с иконкой и ролью
-        title = f"{role_icon} Message #{idx}: {role.upper()}"
-
-        # Статистика сообщения
-        stats = f"[dim]Length: {content_length} chars[/dim]"
-
-        # Создаём панель с форматированным содержимым
-        panel = Panel(
-            formatted_message.rstrip(),
-            title=title,
-            subtitle=stats,
-            title_align="left",
-            subtitle_align="right",
-            border_style=role_color,
-            padding=(1, 1)
-        )
-
-        console.print(panel)
-        console.print()  # Пустая строка между сообщениями
-
-    # Итоговая статистика
-    total_chars = sum(len(msg.get("content", "")) for msg in messages)
-    total_tokens_estimate = total_chars // 4  # Примерная оценка токенов (1 токен ≈ 4 символа)
-
-    console.print(f"\n> Total: {len(messages)} messages | {total_chars} chars | ~{total_tokens_estimate} tokens")
-    console.print("=" * 90 + "\n")
+    console.print(api_syntax)
+    console.print()  # Пустая строка после JSON

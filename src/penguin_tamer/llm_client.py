@@ -55,6 +55,7 @@ class StreamProcessor:
         self.client = client
         self.interrupted = threading.Event()
         self.reply_parts: List[str] = []
+        self.user_input: str = ""  # Store user input to add to context only on success
 
     def process(self, user_input: str) -> str:
         """Process user input and return AI response.
@@ -65,7 +66,8 @@ class StreamProcessor:
         Returns:
             Complete AI response text
         """
-        self.client.messages.append({"role": "user", "content": user_input})
+        # Store user input to add to context only if request succeeds
+        self.user_input = user_input
 
         # Create error handler
         debug_mode = config.get("global", "debug", False)
@@ -74,6 +76,7 @@ class StreamProcessor:
         # Phase 1: Connect and wait for first chunk
         stream, first_chunk = self._connect_and_wait(error_handler)
         if stream is None:
+            # Error occurred - don't add user message to context
             return ""
 
         # Phase 2: Process stream with live display
@@ -81,9 +84,10 @@ class StreamProcessor:
             reply = self._stream_with_live_display(stream, first_chunk)
         except KeyboardInterrupt:
             self.interrupted.set()
+            # Interrupted - don't add to context
             raise
 
-        # Phase 3: Finalize
+        # Phase 3: Finalize (will add user message to context if successful)
         return self._finalize_response(reply)
 
     @contextmanager
@@ -113,9 +117,12 @@ class StreamProcessor:
         """
         with self._managed_spinner(t('Connecting...')) as status_message:
             try:
-                # Send API request
-                api_params = self.client._prepare_api_params()
+                # Send API request with user input (but don't add to permanent context yet)
+                api_params = self.client._prepare_api_params(self.user_input)
                 stream = self.client.client.chat.completions.create(**api_params)
+
+                # Try to extract rate limit info from stream (if available)
+                self.client._extract_rate_limits(stream)
 
                 # Wait for first chunk
                 status_message['text'] = t('Ai thinking...')
@@ -195,8 +202,10 @@ class StreamProcessor:
                     if not hasattr(chunk, 'choices') or not chunk.choices:
                         # Check for usage statistics in non-content chunks
                         if hasattr(chunk, 'usage') and chunk.usage:
-                            self.client.total_prompt_tokens += getattr(chunk.usage, 'prompt_tokens', 0)
-                            self.client.total_completion_tokens += getattr(chunk.usage, 'completion_tokens', 0)
+                            prompt_tokens = getattr(chunk.usage, 'prompt_tokens', 0)
+                            completion_tokens = getattr(chunk.usage, 'completion_tokens', 0)
+                            self.client.total_prompt_tokens += prompt_tokens
+                            self.client.total_completion_tokens += completion_tokens
                             self.client.total_requests += 1
                         continue
                     if not hasattr(chunk.choices[0], 'delta'):
@@ -230,9 +239,11 @@ class StreamProcessor:
         if not reply or not reply.strip():
             warning = t('Warning: Empty response received from API.')
             self.client.console.print(f"[dim italic]{warning}[/dim italic]")
+            # Empty response is an error - don't add to context
             return ""
 
-        # Add to message history
+        # Success! Add both user message and assistant response to context
+        self.client.messages.append({"role": "user", "content": self.user_input})
         self.client.messages.append({"role": "assistant", "content": reply})
 
         # Debug output if enabled
@@ -277,6 +288,12 @@ class OpenRouterClient:
     total_prompt_tokens: int = field(default=0, init=False)
     total_completion_tokens: int = field(default=0, init=False)
     total_requests: int = field(default=0, init=False)
+    
+    # Rate limit information (if available from API)
+    rate_limit_requests: Optional[int] = field(default=None, init=False)
+    rate_limit_tokens: Optional[int] = field(default=None, init=False)
+    rate_limit_remaining_requests: Optional[int] = field(default=None, init=False)
+    rate_limit_remaining_tokens: Optional[int] = field(default=None, init=False)
 
     def __post_init__(self):
         """Initialize internal state after dataclass construction."""
@@ -376,17 +393,26 @@ class OpenRouterClient:
         except KeyboardInterrupt:
             pass
 
-    def _prepare_api_params(self) -> dict:
+    def _prepare_api_params(self, user_input: Optional[str] = None) -> dict:
         """Подготовка параметров для API запроса.
+
+        Args:
+            user_input: Optional user input to include in request (not added to permanent context)
 
         Returns:
             dict: Параметры для chat.completions.create()
         """
+        # Build messages list for this request
+        messages = self.messages.copy()
+        if user_input:
+            messages.append({"role": "user", "content": user_input})
+        
         api_params = {
             "model": self.model,
-            "messages": self.messages,
+            "messages": messages,
             "temperature": self.temperature,
-            "stream": True
+            "stream": True,
+            "stream_options": {"include_usage": True}  # Request usage data in streaming mode
         }
 
         # Добавляем опциональные параметры только если они заданы
@@ -491,23 +517,73 @@ class OpenRouterClient:
         parts.append(")")
         return "\n".join(parts)
 
+    def _extract_rate_limits(self, stream) -> None:
+        """Try to extract rate limit information from stream object.
+        
+        Args:
+            stream: OpenAI stream object
+        """
+        try:
+            # Try common paths to get headers
+            headers = None
+            if hasattr(stream, 'response') and hasattr(stream.response, 'headers'):
+                headers = stream.response.headers
+            elif hasattr(stream, '_response') and hasattr(stream._response, 'headers'):
+                headers = stream._response.headers
+            elif hasattr(stream, 'headers'):
+                headers = stream.headers
+            
+            if headers:
+                # OpenAI style headers
+                if 'x-ratelimit-limit-requests' in headers:
+                    self.rate_limit_requests = int(headers['x-ratelimit-limit-requests'])
+                if 'x-ratelimit-limit-tokens' in headers:
+                    self.rate_limit_tokens = int(headers['x-ratelimit-limit-tokens'])
+                if 'x-ratelimit-remaining-requests' in headers:
+                    self.rate_limit_remaining_requests = int(headers['x-ratelimit-remaining-requests'])
+                if 'x-ratelimit-remaining-tokens' in headers:
+                    self.rate_limit_remaining_tokens = int(headers['x-ratelimit-remaining-tokens'])
+                
+                # OpenRouter style headers (fallback)
+                if 'x-ratelimit-limit' in headers and not self.rate_limit_requests:
+                    self.rate_limit_requests = int(headers['x-ratelimit-limit'])
+                if 'x-ratelimit-remaining' in headers and not self.rate_limit_remaining_requests:
+                    self.rate_limit_remaining_requests = int(headers['x-ratelimit-remaining'])
+        except (AttributeError, ValueError, KeyError):
+            # Silently ignore if headers are not accessible
+            pass
+
     def print_token_statistics(self) -> None:
         """Print token usage statistics for the entire session.
         
         Only prints if debug mode is enabled and there were any requests.
         """
-        if not config.get("global", "debug_mode", False):
+        debug_mode = config.get("global", "debug_mode", False)
+        
+        if not debug_mode:
             return
             
         if self.total_requests == 0:
+            self.console.print("\n[yellow]⚠️  No token usage data collected (API may not provide usage statistics)[/yellow]\n")
             return
             
         total_tokens = self.total_prompt_tokens + self.total_completion_tokens
         
-        self.console.print("\n[bold cyan]═══ Token Usage Statistics ═══[/bold cyan]")
+        self.console.print("\n[bold cyan]Token Usage Statistics:[/bold cyan]")
         self.console.print(f"[cyan]Total requests:[/cyan] {self.total_requests}")
         self.console.print(f"[cyan]Prompt tokens:[/cyan] {self.total_prompt_tokens:,}")
         self.console.print(f"[cyan]Completion tokens:[/cyan] {self.total_completion_tokens:,}")
         self.console.print(f"[bold cyan]Total tokens:[/bold cyan] {total_tokens:,}")
-        self.console.print("[bold cyan]═══════════════════════════════[/bold cyan]\n")
+        
+        # Show rate limits if available
+        if self.rate_limit_requests or self.rate_limit_tokens:
+            self.console.print(f"\n[bold cyan]API Rate Limits:[/bold cyan]")
+            if self.rate_limit_requests:
+                remaining = self.rate_limit_remaining_requests or "?"
+                self.console.print(f"[cyan]Requests:[/cyan] {remaining}/{self.rate_limit_requests:,} remaining")
+            if self.rate_limit_tokens:
+                remaining = self.rate_limit_remaining_tokens or "?"
+                self.console.print(f"[cyan]Tokens:[/cyan] {remaining:,}/{self.rate_limit_tokens:,} remaining")
+        
+        self.console.print()  # Empty line at the end
 

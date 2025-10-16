@@ -328,47 +328,49 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
     # Process initial prompt if provided
     last_code_blocks = _process_initial_prompt(chat_client, console, initial_user_prompt, demo_manager)
 
-    # Main dialog loop
-    while True:
-        try:
-            # Get user input
-            user_prompt = input_formatter.get_input(
-                console,
-                has_code_blocks=bool(last_code_blocks),
-                t=t
-            )
+    # Main dialog loop with proper cleanup
+    try:
+        while True:
+            try:
+                # Get user input
+                user_prompt = input_formatter.get_input(
+                    console,
+                    has_code_blocks=bool(last_code_blocks),
+                    t=t
+                )
 
-            if not user_prompt:
-                continue
+                if not user_prompt:
+                    continue
 
-            # Record user input
-            demo_manager.record_user_input(user_prompt)
+                # Record user input
+                demo_manager.record_user_input(user_prompt)
 
-            # Check for exit
-            if _is_exit_command(user_prompt):
+                # Check for exit
+                if _is_exit_command(user_prompt):
+                    break
+
+                # Handle direct command execution (with context)
+                if _handle_direct_command(console, chat_client, user_prompt, demo_manager):
+                    continue
+
+                # Handle code block execution (with context)
+                if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks, demo_manager):
+                    continue
+
+                # Process as AI query
+                last_code_blocks = _process_ai_query(chat_client, console, user_prompt, demo_manager)
+
+            except KeyboardInterrupt:
                 break
+            except Exception as e:
+                console.print(connection_error(e))
+    finally:
+        # Always execute cleanup code, even after KeyboardInterrupt
+        # Print token statistics if debug mode is enabled
+        chat_client.print_token_statistics()
 
-            # Handle direct command execution (with context)
-            if _handle_direct_command(console, chat_client, user_prompt, demo_manager):
-                continue
-
-            # Handle code block execution (with context)
-            if _handle_code_block_execution(console, chat_client, user_prompt, last_code_blocks, demo_manager):
-                continue
-
-            # Process as AI query
-            last_code_blocks = _process_ai_query(chat_client, console, user_prompt, demo_manager)
-
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            console.print(connection_error(e))
-
-    # Print token statistics if debug mode is enabled
-    chat_client.print_token_statistics()
-
-    # Finalize demo recording
-    demo_manager.finalize()
+        # Finalize demo recording
+        demo_manager.finalize()
 
 
 def _create_chat_client(console):
