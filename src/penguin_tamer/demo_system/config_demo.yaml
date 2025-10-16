@@ -2,6 +2,13 @@ playback:
   # Delay between chunks when streaming LLM output
   chunk_delay: 0.05
 
+  # Chunk size configuration for LLM output streaming
+  # Minimum chunk size (characters)
+  chunk_size_min: 1
+  
+  # Maximum chunk size (characters)
+  chunk_size_max: 10
+
   # Pause before user starts typing (simulates reading/thinking time)
   pause_before_input: 2.0
 

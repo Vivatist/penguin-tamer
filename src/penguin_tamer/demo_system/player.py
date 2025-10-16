@@ -49,7 +49,9 @@ class DemoPlayer:
                 "pause_after_input": 0.5,
                 "output_delay": 1.0,
                 "char_delay": 0.01,
-                "finish_string": "quit"
+                "finish_string": "quit",
+                "chunk_size_min": 1,
+                "chunk_size_max": 10
             }
         }
 
@@ -342,14 +344,20 @@ class DemoPlayer:
         accumulated_text = ""
         i = 0
 
+        # Get chunk size configuration
+        chunk_size_min = config.get("chunk_size_min", 1)
+        chunk_size_max = config.get("chunk_size_max", 10)
+        
+        # Generate chunk size choices and weights dynamically
+        chunk_sizes = list(range(chunk_size_min, chunk_size_max + 1))
+        # Create weights that favor smaller chunks (exponential decay)
+        weights = [max(1, 20 - 2 * i) for i in range(len(chunk_sizes))]
+
         with Live(console=self.console, auto_refresh=False) as live:
             while i < len(text):
-                # Generate realistic chunk size (1-10 characters, weighted towards smaller)
+                # Generate realistic chunk size (weighted towards smaller)
                 # This simulates real LLM streaming where chunks vary in size
-                chunk_size = random.choices(
-                    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                    weights=[5, 10, 15, 20, 15, 10, 8, 5, 2, 1]
-                )[0]
+                chunk_size = random.choices(chunk_sizes, weights=weights)[0]
 
                 # Extract chunk
                 chunk = text[i:i + chunk_size]
