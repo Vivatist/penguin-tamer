@@ -386,9 +386,6 @@ class ConfigManager:
         Args:
             llm_id: ID LLM для удаления
         """
-        if llm_id == self.current_llm:
-            raise ValueError("Нельзя удалить текущую LLM")
-
         supported_llms = self.get("supported_LLMs") or {}
 
         if llm_id not in supported_llms:

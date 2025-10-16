@@ -837,13 +837,18 @@ class ConfigMenuApp(App):
         llm_id = llms[table.cursor_row]
         cfg = config.get_llm_config(llm_id) or {}
 
-        if llm_id == config.current_llm:
-            self.notify(t("Cannot delete current LLM"), severity="error")
-            return
-
         def handle_confirm(confirm):
             if confirm:
+                is_current = (llm_id == config.current_llm)
                 config.remove_llm(llm_id)
+                
+                # Если удалили текущую LLM, выбираем первую оставшуюся
+                if is_current:
+                    remaining_llms = config.get_available_llms()
+                    if remaining_llms:
+                        config.current_llm = remaining_llms[0]
+                        config.save()
+                
                 self.update_llm_tables()
                 self.refresh_status()
                 provider = cfg.get("provider", "")
