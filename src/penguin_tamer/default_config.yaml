@@ -19,6 +19,9 @@ global:
   markdown_theme: "default" # Тема для Markdown: default, monokai, dracula, nord, solarized_dark, github, matrix, minimal
   debug_mode: false # Режим отладки: показывает структуру всех сообщений, отправляемых в LLM
 
+  # === Context Management ===
+  add_execution_to_context: true # Добавлять результаты выполнения команд в контекст беседы (true/false). При false экономит токены.
+
   # === Demo System Settings ===
   demo_mode: "off" # Режим демонстрации: off, record, play
   demo_file: null # Файл для воспроизведения в режиме play (если null, используется последний записанный)

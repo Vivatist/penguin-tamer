@@ -270,7 +270,19 @@ use real-life examples to explain complex concepts.
 You specialize in web development
 with focus on React and TypeScript.
 
+---
 
+## Add Execution Results to Context
+
+Controls whether command execution results are added to the conversation context.
+
+- **Enabled** (default): Command outputs and results are sent to the LLM as context
+- **Disabled**: Only commands are recorded, not their outputs
+
+> 💡 **Token Saving:** Disable this setting if commands produce large outputs
+> (logs, file contents, etc.) to reduce token consumption and API costs.
+
+---
 
 > 💡 **Tip:** Be specific — clear instructions give better results""",
 

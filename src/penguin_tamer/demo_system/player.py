@@ -347,7 +347,7 @@ class DemoPlayer:
         # Get chunk size configuration
         chunk_size_min = config.get("chunk_size_min", 1)
         chunk_size_max = config.get("chunk_size_max", 10)
-        
+
         # Generate chunk size choices and weights dynamically
         chunk_sizes = list(range(chunk_size_min, chunk_size_max + 1))
         # Create weights that favor smaller chunks (exponential decay)

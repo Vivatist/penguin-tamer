@@ -236,6 +236,7 @@ class ConfigMenuApp(App):
                                 f"[dim]{t('Shape the assistant character and communication style')}[/dim]",
                                 classes="tab-header",
                             )
+
                             yield TextArea(text=config.user_content, id="content-textarea")
                             with Horizontal(classes="button-row"):
                                 yield Button(
@@ -243,6 +244,21 @@ class ConfigMenuApp(App):
                                     id="save-content-btn",
                                     variant="success",
                                 )
+
+                            yield Static("")
+
+                            # Add execution to context toggle
+                            with Horizontal(classes="setting-row"):
+                                context_help = t('Include command outputs in conversation. Disable to save tokens.')
+                                yield Static(
+                                    f"{t('Add execution results to context')}\n[dim]{context_help}[/dim]",
+                                    classes="param-label"
+                                )
+                                with Container(classes="param-control"):
+                                    yield Switch(
+                                        value=config.get("global", "add_execution_to_context", True),
+                                        id="add-execution-switch"
+                                    )
 
                     # Tab 3: Generation Parameters
                     with TabPane(t("Generation"), id="tab-params"):
@@ -517,6 +533,14 @@ class ConfigMenuApp(App):
             self.refresh_status()
             status = t("enabled") if event.value else t("disabled")
             self.notify(t("Debug mode {status}", status=status), severity="information")
+        elif event.switch.id == "add-execution-switch":
+            config.set("global", "add_execution_to_context", event.value)
+            self.refresh_status()
+            status = t("enabled") if event.value else t("disabled")
+            self.notify(
+                t("Adding execution results to context {status}", status=status),
+                severity="information"
+            )
 
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle select changes."""
@@ -1083,6 +1107,10 @@ class ConfigMenuApp(App):
 
             debug_switch = self.query_one("#debug-switch", Switch)
             debug_switch.value = getattr(config, "debug", False)
+
+            # Обновляем переключатель добавления результатов в контекст
+            add_execution_switch = self.query_one("#add-execution-switch", Switch)
+            add_execution_switch.value = config.get("global", "add_execution_to_context", True)
 
             # Обновляем контент
             content_textarea = self.query_one("#content-textarea", TextArea)

@@ -5,7 +5,7 @@ playback:
   # Chunk size configuration for LLM output streaming
   # Minimum chunk size (characters)
   chunk_size_min: 1
-  
+
   # Maximum chunk size (characters)
   chunk_size_max: 10
 

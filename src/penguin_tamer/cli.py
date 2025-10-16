@@ -114,6 +114,10 @@ def _add_command_to_context(
         result: Execution result dictionary
         block_number: Optional code block number
     """
+    # Проверяем настройку добавления результатов в контекст
+    if not config.get("global", "add_execution_to_context", True):
+        return  # Не добавляем результаты в контекст
+
     # Формируем сообщение пользователя о выполнении команды
     if block_number is not None:
         user_message = t("Execute code block #{number}:").format(number=block_number) + f"\n```\n{command}\n```"
