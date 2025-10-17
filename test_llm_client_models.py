@@ -10,7 +10,7 @@ from pathlib import Path
 src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
-from penguin_tamer.llm_client import OpenRouterClient
+from penguin_tamer.llm_clients import OpenRouterClient, LLMConfig
 
 
 def test_fetch_models_static():
@@ -78,7 +78,6 @@ def test_instance_method():
     console = Console()
     
     # Используем публичный endpoint OpenRouter
-    from penguin_tamer.llm_client import LLMConfig
     
     llm_config = LLMConfig(
         api_key="",  # Пустой ключ для публичного endpoint

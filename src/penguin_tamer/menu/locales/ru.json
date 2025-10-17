@@ -149,6 +149,8 @@
   "Model (select or type manually):": "Модель (выберите или введите вручную):",
   "Select from available models:": "Выберите из списка доступных моделей:",
   "Or enter model name manually:": "Или введите название модели вручную:",
-  "e.g., gpt-4o, claude-3-opus, llama-3-70b": "например: gpt-4o, claude-3-opus, llama-3-70b"
+  "e.g., gpt-4o, claude-3-opus, llama-3-70b": "например: gpt-4o, claude-3-opus, llama-3-70b",
+  "Client not implemented: {error}": "Клиент не реализован: {error}",
+  "Error loading models: {error}": "Ошибка загрузки моделей: {error}"
 }
 

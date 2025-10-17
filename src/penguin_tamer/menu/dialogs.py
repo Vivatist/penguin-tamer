@@ -2,6 +2,7 @@
 Modal dialogs for the configuration menu.
 """
 
+from typing import Dict
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import ModalScreen
@@ -11,6 +12,31 @@ from textual import work
 from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.menu.locales.menu_i18n import t
 from penguin_tamer.config_manager import config
+
+
+# === UI Helper Functions ===
+
+def format_model_for_select(model: Dict[str, str]) -> tuple:
+    """
+    Форматирует модель для использования в Select виджете Textual.
+    
+    Args:
+        model: Словарь с информацией о модели {"id": "...", "name": "..."}
+    
+    Returns:
+        Кортеж (display_name, model_id) для Select виджета
+    """
+    model_id = model.get("id", "")
+    model_name = model.get("name", model_id)
+    
+    # Если name и id одинаковые, показываем только одно
+    if model_name == model_id:
+        display_name = model_id
+    else:
+        # Показываем name (id)
+        display_name = f"{model_name} ({model_id})"
+    
+    return (display_name, model_id)
 
 
 class LLMEditDialog(ModalScreen):
@@ -117,28 +143,54 @@ class LLMEditDialog(ModalScreen):
         api_list_url = provider_config.get("api_list", "")
         api_key = provider_config.get("api_key", "")
         model_filter = provider_config.get("filter", None)
+        client_name = provider_config.get("client_name", "openai")  # тип клиента для получения моделей
         if api_list_url:
-            self.fetch_models(api_list_url, api_key, model_filter)
+            self.fetch_models(api_list_url, api_key, model_filter, client_name)
 
     @work(exclusive=True, thread=True)
-    def fetch_models(self, api_list_url: str, api_key: str, model_filter: str = None) -> None:
+    def fetch_models(self, api_list_url: str, api_key: str, model_filter: str = None, client_name: str = "openai") -> None:
         """Загружает список моделей от провайдера (в отдельном потоке)."""
-        from penguin_tamer.llm_client import OpenRouterClient
-        from penguin_tamer.menu.provider_utils import format_model_for_select
+        from penguin_tamer.llm_clients import ClientFactory
         
         # Показываем индикатор загрузки
         self.loading_models = True
         self.current_filter = model_filter
         self.app.call_from_thread(self.show_loading, True)
         
-        # Запрашиваем модели с применением фильтра используя статический метод OpenRouterClient
-        models = OpenRouterClient.fetch_models(api_list_url, api_key, model_filter)
-        self.available_models = models
-        
-        # Скрываем индикатор загрузки и обновляем список
-        self.loading_models = False
-        self.app.call_from_thread(self.show_loading, False)
-        self.app.call_from_thread(self.update_model_select, models, model_filter)
+        try:
+            # Получаем класс клиента для использования статических методов
+            client_class = ClientFactory.get_client_for_static_methods(client_name)
+            
+            # Запрашиваем модели с применением фильтра
+            models = client_class.fetch_models(api_list_url, api_key, model_filter)
+            self.available_models = models
+            
+            # Скрываем индикатор загрузки и обновляем список
+            self.loading_models = False
+            self.app.call_from_thread(self.show_loading, False)
+            self.app.call_from_thread(self.update_model_select, models, model_filter, show_notification=True)
+        except NotImplementedError as e:
+            # Клиент ещё не реализован
+            self.loading_models = False
+            self.app.call_from_thread(self.show_loading, False)
+            self.app.call_from_thread(
+                self.notify,
+                t("Client not implemented: {error}").format(error=str(e)),
+                severity="error",
+                timeout=5
+            )
+            self.app.call_from_thread(self.update_model_select, [], model_filter, show_notification=False)
+        except Exception as e:
+            # Общая ошибка при загрузке моделей
+            self.loading_models = False
+            self.app.call_from_thread(self.show_loading, False)
+            self.app.call_from_thread(
+                self.notify,
+                t("Error loading models: {error}").format(error=str(e)),
+                severity="error",
+                timeout=5
+            )
+            self.app.call_from_thread(self.update_model_select, [], model_filter, show_notification=False)
 
     def show_loading(self, show: bool) -> None:
         """Показывает/скрывает индикатор загрузки."""
@@ -151,10 +203,8 @@ class LLMEditDialog(ModalScreen):
         except Exception:
             pass
 
-    def update_model_select(self, models: list, model_filter: str = None) -> None:
+    def update_model_select(self, models: list, model_filter: str = None, show_notification: bool = True) -> None:
         """Обновляет список моделей в Select."""
-        from penguin_tamer.menu.provider_utils import format_model_for_select
-        
         try:
             model_select = self.query_one("#model-select", Select)
             
@@ -162,11 +212,12 @@ class LLMEditDialog(ModalScreen):
                 # Нет моделей - показываем сообщение
                 model_select.set_options([(t("No models available"), "")])
                 model_select.disabled = True
-                self.notify(
-                    t("Failed to load models from provider"),
-                    severity="warning",
-                    timeout=3
-                )
+                if show_notification:
+                    self.notify(
+                        t("Failed to load models from provider"),
+                        severity="warning",
+                        timeout=3
+                    )
             else:
                 # Форматируем модели для Select
                 options = [format_model_for_select(model) for model in models]

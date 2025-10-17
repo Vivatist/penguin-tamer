@@ -43,16 +43,19 @@ supported_LLMs:
 
 supported_Providers:
   OpenRouter:
+    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
     api_url: "https://openrouter.ai/api/v1"
     api_list: "https://openrouter.ai/api/v1/models"
     api_key: "" # Your OpenRouter API key here
     filter: null # Optional: filter models by substring (e.g., "free" to show only free models)
   OpenRouter (free):
+    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
     api_url: "https://openrouter.ai/api/v1"
     api_list: "https://openrouter.ai/api/v1/models"
     api_key: "" # Your OpenRouter API key here
     filter: "free"
   OpenAI:
+    client_name: "openai" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
     api_url: "https://api.openai.com/v1"
     api_list: "https://api.openai.com/v1/models"
     api_key: "" # Your OpenAI API key here

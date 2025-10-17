@@ -1,9 +1,11 @@
-# """
-# Utility functions for working with LLM providers.
-# """
+"""
+UI utility functions for LLM provider menu.
 
-# import requests
-# from typing import List, Dict, Optional
+Contains only UI-specific formatting functions.
+Model fetching has been moved to LLM client classes (see llm_clients package).
+"""
+
+from typing import Dict
 
 
 # def fetch_models_from_provider(api_list_url: str, api_key: str = "", model_filter: Optional[str] = None) -> List[Dict[str, str]]:
@@ -83,27 +85,26 @@
 #         return []
 #     except Exception:
 #         # Любые другие ошибки
-#         return []
 
 
-# def format_model_for_select(model: Dict[str, str]) -> tuple:
-#     """
-#     Форматирует модель для использования в Select виджете Textual.
+def format_model_for_select(model: Dict[str, str]) -> tuple:
+    """
+    Форматирует модель для использования в Select виджете Textual.
     
-#     Args:
-#         model: Словарь с информацией о модели {"id": "...", "name": "..."}
+    Args:
+        model: Словарь с информацией о модели {"id": "...", "name": "..."}
     
-#     Returns:
-#         Кортеж (display_name, model_id) для Select виджета
-#     """
-#     model_id = model.get("id", "")
-#     model_name = model.get("name", model_id)
+    Returns:
+        Кортеж (display_name, model_id) для Select виджета
+    """
+    model_id = model.get("id", "")
+    model_name = model.get("name", model_id)
     
-#     # Если name и id одинаковые, показываем только одно
-#     if model_name == model_id:
-#         display_name = model_id
-#     else:
-#         # Показываем name (id)
-#         display_name = f"{model_name} ({model_id})"
+    # Если name и id одинаковые, показываем только одно
+    if model_name == model_id:
+        display_name = model_id
+    else:
+        # Показываем name (id)
+        display_name = f"{model_name} ({model_id})"
     
-#     return (display_name, model_id)
+    return (display_name, model_id)

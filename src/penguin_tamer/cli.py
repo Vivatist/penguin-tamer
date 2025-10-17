@@ -82,7 +82,7 @@ def get_formatter_text():
 
 
 # Импортируем только самое необходимое для быстрого старта
-from penguin_tamer.llm_client import OpenRouterClient, LLMConfig
+from penguin_tamer.llm_clients import ClientFactory, LLMConfig, AbstractLLMClient
 from penguin_tamer.arguments import parse_args
 from penguin_tamer.error_handlers import connection_error
 from penguin_tamer.dialog_input import DialogInputFormatter
@@ -90,7 +90,7 @@ from penguin_tamer.prompts import get_system_prompt, get_educational_prompt
 
 
 # === Основная логика ===
-def run_single_query(chat_client: OpenRouterClient, query: str, console) -> None:
+def run_single_query(chat_client: AbstractLLMClient, query: str, console) -> None:
     """Run a single query (optionally streaming)"""
     try:
         chat_client.ask_stream(query)
@@ -104,7 +104,7 @@ def _is_exit_command(prompt: str) -> bool:
 
 
 def _add_command_to_context(
-    chat_client: OpenRouterClient, command: str, result: dict, block_number: int = None
+    chat_client: AbstractLLMClient, command: str, result: dict, block_number: int = None
 ) -> None:
     """Add executed command and its result to chat context.
 
@@ -151,7 +151,7 @@ def _add_command_to_context(
     chat_client.messages.append({"role": "system", "content": system_message})
 
 
-def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str, demo_manager=None) -> bool:
+def _handle_direct_command(console, chat_client: AbstractLLMClient, prompt: str, demo_manager=None) -> bool:
     """Execute direct shell command (starts with dot) and add to context.
 
     Args:
@@ -196,7 +196,7 @@ def _handle_direct_command(console, chat_client: OpenRouterClient, prompt: str, 
 
 
 def _handle_code_block_execution(
-    console, chat_client: OpenRouterClient, prompt: str, code_blocks: list, demo_manager=None
+    console, chat_client: AbstractLLMClient, prompt: str, code_blocks: list, demo_manager=None
 ) -> bool:
     """Execute code block by number and add to context.
 
@@ -242,7 +242,7 @@ def _handle_code_block_execution(
     return True
 
 
-def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str, demo_manager=None) -> list:
+def _process_ai_query(chat_client: AbstractLLMClient, console, prompt: str, demo_manager=None) -> list:
     """Send query to AI and extract code blocks from response.
 
     Args:
@@ -269,7 +269,7 @@ def _process_ai_query(chat_client: OpenRouterClient, console, prompt: str, demo_
     return code_blocks
 
 
-def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str, demo_manager=None) -> list:
+def _process_initial_prompt(chat_client: AbstractLLMClient, console, prompt: str, demo_manager=None) -> list:
     """Process initial user prompt if provided.
 
     Args:
@@ -292,7 +292,7 @@ def _process_initial_prompt(chat_client: OpenRouterClient, console, prompt: str,
         return []
 
 
-def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt: str = None) -> None:
+def run_dialog_mode(chat_client: AbstractLLMClient, console, initial_user_prompt: str = None) -> None:
     """Interactive dialog mode with educational prompt for code block numbering.
 
     Args:
@@ -374,12 +374,19 @@ def run_dialog_mode(chat_client: OpenRouterClient, console, initial_user_prompt:
 
 
 def _create_chat_client(console):
-    """Ленивое создание LLM клиента только когда он действительно нужен"""
+    """Ленивое создание LLM клиента только когда он действительно нужен.
+    
+    Использует фабрику для выбора правильной реализации клиента на основе
+    параметра client_name из конфигурации провайдера.
+    """
 
     # Убеждаемся, что i18n инициализирован перед созданием клиента
     _ensure_i18n()
 
     llm_config = config.get_current_llm_effective_config()
+
+    # Определяем тип клиента из конфигурации провайдера
+    client_name = llm_config.get("client_name", "openrouter")  # по умолчанию openrouter
 
     # Создаём полную конфигурацию LLM (подключение + генерация)
     full_llm_config = LLMConfig(
@@ -397,8 +404,9 @@ def _create_chat_client(console):
         seed=config.get("global", "seed", None)
     )
 
-    # Создаём клиент с единой конфигурацией
-    chat_client = OpenRouterClient(
+    # Создаём клиент через фабрику
+    chat_client = ClientFactory.create_client(
+        client_name=client_name,
         console=console,
         system_message=get_system_prompt(),
         llm_config=full_llm_config

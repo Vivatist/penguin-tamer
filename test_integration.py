@@ -11,7 +11,7 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 from penguin_tamer.config_manager import config
-from penguin_tamer.llm_client import OpenRouterClient
+from penguin_tamer.llm_clients import ClientFactory
 
 
 def test_full_workflow():
@@ -47,13 +47,15 @@ def test_full_workflow():
     for provider_name, provider_config in providers.items():
         api_list = provider_config.get("api_list", "")
         api_key = provider_config.get("api_key", "")
+        client_name = provider_config.get("client_name", "openrouter")
         
         if not api_list:
             print(f"  ⚠ {provider_name}: API List URL не настроен")
             continue
         
         print(f"  Testing {provider_name}...", end=" ")
-        models = OpenRouterClient.fetch_models(api_list, api_key)
+        client_class = ClientFactory.get_client_for_static_methods(client_name)
+        models = client_class.fetch_models(api_list, api_key)
         
         if models:
             print(f"✓ ({len(models)} моделей)")
@@ -71,9 +73,11 @@ def test_full_workflow():
     for provider_name, provider_config in providers.items():
         api_list = provider_config.get("api_list", "")
         api_key = provider_config.get("api_key", "")
+        client_name = provider_config.get("client_name", "openrouter")
         
         if api_list:
-            models = OpenRouterClient.fetch_models(api_list, api_key)
+            client_class = ClientFactory.get_client_for_static_methods(client_name)
+            models = client_class.fetch_models(api_list, api_key)
             if models:
                 test_provider = provider_name
                 test_models = models[:3]  # Первые 3 модели
@@ -111,8 +115,10 @@ def test_full_workflow():
     for provider_name, provider_config in providers.items():
         api_list = provider_config.get("api_list", "")
         api_key = provider_config.get("api_key", "")
+        client_name = provider_config.get("client_name", "openrouter")
         if api_list:
-            models = OpenRouterClient.fetch_models(api_list, api_key)
+            client_class = ClientFactory.get_client_for_static_methods(client_name)
+            models = client_class.fetch_models(api_list, api_key)
             if models:
                 working_providers += 1
     
