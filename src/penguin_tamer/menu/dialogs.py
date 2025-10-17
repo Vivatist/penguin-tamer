@@ -404,13 +404,9 @@ class ProviderEditDialog(ModalScreen):
                 ),
                 Static(t("API_KEY:"), classes="llm-field-label"),
                 Input(
-                    value="",  # Оставляем пустым при редактировании
+                    value=format_api_key_display(self.default_api_key) if self.default_api_key else "",  # Показываем в сокращённом виде для безопасности
                     id="provider-key-input",
-                    placeholder=(
-                        t("Current: {apikey}", apikey=format_api_key_display(self.default_api_key))
-                        if self.default_api_key
-                        else t("Optional: Provider-level API key")
-                    )
+                    placeholder=t("Optional: Provider-level API key")
                 ),
                 classes="llm-fields-container"
             ),
@@ -448,6 +444,10 @@ class ProviderEditDialog(ModalScreen):
             model_filter = filter_input.value.strip() or None  # Пустая строка → None
             api_url = url_input.value.strip()
             api_key = key_input.value.strip()
+            
+            # Если ключ не изменён (остался в сокращённом виде), используем оригинальный
+            if self.default_api_key and api_key == format_api_key_display(self.default_api_key):
+                api_key = self.default_api_key
 
             # Validation
             if not name:
