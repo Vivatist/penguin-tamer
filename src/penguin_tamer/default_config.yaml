@@ -29,13 +29,13 @@ global:
 
 supported_LLMs:
   llm_1:
-    provider: "OpenRouter_free"
+    provider: "OpenRouter (free)"
     model: "google/gemini-2.0-flash-exp:free"
   llm_2:
-    provider: "OpenRouter_free"
+    provider: "OpenRouter (free)"
     model: "deepseek/deepseek-chat-v3.1:free"
   llm_3:
-    provider: "OpenRouter_free"
+    provider: "OpenRouter (free)"
     model: "qwen/qwen3-coder:free"
   llm_4:
     provider: "OpenAI"
@@ -43,17 +43,17 @@ supported_LLMs:
 
 supported_Providers:
   OpenRouter:
-    api_list: "https://openrouter.ai/api/v1/models"
     api_url: "https://openrouter.ai/api/v1"
+    api_list: "https://openrouter.ai/api/v1/models"
     api_key: "" # Your OpenRouter API key here
     filter: null # Optional: filter models by substring (e.g., "free" to show only free models)
-  OpenRouter_free:
-    api_list: "https://openrouter.ai/api/v1/models"
+  OpenRouter (free):
     api_url: "https://openrouter.ai/api/v1"
+    api_list: "https://openrouter.ai/api/v1/models"
     api_key: "" # Your OpenRouter API key here
     filter: "free"
   OpenAI:
-    api_list: "https://api.openai.com/v1/models"
     api_url: "https://api.openai.com/v1"
-    filter: null # Optional: filter models by substring
+    api_list: "https://api.openai.com/v1/models"
     api_key: "" # Your OpenAI API key here
+    filter: null # Optional: filter models by substring

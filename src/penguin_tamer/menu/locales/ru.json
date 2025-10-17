@@ -106,6 +106,7 @@
   "Providers": "Провайдеры",
   "Provider Management": "Управление провайдерами",
   "Provider Name": "Имя провайдера",
+  "Filter": "Фильтр",
   "API List URL": "API List URL",
   "Provider Name:": "Имя провайдера:",
   "For example: OpenRouter, OpenAI": "Например: OpenRouter, OpenAI",

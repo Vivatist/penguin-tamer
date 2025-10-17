@@ -5,12 +5,13 @@ Provider Manager - Modal screen for managing LLM providers.
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, DataTable, Static
+from textual.widgets import Button, Static
 
 from penguin_tamer.config_manager import config
 from penguin_tamer.text_utils import format_api_key_display
 from penguin_tamer.menu.locales.menu_i18n import t
 from penguin_tamer.menu.dialogs import ProviderEditDialog, ConfirmDialog
+from penguin_tamer.menu.widgets import DoubleClickDataTable
 
 
 class ProviderManagerScreen(ModalScreen):
@@ -24,7 +25,7 @@ class ProviderManagerScreen(ModalScreen):
         yield Container(
             Static(t("Provider Management"), classes="provider-manager-title"),
             Container(
-                DataTable(
+                DoubleClickDataTable(
                     id="provider-table",
                     cursor_type="row",
                     zebra_stripes=True,
@@ -48,23 +49,26 @@ class ProviderManagerScreen(ModalScreen):
 
     def update_provider_table(self) -> None:
         """Update provider table with current data."""
-        table = self.query_one("#provider-table", DataTable)
+        table = self.query_one("#provider-table", DoubleClickDataTable)
         
         # Save cursor position
         old_cursor_row = table.cursor_row if table.row_count > 0 else 0
         
         table.clear(columns=True)
         # Добавляем колонки с указанием ширины
-        table.add_column(t("Provider Name"), width=30)
+        table.add_column(t("Provider Name"), width=25)
+        table.add_column(t("Filter"), width=20)
         table.add_column(t("API Key"), width=32)
 
         providers = config.get("supported_Providers") or {}
         
         for provider_name, provider_config in providers.items():
             api_key = format_api_key_display(provider_config.get("api_key", ""))
+            filter_value = provider_config.get("filter", "") or ""
             
             table.add_row(
                 provider_name,
+                filter_value,
                 api_key
             )
         
@@ -112,7 +116,7 @@ class ProviderManagerScreen(ModalScreen):
 
     def edit_provider(self) -> None:
         """Edit selected provider."""
-        table = self.query_one("#provider-table", DataTable)
+        table = self.query_one("#provider-table", DoubleClickDataTable)
 
         if table.cursor_row < 0:
             self.notify(t("Select provider to edit"), severity="warning")
@@ -155,7 +159,7 @@ class ProviderManagerScreen(ModalScreen):
 
     def delete_provider(self) -> None:
         """Delete selected provider."""
-        table = self.query_one("#provider-table", DataTable)
+        table = self.query_one("#provider-table", DoubleClickDataTable)
 
         if table.cursor_row < 0:
             self.notify(t("Select provider to delete"), severity="warning")
@@ -181,3 +185,7 @@ class ProviderManagerScreen(ModalScreen):
             ),
             handle_confirm,
         )
+
+    def on_double_click_data_table_double_clicked(self, event: DoubleClickDataTable.DoubleClicked) -> None:
+        """Handle double-click on provider table to open edit dialog."""
+        self.edit_provider()
