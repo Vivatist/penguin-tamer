@@ -1178,10 +1178,19 @@ class ConfigMenuApp(App):
             theme_select.value = current_theme
 
             # Обновляем отображение текущей LLM на вкладке "Общие"
-            current_llm = config.current_llm or t("Not selected")
+            # Получаем провайдер и модель вместо простого ID
+            current_llm_id = config.current_llm
+            if current_llm_id:
+                cfg = config.get_llm_config(current_llm_id) or {}
+                provider = cfg.get("provider", "N/A")
+                model = cfg.get("model", "N/A")
+                llm_display = f"[#e07333]{provider}[/#e07333] / [#22c]{model}[/#22c]"
+            else:
+                llm_display = t("Not selected")
+            
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
-                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]"
+                f"[bold]{t('Current LLM:')}[/bold] {llm_display}"
             )
 
             # Обновляем отображение путей на вкладке "Система"
