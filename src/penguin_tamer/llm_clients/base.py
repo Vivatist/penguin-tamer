@@ -8,6 +8,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 from dataclasses import dataclass, field
+from contextlib import contextmanager
 
 from penguin_tamer.text_utils import format_api_key_display
 
@@ -242,6 +243,51 @@ class AbstractLLMClient(ABC):
         except KeyboardInterrupt:
             pass
 
+    def _create_markdown(self, text: str, theme_name: str = "default"):
+        """Создаёт Markdown объект с правильной темой для блоков кода.
+        
+        Общий метод для всех клиентов. Используется для рендеринга ответов LLM
+        с подсветкой синтаксиса в терминале.
+        
+        Args:
+            text: Текст в формате Markdown
+            theme_name: Название темы для подсветки кода
+        
+        Returns:
+            Rich Markdown объект с применённой темой
+        """
+        from rich.markdown import Markdown
+        from penguin_tamer.themes import get_code_theme
+        
+        code_theme = get_code_theme(theme_name)
+        return Markdown(text, code_theme=code_theme)
+
+    @contextmanager
+    def _managed_spinner(self, initial_message: str):
+        """Context manager для управления спиннером.
+        
+        Args:
+            initial_message: Начальное сообщение для отображения в спиннере
+            
+        Yields:
+            dict: Словарь со статусным сообщением, которое можно обновлять
+        """
+        stop_spinner = threading.Event()
+        status_message = {'text': initial_message}
+        spinner_thread = threading.Thread(
+            target=self._spinner,
+            args=(stop_spinner, status_message),
+            daemon=True
+        )
+        spinner_thread.start()
+
+        try:
+            yield status_message
+        finally:
+            stop_spinner.set()
+            if spinner_thread.is_alive():
+                spinner_thread.join(timeout=0.3)
+
     def _debug_print_if_enabled(self, phase: str) -> None:
         """Печать debug информации если режим отладки включён.
 
@@ -258,44 +304,17 @@ class AbstractLLMClient(ABC):
                 phase=phase
             )
 
+    @abstractmethod
     def _extract_rate_limits(self, stream) -> None:
-        """Try to extract rate limit information from stream object.
+        """Extract rate limit information from API response stream.
         
-        Общий метод для всех клиентов, использующих OpenAI-совместимый API.
-        Пытается извлечь информацию о лимитах из заголовков ответа.
+        Provider-specific method. Each client should implement its own logic
+        based on the headers format used by its API provider.
         
         Args:
-            stream: OpenAI stream object
+            stream: API response stream object
         """
-        try:
-            # Try common paths to get headers
-            headers = None
-            if hasattr(stream, 'response') and hasattr(stream.response, 'headers'):
-                headers = stream.response.headers
-            elif hasattr(stream, '_response') and hasattr(stream._response, 'headers'):
-                headers = stream._response.headers
-            elif hasattr(stream, 'headers'):
-                headers = stream.headers
-            
-            if headers:
-                # OpenAI style headers
-                if 'x-ratelimit-limit-requests' in headers:
-                    self.rate_limit_requests = int(headers['x-ratelimit-limit-requests'])
-                if 'x-ratelimit-limit-tokens' in headers:
-                    self.rate_limit_tokens = int(headers['x-ratelimit-limit-tokens'])
-                if 'x-ratelimit-remaining-requests' in headers:
-                    self.rate_limit_remaining_requests = int(headers['x-ratelimit-remaining-requests'])
-                if 'x-ratelimit-remaining-tokens' in headers:
-                    self.rate_limit_remaining_tokens = int(headers['x-ratelimit-remaining-tokens'])
-                
-                # OpenRouter style headers (fallback)
-                if 'x-ratelimit-limit' in headers and not self.rate_limit_requests:
-                    self.rate_limit_requests = int(headers['x-ratelimit-limit'])
-                if 'x-ratelimit-remaining' in headers and not self.rate_limit_remaining_requests:
-                    self.rate_limit_remaining_requests = int(headers['x-ratelimit-remaining'])
-        except (AttributeError, ValueError, KeyError):
-            # Silently ignore if headers are not accessible
-            pass
+        pass
 
     # === Абстрактные методы (должны быть реализованы в подклассах) ===
 

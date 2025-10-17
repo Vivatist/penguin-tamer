@@ -35,6 +35,19 @@ class PollinationsClient(AbstractLLMClient):
             "Please use OpenRouterClient or OpenAIClient instead."
         )
 
+    def _extract_rate_limits(self, stream) -> None:
+        """Extract rate limit information from Pollinations API response.
+        
+        Pollinations API may not provide rate limit headers.
+        Implementation pending based on actual API behavior.
+        
+        Args:
+            stream: Pollinations API response stream object
+        """
+        # Pollinations API doesn't provide rate limit info (yet)
+        # Leave all rate_limit fields as None
+        pass
+
     @staticmethod
     def fetch_models(api_list_url: str, api_key: str = "", model_filter: Optional[str] = None) -> List[Dict[str, str]]:
         """Fetch list of available models from Pollinations API.
