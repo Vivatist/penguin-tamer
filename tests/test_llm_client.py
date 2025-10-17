@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import Mock, patch
 from rich.console import Console
 
-from penguin_tamer.llm_client import OpenRouterClient
+from penguin_tamer.llm_clients import OpenRouterClient
 
 
 class TestLLMClient:
@@ -29,7 +29,7 @@ class TestLLMClient:
     @pytest.fixture
     def client(self, mock_console):
         """Фикстура для создания тестового клиента"""
-        with patch('penguin_tamer.llm_client.get_openai_client'):
+        with patch('penguin_tamer.llm_clients.openrouter_client.get_openai_client'):
             return OpenRouterClient.create(
                 console=mock_console,
                 api_key="test-key",
@@ -94,7 +94,7 @@ class TestLLMClient:
 
     def test_system_message_handling(self, mock_console):
         """Проверка обработки системного сообщения"""
-        with patch('penguin_tamer.llm_client.get_openai_client'):
+        with patch('penguin_tamer.llm_clients.openrouter_client.get_openai_client'):
             system_msgs = [
                 {"role": "system", "content": "You are a helpful assistant"},
                 {"role": "system", "content": "Be concise"}
@@ -116,7 +116,7 @@ class TestLLMClient:
 
     def test_create_method_returns_client(self, mock_console):
         """Проверка, что create возвращает экземпляр клиента"""
-        with patch('penguin_tamer.llm_client.get_openai_client'):
+        with patch('penguin_tamer.llm_clients.openrouter_client.get_openai_client'):
             client = OpenRouterClient.create(
                 console=mock_console,
                 api_key="test-key",
