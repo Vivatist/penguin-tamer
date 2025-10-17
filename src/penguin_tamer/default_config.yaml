@@ -60,3 +60,9 @@ supported_Providers:
     api_list: "https://api.openai.com/v1/models"
     api_key: "" # Your OpenAI API key here
     filter: null # Optional: filter models by substring
+  Pollinations:
+    client_name: "pollinations" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    api_url: "https://text.pollinations.ai"
+    api_list: "https://text.pollinations.ai/models"
+    api_key: "" # No API key required for Pollinations (free service)
+    filter: null # Optional: filter models by substring

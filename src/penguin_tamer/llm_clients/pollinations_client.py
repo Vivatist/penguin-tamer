@@ -1,121 +1,273 @@
 """
 Pollinations Client - Реализация клиента для Pollinations API.
 
-В РАЗРАБОТКЕ: Базовая структура для будущей реализации.
+Использует OpenAI-совместимый endpoint для текстовой генерации.
+API documentation: https://pollinations.ai/
 """
 
 from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 
-from penguin_tamer.llm_clients.base import AbstractLLMClient
+from penguin_tamer.llm_clients.base import AbstractLLMClient, LLMConfig
+from penguin_tamer.llm_clients.stream_processor import StreamProcessor
+from penguin_tamer.utils.lazy_import import lazy_import
+
+# Ленивый импорт requests для работы с API
+@lazy_import
+def get_requests_module():
+    """Ленивый импорт requests для API запросов"""
+    import requests
+    return requests
+
+
+# Ленивый импорт OpenAI клиента
+@lazy_import
+def get_openai_client():
+    """Ленивый импорт OpenAI клиента (Pollinations использует OpenAI-совместимый API)"""
+    from openai import OpenAI
+    return OpenAI
 
 
 @dataclass
 class PollinationsClient(AbstractLLMClient):
     """Pollinations-specific implementation of LLM client.
     
-    TODO: Implement Pollinations API integration.
-    Currently raises NotImplementedError for all methods.
+    Uses OpenAI-compatible API at https://text.pollinations.ai/openai
+    No API key required - free and open access.
+    
+    This class contains ONLY Pollinations API-specific logic:
+    - Request parameter preparation
+    - Stream creation
+    - Response parsing (chunks, usage, rate limits)
     """
 
-    def ask_stream(self, user_input: str) -> str:
-        """Send streaming request to Pollinations API.
+    # Pollinations-specific state
+    _client: Optional[object] = field(default=None, init=False)
+
+    # === API-specific methods (формирование запросов и парсинг ответов) ===
+
+    def _prepare_api_params(self, user_input: Optional[str] = None) -> dict:
+        """Подготовка параметров для Pollinations API запроса.
         
         Args:
-            user_input: User's message text
+            user_input: Пользовательский ввод (добавляется в историю сообщений)
             
         Returns:
-            Complete AI response text
-            
-        Raises:
-            NotImplementedError: Pollinations client not yet implemented
+            dict: Параметры для передачи в OpenAI SDK (OpenAI-compatible format)
         """
-        raise NotImplementedError(
-            "PollinationsClient is not yet implemented. "
-            "Please use OpenRouterClient or OpenAIClient instead."
-        )
+        if user_input:
+            self.messages.append({"role": "user", "content": user_input})
 
-    def _extract_rate_limits(self, stream) -> None:
-        """Extract rate limit information from Pollinations API response.
+        # Pollinations использует OpenAI-совместимый формат
+        api_params = {
+            "model": self.llm_config.model,
+            "messages": self.messages,
+            "stream": True,
+        }
+
+        # ВАЖНО: Некоторые модели Pollinations (например, "openai") не поддерживают
+        # кастомные значения temperature, top_p и других параметров.
+        # Они работают только со значениями по умолчанию.
+        # Для таких моделей мы не добавляем эти параметры.
         
-        Pollinations API may not provide rate limit headers.
-        Implementation pending based on actual API behavior.
+        # Список моделей с ограничениями (могут не поддерживать кастомные параметры)
+        restricted_models = {"openai", "gpt-5-nano"}
         
-        Args:
-            stream: Pollinations API response stream object
-        """
-        # Pollinations API doesn't provide rate limit info (yet)
-        # Leave all rate_limit fields as None
-        pass
+        model_name = self.llm_config.model.lower()
+        is_restricted = any(restricted in model_name for restricted in restricted_models)
+        
+        if not is_restricted:
+            # Для моделей без ограничений добавляем все параметры
+            if self.llm_config.temperature and self.llm_config.temperature != 1.0:
+                api_params["temperature"] = self.llm_config.temperature
+
+            if self.llm_config.max_tokens and self.llm_config.max_tokens > 0:
+                api_params["max_tokens"] = self.llm_config.max_tokens
+
+            if self.llm_config.top_p and self.llm_config.top_p != 1.0:
+                api_params["top_p"] = self.llm_config.top_p
+        else:
+            # Для ограниченных моделей добавляем только max_tokens (обычно поддерживается)
+            if self.llm_config.max_tokens and self.llm_config.max_tokens > 0:
+                api_params["max_tokens"] = self.llm_config.max_tokens
+
+        return api_params
+
+    @property
+    def client(self):
+        """Lazy initialization Pollinations client (OpenAI-compatible SDK)."""
+        if self._client is None:
+            OpenAI = get_openai_client()
+            # Pollinations использует OpenAI-совместимый endpoint и НЕ требует API ключа
+            # Используем placeholder для api_key т.к. SDK требует его, но Pollinations игнорирует
+            # Base URL должен указывать на /openai, т.к. SDK добавит /chat/completions
+            self._client = OpenAI(
+                api_key="not-needed",  # Pollinations не требует ключа
+                base_url="https://text.pollinations.ai/openai"  # Pollinations OpenAI-compatible endpoint
+            )
+        return self._client
 
     def _create_stream(self, api_params: dict):
-        """Create API stream object (Pollinations-specific).
+        """Создание потока для Pollinations API.
         
         Args:
-            api_params: API parameters
+            api_params: Параметры запроса (из _prepare_api_params)
             
         Returns:
-            Stream object
-            
-        Raises:
-            NotImplementedError: Not yet implemented
+            Stream object от OpenAI SDK (Pollinations совместим с OpenAI)
         """
-        raise NotImplementedError("Pollinations stream creation not implemented")
+        return self.client.chat.completions.create(**api_params)
 
     def _extract_chunk_content(self, chunk) -> Optional[str]:
-        """Extract text content from stream chunk (Pollinations-specific).
+        """Извлечение текстового контента из чанка.
+        
+        Pollinations использует OpenAI-совместимый формат:
+        chunk.choices[0].delta.content
         
         Args:
-            chunk: Stream chunk from API
+            chunk: Чанк от stream
             
         Returns:
-            Text content or None
-            
-        Raises:
-            NotImplementedError: Not yet implemented
+            str или None: Текст из чанка или None если пусто
         """
-        raise NotImplementedError("Pollinations chunk parsing not implemented")
+        if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
+            delta = chunk.choices[0].delta
+            if hasattr(delta, 'content'):
+                return delta.content
+        return None
 
     def _extract_usage_stats(self, chunk) -> Optional[dict]:
-        """Extract usage statistics from chunk (Pollinations-specific).
+        """Извлечение статистики использования токенов из чанка.
+        
+        Pollinations может не предоставлять usage stats в каждом чанке.
+        Формат (если есть): chunk.usage с полями prompt_tokens, completion_tokens
         
         Args:
-            chunk: Stream chunk from API
+            chunk: Чанк от stream
             
         Returns:
-            Dict with usage stats or None
-            
-        Raises:
-            NotImplementedError: Not yet implemented
+            dict или None: {'prompt_tokens': int, 'completion_tokens': int} или None
         """
-        raise NotImplementedError("Pollinations usage stats extraction not implemented")
+        if hasattr(chunk, 'usage') and chunk.usage:
+            return {
+                'prompt_tokens': getattr(chunk.usage, 'prompt_tokens', 0),
+                'completion_tokens': getattr(chunk.usage, 'completion_tokens', 0)
+            }
+        return None
+
+    def _extract_rate_limits(self, headers: dict) -> dict:
+        """Извлечение rate limits из заголовков ответа.
+        
+        Pollinations может не предоставлять rate limit информацию,
+        т.к. это бесплатный сервис без ограничений по ключу.
+        
+        Args:
+            headers: HTTP заголовки ответа
+            
+        Returns:
+            dict: Словарь с rate limit данными (может быть пустым)
+        """
+        # Pollinations скорее всего не возвращает rate limits
+        # Возвращаем пустой dict, т.к. это бесплатный сервис
+        return {}
+
+    # === Основной метод потоковой генерации ===
+
+    def ask_stream(self, user_input: str) -> str:
+        """Основной метод для потоковой генерации с Pollinations.
+        
+        Делегирует UI/orchestration StreamProcessor,
+        отвечает только за подготовку параметров.
+        
+        Args:
+            user_input: Запрос пользователя
+            
+        Returns:
+            str: Полный ответ от LLM
+        """
+        processor = StreamProcessor(self)
+        return processor.process(user_input)
+
+    # === Методы работы со списком моделей ===
 
     @staticmethod
-    def fetch_models(api_list_url: str, api_key: str = "", model_filter: Optional[str] = None) -> List[Dict[str, str]]:
-        """Fetch list of available models from Pollinations API.
+    def fetch_models(
+        api_list_url: str,
+        api_key: Optional[str] = None,
+        console=None,
+        debug_mode: bool = False
+    ) -> List[Dict[str, str]]:
+        """Получение списка доступных моделей от Pollinations API.
         
         Args:
-            api_list_url: URL endpoint to fetch models list
-            api_key: API key for authentication (optional)
-            model_filter: Filter string (optional)
-        
+            api_list_url: URL для получения списка моделей (игнорируется, используется стандартный endpoint)
+            api_key: API ключ (не требуется для Pollinations)
+            console: Rich Console для вывода ошибок
+            debug_mode: Режим отладки
+            
         Returns:
-            Empty list (not implemented yet)
+            List[Dict]: Список моделей в формате [{"id": "model-name", "name": "Model Name"}, ...]
         """
-       
-        raise NotImplementedError(
-            "Implement Pollinations models fetching"
-        )
+        requests = get_requests_module()
+        
+        # Pollinations models endpoint
+        models_url = "https://text.pollinations.ai/models"
+        
+        try:
+            response = requests.get(models_url, timeout=10)
+            response.raise_for_status()
+            models_data = response.json()
+            
+            # Pollinations возвращает массив моделей
+            # Формат может быть списком строк или списком объектов
+            models = []
+            
+            if isinstance(models_data, list):
+                for model in models_data:
+                    if isinstance(model, str):
+                        # Простой список имён моделей
+                        models.append({
+                            "id": model,
+                            "name": model
+                        })
+                    elif isinstance(model, dict):
+                        # Объекты с полями
+                        model_id = model.get("id") or model.get("name", "")
+                        model_name = model.get("name") or model_id
+                        if model_id:
+                            models.append({
+                                "id": model_id,
+                                "name": model_name
+                            })
+            
+            return models
+            
+        except Exception as e:
+            if console and debug_mode:
+                console.print(f"[red]Error fetching Pollinations models: {e}[/red]")
+            # Возвращаем дефолтные модели при ошибке
+            return [
+                {"id": "openai", "name": "OpenAI Default"},
+                {"id": "mistral", "name": "Mistral"},
+                {"id": "llama", "name": "LLaMA"},
+            ]
 
-    def get_available_models(self, model_filter: Optional[str] = None) -> List[Dict[str, str]]:
-        """Get list of available models for Pollinations.
-        
-        Args:
-            model_filter: Optional filter string
+    def get_available_models(self) -> List[str]:
+        """Получение списка ID доступных моделей.
         
         Returns:
-            Empty list (not implemented yet)
+            List[str]: Список ID моделей
         """
-        raise NotImplementedError(
-            "Implement Pollinations models fetching"
+        # Получаем debug_mode из config менеджера, т.к. llm_config не имеет этого поля
+        from penguin_tamer.config_manager import config
+        debug_mode = config.get("global", "debug", False)
+        
+        models = self.fetch_models(
+            api_list_url="",  # Не используется
+            api_key=None,  # Не требуется
+            console=self.console,
+            debug_mode=debug_mode
         )
+        return [model["id"] for model in models]
+
+
