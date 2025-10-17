@@ -437,8 +437,10 @@ def main() -> None:
         try:
             llm_config = config.get_current_llm_effective_config()
             api_key = llm_config.get("api_key", "").strip()
+            client_name = llm_config.get("client_name", "openrouter")
 
-            if not api_key:
+            # Pollinations не требует API ключа
+            if client_name != "pollinations" and not api_key:
                 # API key is missing - open settings with modal dialog
                 from penguin_tamer.menu.config_menu import main_menu
                 main_menu(show_api_key_dialog=True)

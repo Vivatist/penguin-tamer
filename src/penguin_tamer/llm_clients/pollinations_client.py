@@ -193,17 +193,17 @@ class PollinationsClient(AbstractLLMClient):
     @staticmethod
     def fetch_models(
         api_list_url: str,
-        api_key: Optional[str] = None,
-        console=None,
-        debug_mode: bool = False
+        api_key: str = "",
+        model_filter: Optional[str] = None
     ) -> List[Dict[str, str]]:
         """Получение списка доступных моделей от Pollinations API.
+        
+        Фильтрует только модели с tier="anonymous" для бесплатного доступа.
         
         Args:
             api_list_url: URL для получения списка моделей (игнорируется, используется стандартный endpoint)
             api_key: API ключ (не требуется для Pollinations)
-            console: Rich Console для вывода ошибок
-            debug_mode: Режим отладки
+            model_filter: Фильтр для моделей (опционально)
             
         Returns:
             List[Dict]: Список моделей в формате [{"id": "model-name", "name": "Model Name"}, ...]
@@ -218,38 +218,53 @@ class PollinationsClient(AbstractLLMClient):
             response.raise_for_status()
             models_data = response.json()
             
-            # Pollinations возвращает массив моделей
-            # Формат может быть списком строк или списком объектов
+            # Pollinations возвращает массив моделей с полями:
+            # {name, description, tier, maxInputChars, reasoning, ...}
             models = []
             
             if isinstance(models_data, list):
                 for model in models_data:
                     if isinstance(model, str):
-                        # Простой список имён моделей
+                        # Простой список имён моделей (старый формат)
                         models.append({
                             "id": model,
                             "name": model
                         })
                     elif isinstance(model, dict):
+                        # Фильтруем только модели с tier="anonymous"
+                        tier = model.get("tier", "").lower()
+                        if tier != "anonymous":
+                            continue
+                        
                         # Объекты с полями
-                        model_id = model.get("id") or model.get("name", "")
-                        model_name = model.get("name") or model_id
+                        model_id = model.get("name", "")  # У Pollinations "name" это ID
+                        model_description = model.get("description", model_id)
+                        
                         if model_id:
+                            # Формируем красивое название с описанием
+                            display_name = f"{model_id}"
+                            if model_description and model_description != model_id:
+                                display_name = f"{model_id} ({model_description})"
+                            
                             models.append({
                                 "id": model_id,
-                                "name": model_name
+                                "name": display_name
                             })
+            
+            # Применяем фильтр если указан
+            if model_filter:
+                filter_lower = model_filter.lower()
+                models = [
+                    m for m in models
+                    if filter_lower in m["id"].lower() or filter_lower in m["name"].lower()
+                ]
             
             return models
             
-        except Exception as e:
-            if console and debug_mode:
-                console.print(f"[red]Error fetching Pollinations models: {e}[/red]")
-            # Возвращаем дефолтные модели при ошибке
+        except Exception:
+            # Возвращаем дефолтную anonymous модель при ошибке
             return [
-                {"id": "openai", "name": "OpenAI Default"},
-                {"id": "mistral", "name": "Mistral"},
-                {"id": "llama", "name": "LLaMA"},
+                {"id": "openai", "name": "OpenAI (GPT-5 Nano)"},
             ]
 
     def get_available_models(self) -> List[str]:
@@ -258,15 +273,10 @@ class PollinationsClient(AbstractLLMClient):
         Returns:
             List[str]: Список ID моделей
         """
-        # Получаем debug_mode из config менеджера, т.к. llm_config не имеет этого поля
-        from penguin_tamer.config_manager import config
-        debug_mode = config.get("global", "debug", False)
-        
         models = self.fetch_models(
             api_list_url="",  # Не используется
-            api_key=None,  # Не требуется
-            console=self.console,
-            debug_mode=debug_mode
+            api_key="",  # Не требуется
+            model_filter=None
         )
         return [model["id"] for model in models]
 

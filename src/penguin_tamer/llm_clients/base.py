@@ -149,7 +149,7 @@ class AbstractLLMClient(ABC):
         """
         from penguin_tamer.config_manager import config
         
-        debug_mode = config.get("global", "debug_mode", False)
+        debug_mode = config.get("global", "debug", False)
         
         if not debug_mode:
             return

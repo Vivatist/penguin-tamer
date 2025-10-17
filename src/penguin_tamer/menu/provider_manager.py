@@ -98,7 +98,11 @@ class ProviderManagerScreen(ModalScreen):
             if result:
                 # Добавляем провайдера в конфиг
                 providers = config.get("supported_Providers") or {}
+                
+                # Для новых провайдеров используем client_name по умолчанию
+                # TODO: В будущем можно добавить выбор client_name в UI
                 providers[result["name"]] = {
+                    "client_name": "openai",  # По умолчанию используем openai-совместимый клиент
                     "api_list": result["api_list"],
                     "api_url": result["api_url"],
                     "api_key": result["api_key"],
@@ -133,7 +137,10 @@ class ProviderManagerScreen(ModalScreen):
                 # Если API ключ не был изменен (пустой), оставляем старый
                 api_key_to_save = result["api_key"] if result["api_key"] else provider_config.get("api_key", "")
                 
+                # ВАЖНО: Сохраняем client_name из существующей конфигурации
+                # Этот параметр НЕ редактируется через UI и должен сохраняться
                 providers[provider_name] = {
+                    "client_name": provider_config.get("client_name", "openai"),  # Сохраняем существующий client_name
                     "api_list": result["api_list"],
                     "api_url": result["api_url"],
                     "api_key": api_key_to_save,

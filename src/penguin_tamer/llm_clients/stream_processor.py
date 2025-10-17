@@ -164,9 +164,8 @@ class StreamProcessor:
                         markdown = self.client._create_markdown(full_text, theme_name)
                         live.update(markdown)
                         time.sleep(sleep_time)
-                        continue
 
-                    # Use client-specific usage stats extraction
+                    # Use client-specific usage stats extraction (ВСЕГДА проверяем, не только если нет контента)
                     usage_stats = self.client._extract_usage_stats(chunk)
                     if usage_stats:
                         self.client.total_prompt_tokens += usage_stats.get('prompt_tokens', 0)

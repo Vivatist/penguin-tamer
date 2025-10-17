@@ -295,7 +295,7 @@ class ConfigManager:
             llm_name: Имя LLM
         
         Returns:
-            Dict с полями: provider, model, api_url, api_key
+            Dict с полями: provider, model, api_url, api_key, client_name
         """
         llm_config = self.get_llm_config(llm_name)
         if not llm_config:
@@ -309,7 +309,8 @@ class ConfigManager:
             "provider": provider_name,
             "model": llm_config.get("model", ""),
             "api_url": provider_config.get("api_url", ""),
-            "api_key": provider_config.get("api_key", "")
+            "api_key": provider_config.get("api_key", ""),
+            "client_name": provider_config.get("client_name", "openrouter")  # Дефолт для совместимости
         }
 
     def get_current_llm_effective_config(self) -> Dict[str, Any]:

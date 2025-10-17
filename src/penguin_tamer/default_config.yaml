@@ -42,27 +42,28 @@ supported_LLMs:
     model: "gpt-4.1-mini"
 
 supported_Providers:
-  OpenRouter:
-    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
-    api_url: "https://openrouter.ai/api/v1"
-    api_list: "https://openrouter.ai/api/v1/models"
-    api_key: "" # Your OpenRouter API key here
-    filter: null # Optional: filter models by substring (e.g., "free" to show only free models)
+  Pollinations:
+    client_name: "pollinations" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    api_url: "https://text.pollinations.ai"
+    api_list: "https://text.pollinations.ai/models"
+    api_key: "" # API ключ не требуется для Pollinations (бесплатные модели tier=anonymous)
+    filter: null # Опционально: фильтр моделей по подстроке
   OpenRouter (free):
     client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
     api_url: "https://openrouter.ai/api/v1"
     api_list: "https://openrouter.ai/api/v1/models"
     api_key: "" # Your OpenRouter API key here
     filter: "free"
+  OpenRouter:
+    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    api_url: "https://openrouter.ai/api/v1"
+    api_list: "https://openrouter.ai/api/v1/models"
+    api_key: "" # Your OpenRouter API key here
+    filter: null # Optional: filter models by substring (e.g., "free" to show only free models)
   OpenAI:
     client_name: "openai" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
     api_url: "https://api.openai.com/v1"
     api_list: "https://api.openai.com/v1/models"
     api_key: "" # Your OpenAI API key here
     filter: null # Optional: filter models by substring
-  Pollinations:
-    client_name: "pollinations" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
-    api_url: "https://text.pollinations.ai"
-    api_list: "https://text.pollinations.ai/models"
-    api_key: "" # No API key required for Pollinations (free service)
-    filter: null # Optional: filter models by substring
+
