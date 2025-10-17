@@ -22,13 +22,13 @@ def _plain_overview_print():
 
     # Текущая LLM
     current_llm = config.current_llm or "(not selected)"
-    current_cfg = config.get_current_llm_config() or {}
+    current_cfg = config.get_current_llm_effective_config() or {}
 
     print("\n" + t("Current LLM") + ":")
     print(f"  {t('Name')}: {current_llm}")
     if current_cfg:
+        print(f"  {t('Provider')}: {current_cfg.get('provider', '')}")
         print(f"  {t('Model')}: {current_cfg.get('model', '')}")
-        print(f"  API URL: {current_cfg.get('api_url', '')}")
         print(f"  {t('API key')}: {format_api_key_display(current_cfg.get('api_key', ''))}")
     else:
         print("  " + t("No settings found"))
@@ -52,20 +52,19 @@ def _plain_overview_print():
     if not llms:
         print("  " + t("No LLMs added"))
     else:
-        header = f"{t('LLM'):20} | {t('Model'):20} | {'API URL':30} | {t('API key')}"
+        header = f"{'  ':3} | {t('Provider'):20} | {t('Model'):40}"
         print(header)
         print("-" * len(header))
-        for name in llms:
-            cfg = config.get_llm_config(name) or {}
-            is_current = name == config.current_llm
+        for llm_id in llms:
+            cfg = config.get_llm_config(llm_id) or {}
+            is_current = llm_id == config.current_llm
             current_mark = " ✓" if is_current else "  "
             row = [
-                f"{current_mark}{name}",
+                current_mark,
+                cfg.get('provider', '') or '',
                 cfg.get('model', '') or '',
-                cfg.get('api_url', '') or '',
-                format_api_key_display(cfg.get('api_key', '') or ''),
             ]
-            print(f"{row[0]:20} | {row[1]:20} | {row[2]:30} | {row[3]}")
+            print(f"{row[0]:3} | {row[1]:20} | {row[2]:40}")
 
     # Пути
     print("\n" + t("Paths") + ":")
@@ -97,13 +96,13 @@ def print_settings_overview(console: Optional[object] = None) -> None:
 
     # Текущая LLM
     current_llm = config.current_llm
-    current_cfg = config.get_current_llm_config() or {}
+    current_cfg = config.get_current_llm_effective_config() or {}
 
     current_lines = []
     current_lines.append(t("Current LLM") + f": [bold]{current_llm or t('(not selected)')}[/bold]")
     if current_cfg:
+        current_lines.append(f"{t('Provider')}: {current_cfg.get('provider', '')}")
         current_lines.append(f"{t('Model')}: {current_cfg.get('model', '')}")
-        current_lines.append(f"API URL: {current_cfg.get('api_url', '')}")
         current_lines.append(f"{t('API key')}: {format_api_key_display(current_cfg.get('api_key', ''))}")
     else:
         current_lines.append(t("No settings found"))
@@ -133,32 +132,28 @@ def print_settings_overview(console: Optional[object] = None) -> None:
     llms = config.get_available_llms() or []
     if llms:
         table = Table(title=t("Available LLMs"), show_lines=False, expand=True)
-        table.add_column(t("LLM"), style="bold")
-        table.add_column(t("Model"))
-        table.add_column("API URL")
-        table.add_column(t("API key"))
+        table.add_column("", style="bold", width=3)
+        table.add_column(t("Provider"), width=20)
+        table.add_column(t("Model"), width=40)
 
-        for name in llms:
-            cfg = config.get_llm_config(name) or {}
-            is_current = name == current_llm
+        for llm_id in llms:
+            cfg = config.get_llm_config(llm_id) or {}
+            is_current = llm_id == current_llm
 
             # Выделяем текущую LLM зеленым цветом
             if is_current:
-                name_display = f"[green]{name}[/green]"
+                current_mark = "[green]✓[/green]"
+                provider_display = f"[green]{cfg.get('provider', '') or ''}[/green]"
                 model_display = f"[green]{cfg.get('model', '') or ''}[/green]"
-                url_display = f"[green]{cfg.get('api_url', '') or ''}[/green]"
-                key_display = f"[green]{format_api_key_display(cfg.get('api_key', '') or '')}[/green]"
             else:
-                name_display = name
+                current_mark = ""
+                provider_display = cfg.get('provider', '') or ''
                 model_display = cfg.get('model', '') or ''
-                url_display = cfg.get('api_url', '') or ''
-                key_display = format_api_key_display(cfg.get('api_key', '') or '')
 
             table.add_row(
-                name_display,
+                current_mark,
+                provider_display,
                 model_display,
-                url_display,
-                key_display,
             )
         console.print(table)
     else:

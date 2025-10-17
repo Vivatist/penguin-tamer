@@ -42,16 +42,18 @@ from penguin_tamer.text_utils import format_api_key_display
 if __name__ == "__main__":
     # При прямом запуске используем абсолютные импорты
     from penguin_tamer.menu.widgets import DoubleClickDataTable, ResponsiveButtonRow
-    from penguin_tamer.menu.dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog
+    from penguin_tamer.menu.dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog, ProviderEditDialog
     from penguin_tamer.menu.info_panel import InfoPanel
     from penguin_tamer.menu.intro_screen import show_intro
+    from penguin_tamer.menu.provider_manager import ProviderManagerScreen
     from penguin_tamer.menu.locales.menu_i18n import menu_translator, t
 else:
     # При импорте как модуль используем относительные импорты
     from .widgets import DoubleClickDataTable, ResponsiveButtonRow
-    from .dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog
+    from .dialogs import LLMEditDialog, ConfirmDialog, ApiKeyMissingDialog, ProviderEditDialog
     from .info_panel import InfoPanel
     from .intro_screen import show_intro
+    from .provider_manager import ProviderManagerScreen
     from .locales.menu_i18n import menu_translator, t
 
 # Initialize menu translator with current language BEFORE class definition
@@ -193,36 +195,28 @@ class ConfigMenuApp(App):
                                     classes="param-control"
                                 )
 
-                            yield Static("")
-
-                            # System Info
-                            if hasattr(config, 'config_path'):
-                                config_dir = Path(config.config_path).parent
+                            # Current LLM Info над таблицей (Provider + Model)
+                            current_llm_id = config.current_llm
+                            if current_llm_id:
+                                cfg = config.get_llm_config(current_llm_id) or {}
+                                provider = cfg.get("provider", "N/A")
+                                model = cfg.get("model", "N/A")
+                                current_llm_text = f"[#e07333]{provider}[/#e07333] / [#22c]{model}[/#22c]"
                             else:
-                                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
-                            bin_path = Path(sys.executable).parent
-                            current_llm = config.current_llm or t("Not selected")
-
+                                current_llm_text = t("Not selected")
+                            
                             yield Static(
-                                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
-                                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
-                                f"[bold]{t('Binary folder:')}[/bold] {bin_path}",
-                                classes="system-info-panel",
-                                id="system-info-display"
-                            )
-
-                            yield Static("")
-                            yield Static(
-                                f"[bold]{t('Neural network setup')}[/bold]\n"
-                                f"[dim]{t('Select the used neural network or add your own')}[/dim]"
+                                f"[bold]{t('Current LLM:')}[/bold] {current_llm_text}",
+                                id="system-info-display",
+                                classes="current-llm-label"
                             )
                             llm_dt = DoubleClickDataTable(id="llm-table", show_header=True, cursor_type="row")
                             yield llm_dt
-                            yield Static("")
                             yield ResponsiveButtonRow(
                                 buttons_data=[
                                     (t("Add"), "add-llm-btn", "success"),
                                     (t("Settings"), "edit-llm-btn", "success"),
+                                    (t("Providers"), "providers-btn", "success"),
                                     (t("Delete"), "delete-llm-btn", "error"),
                                 ],
                                 classes="button-row"
@@ -362,6 +356,22 @@ class ConfigMenuApp(App):
                                 f"[dim]{t('Application behavior (press Enter to save)')}[/dim]",
                                 classes="tab-header",
                             )
+
+                            # System Paths Info
+                            if hasattr(config, 'config_path'):
+                                config_dir = Path(config.config_path).parent
+                            else:
+                                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
+                            bin_path = Path(sys.executable).parent
+
+                            yield Static(
+                                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
+                                f"[bold]{t('Binary folder:')}[/bold] {bin_path}",
+                                classes="system-info-panel",
+                                id="system-paths-display"
+                            )
+
+                            yield Static("")
 
                             # Stream Delay
                             stream_delay = config.get("global", "sleep_time", 0.01)
@@ -567,34 +577,35 @@ class ConfigMenuApp(App):
         # Update unified LLM table
         llm_table = self.query_one("#llm-table", DataTable)
 
-        # Save cursor position
+        # Save cursor position (теперь сохраняем по ID а не по имени)
         old_cursor_row = llm_table.cursor_row if keep_cursor_position else -1
-        old_llm_name = None
+        old_llm_id = None
         if old_cursor_row >= 0:
             try:
-                row = llm_table.get_row_at(old_cursor_row)
-                old_llm_name = str(row[1])  # Название LLM
+                # ID теперь не отображается в таблице, но мы можем получить его по индексу из списка
+                if old_cursor_row < len(llms):
+                    old_llm_id = llms[old_cursor_row]
             except Exception:
                 pass
 
         llm_table.clear(columns=True)
-        llm_table.add_columns(t(""), t("Name"), t("Model ID"), t("API Key"), t("API URL"))
+        llm_table.add_column(t(""), width=3)
+        llm_table.add_column(t("Provider"), width=20)
+        llm_table.add_column(t("Model"), width=40)
 
         new_cursor_row = 0
-        for idx, llm_name in enumerate(llms):
-            cfg = config.get_llm_config(llm_name) or {}
-            is_current = "✓" if llm_name == current else ""
+        for idx, llm_id in enumerate(llms):
+            cfg = config.get_llm_config(llm_id) or {}
+            is_current = "✓" if llm_id == current else ""
             llm_table.add_row(
                 is_current,
-                llm_name,
+                cfg.get("provider", "N/A"),
                 cfg.get("model", "N/A"),
-                format_api_key_display(cfg.get("api_key", "")),
-                cfg.get("api_url", "N/A"),
             )
             # Запоминаем позицию для текущей LLM или старой LLM
-            if keep_cursor_position and old_llm_name and llm_name == old_llm_name:
+            if keep_cursor_position and old_llm_id and llm_id == old_llm_id:
                 new_cursor_row = idx
-            elif not keep_cursor_position and llm_name == current:
+            elif not keep_cursor_position and llm_id == current:
                 # При первой загрузке устанавливаем курсор на текущую LLM
                 new_cursor_row = idx
 
@@ -656,6 +667,8 @@ class ConfigMenuApp(App):
             self.edit_llm()
         elif btn_id == "delete-llm-btn":
             self.delete_llm()
+        elif btn_id == "providers-btn":
+            self.open_provider_manager()
 
         # User Content
         elif btn_id == "save-content-btn":
@@ -690,47 +703,48 @@ class ConfigMenuApp(App):
             return
 
         try:
-            row = table.get_row_at(table.cursor_row)
-            llm_name = str(row[1])  # Название во втором столбце (после галочки)
+            # Получаем ID LLM по индексу строки
+            llms = config.get_available_llms()
+            if table.cursor_row >= len(llms):
+                return
+            llm_id = llms[table.cursor_row]
 
             # Only update if it's a different LLM
-            if llm_name == config.current_llm:
+            if llm_id == config.current_llm:
                 return
 
-            config.current_llm = llm_name
+            config.current_llm = llm_id
             config.save()
             self.update_llm_tables(keep_cursor_position=True)  # Сохраняем позицию курсора
 
-            # Update system info panel with new current LLM
-            if hasattr(config, 'config_path'):
-                config_dir = Path(config.config_path).parent
-            else:
-                config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
-            bin_path = Path(sys.executable).parent
+            # Update current LLM display (Provider + Model)
+            cfg = config.get_llm_config(llm_id) or {}
+            provider = cfg.get("provider", "N/A")
+            model = cfg.get("model", "N/A")
             system_info_display = self.query_one("#system-info-display", Static)
             system_info_display.update(
-                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{llm_name}[/#e07333]\n\n"
-                f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
-                f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
+                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{provider}[/#e07333] / [#22c]{model}[/#22c]"
             )
 
             self.refresh_status()
 
             # Check if API key exists and show appropriate notification
-            llm_config = config.get_llm_config(llm_name)
+            llm_config = config.get_llm_effective_config(llm_id)
             api_key = llm_config.get("api_key", "").strip() if llm_config else ""
 
             if not api_key:
                 # Warning: No API key
                 self.notify(
-                    t("LLM '{name}' selected. Warning: API key is missing!", name=llm_name),
+                    t("LLM selected: {provider} / {model}. Warning: API key is missing!", 
+                      provider=provider, model=model),
                     severity="warning",
                     timeout=5
                 )
             else:
                 # Success: LLM selected with API key
                 self.notify(
-                    t("LLM '{name}' selected", name=llm_name),
+                    t("LLM selected: {provider} / {model}", 
+                      provider=provider, model=model),
                     severity="information",
                     timeout=3
                 )
@@ -742,15 +756,18 @@ class ConfigMenuApp(App):
         """Add new LLM."""
         def handle_result(result):
             if result:
-                config.add_llm(
-                    result["name"],
-                    result["model"],
-                    result["api_url"],
-                    result["api_key"]
+                llm_id = config.add_llm(
+                    result["provider"],
+                    result["model"]
                 )
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(t("LLM '{name}' added", name=result['name']), severity="information")
+                self.notify(
+                    t("LLM added: {provider} / {model}", 
+                      provider=result['provider'],
+                      model=result['model']),
+                    severity="information"
+                )
 
         self.push_screen(
             LLMEditDialog(title=t("Add LLM")),
@@ -768,32 +785,35 @@ class ConfigMenuApp(App):
         if table.cursor_row < 0:
             self.notify(t("Select LLM to edit"), severity="warning")
             return
-        row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])  # Название во втором столбце (после галочки)
-        cfg = config.get_llm_config(llm_name) or {}
+        
+        # Получаем ID LLM по индексу строки
+        llms = config.get_available_llms()
+        if table.cursor_row >= len(llms):
+            return
+        llm_id = llms[table.cursor_row]
+        cfg = config.get_llm_config(llm_id) or {}
 
         def handle_result(result):
             if result:
-                # Если API ключ не был изменен (пустой), оставляем старый
-                api_key_to_save = result["api_key"] if result["api_key"] else cfg.get("api_key", "")
                 config.update_llm(
-                    llm_name,
-                    model=result["model"],
-                    api_url=result["api_url"],
-                    api_key=api_key_to_save
+                    llm_id,
+                    provider=result["provider"],
+                    model=result["model"]
                 )
-                self.update_llm_tables()
+                self.update_llm_tables(keep_cursor_position=True)
                 self.refresh_status()
-                self.notify(t("LLM '{name}' updated", name=llm_name), severity="information")
+                self.notify(
+                    t("LLM updated: {provider} / {model}", 
+                      provider=result['provider'],
+                      model=result['model']),
+                    severity="information"
+                )
 
         self.push_screen(
             LLMEditDialog(
-                title=t("Edit {name}", name=llm_name),
-                name=llm_name,
-                model=cfg.get("model", ""),
-                api_url=cfg.get("api_url", ""),
-                api_key=cfg.get("api_key", ""),
-                name_editable=False  # При редактировании имя не меняется
+                title=t("Edit LLM"),
+                provider=cfg.get("provider", ""),
+                model=cfg.get("model", "")
             ),
             handle_result
         )
@@ -809,24 +829,50 @@ class ConfigMenuApp(App):
         if table.cursor_row < 0:
             self.notify(t("Select LLM to delete"), severity="warning")
             return
-        row = table.get_row_at(table.cursor_row)
-        llm_name = str(row[1])  # Название во втором столбце (после галочки)
-
-        if llm_name == config.current_llm:
-            self.notify(t("Cannot delete current LLM"), severity="error")
+        
+        # Получаем ID LLM по индексу строки
+        llms = config.get_available_llms()
+        if table.cursor_row >= len(llms):
             return
+        llm_id = llms[table.cursor_row]
+        cfg = config.get_llm_config(llm_id) or {}
 
         def handle_confirm(confirm):
             if confirm:
-                config.remove_llm(llm_name)
+                is_current = (llm_id == config.current_llm)
+                config.remove_llm(llm_id)
+                
+                # Если удалили текущую LLM, выбираем первую оставшуюся
+                if is_current:
+                    remaining_llms = config.get_available_llms()
+                    if remaining_llms:
+                        config.current_llm = remaining_llms[0]
+                        config.save()
+                
                 self.update_llm_tables()
                 self.refresh_status()
-                self.notify(t("LLM '{name}' deleted", name=llm_name), severity="information")
+                provider = cfg.get("provider", "")
+                model = cfg.get("model", "")
+                self.notify(
+                    t("LLM deleted: {provider} / {model}", 
+                      provider=provider, 
+                      model=model),
+                    severity="information"
+                )
 
+        provider = cfg.get("provider", "")
+        model = cfg.get("model", "")
         self.push_screen(
-            ConfirmDialog(t("Delete LLM '{name}'?", name=llm_name), title=t("Confirmation")),
+            ConfirmDialog(
+                t("Delete LLM: {provider} / {model}?", provider=provider, model=model),
+                title=t("Confirmation")
+            ),
             handle_confirm,
         )
+
+    def open_provider_manager(self) -> None:
+        """Open provider manager modal screen."""
+        self.push_screen(ProviderManagerScreen())
 
     # Parameter Methods
     def set_temperature(self) -> None:
@@ -1017,8 +1063,13 @@ class ConfigMenuApp(App):
 
     def show_api_key_missing_dialog(self) -> None:
         """Show modal dialog informing about missing API key."""
+        def handle_dialog_close(result):
+            """After closing the dialog, open provider manager."""
+            if result:
+                self.open_provider_manager()
+        
         dialog = ApiKeyMissingDialog(t)
-        self.push_screen(dialog)
+        self.push_screen(dialog, handle_dialog_close)
 
     def action_refresh_status(self) -> None:
         """Refresh status action."""
@@ -1126,20 +1177,33 @@ class ConfigMenuApp(App):
             current_theme = config.get("global", "markdown_theme", "default")
             theme_select.value = current_theme
 
-            # Обновляем панель с системной информацией и текущей LLM
+            # Обновляем отображение текущей LLM на вкладке "Общие"
+            # Получаем провайдер и модель вместо простого ID
+            current_llm_id = config.current_llm
+            if current_llm_id:
+                cfg = config.get_llm_config(current_llm_id) or {}
+                provider = cfg.get("provider", "N/A")
+                model = cfg.get("model", "N/A")
+                llm_display = f"[#e07333]{provider}[/#e07333] / [#22c]{model}[/#22c]"
+            else:
+                llm_display = t("Not selected")
+            
+            system_info_display = self.query_one("#system-info-display", Static)
+            system_info_display.update(
+                f"[bold]{t('Current LLM:')}[/bold] {llm_display}"
+            )
+
+            # Обновляем отображение путей на вкладке "Система"
             if hasattr(config, 'config_path'):
                 config_dir = Path(config.config_path).parent
             else:
                 config_dir = Path.home() / ".config" / "penguin-tamer" / "penguin-tamer"
             bin_path = Path(sys.executable).parent
-            current_llm = config.current_llm or t("Not selected")
-
-            system_info_display = self.query_one("#system-info-display", Static)
-            system_info_display.update(
-                f"[bold]{t('Current LLM:')}[/bold] [#e07333]{current_llm}[/#e07333]\n\n"
+            
+            system_paths_display = self.query_one("#system-paths-display", Static)
+            system_paths_display.update(
                 f"[bold]{t('Config folder:')}[/bold] {config_dir}\n"
                 f"[bold]{t('Binary folder:')}[/bold] {bin_path}"
-
             )
 
         except Exception:

@@ -82,31 +82,45 @@ class ConfigManager:
     def _ensure_config_exists(self) -> None:
         """
         Убеждается, что файл конфигурации существует.
-        Если config.yaml не найден, копирует default_config.yaml.
+        Если config.yaml не найден, копирует default_config.yaml с сохранением комментариев.
         """
         if not self.user_config_path.exists():
             if self._default_config_path.exists():
                 try:
+                    # Копируем default_config.yaml в user config
                     shutil.copy2(self._default_config_path, self.user_config_path)
-                    # After creating user config from defaults, set language based on system locale
-                    try:
-                        with open(self.user_config_path, 'r', encoding='utf-8') as f:
-                            cfg = yaml.safe_load(f) or {}
-                        sys_lang = detect_system_language(["en", "ru"]) or "en"
-                        cfg["language"] = sys_lang
-
-                        # Установить локализованный user_content при создании конфига
-                        if "global" not in cfg:
-                            cfg["global"] = {}
-                        cfg["global"]["user_content"] = get_default_user_content(sys_lang)
-
-                        with open(self.user_config_path, 'w', encoding='utf-8') as f:
-                            yaml.safe_dump(
-                                cfg, f, indent=2, allow_unicode=True,
-                                default_flow_style=False, sort_keys=False
-                            )
-                    except Exception:
-                        pass
+                    
+                    # Определяем системный язык и локализованный контент
+                    sys_lang = detect_system_language(["en", "ru"]) or "en"
+                    localized_content = get_default_user_content(sys_lang)
+                    
+                    # Читаем скопированный файл как текст для сохранения комментариев
+                    with open(self.user_config_path, 'r', encoding='utf-8') as f:
+                        config_text = f.read()
+                    
+                    # Заменяем язык (первая строка с "language:")
+                    import re
+                    config_text = re.sub(
+                        r'^language:\s*\w+',
+                        f'language: {sys_lang}',
+                        config_text,
+                        count=1,
+                        flags=re.MULTILINE
+                    )
+                    
+                    # Заменяем user_content (многострочное значение)
+                    # Ищем строку "user_content:" и заменяем её значение
+                    config_text = re.sub(
+                        r'(user_content:\s*)[^\n]+',
+                        f'\\1{localized_content}',
+                        config_text,
+                        count=1
+                    )
+                    
+                    # Сохраняем изменённый файл с комментариями
+                    with open(self.user_config_path, 'w', encoding='utf-8') as f:
+                        f.write(config_text)
+                        
                 except Exception as e:
                     raise RuntimeError(f"Не удалось создать файл конфигурации: {e}")
             else:
@@ -273,74 +287,126 @@ class ConfigManager:
         """
         return self.get_llm_config(self.current_llm)
 
-    def add_llm(self, name: str, model: str, api_url: str, api_key: str = "") -> None:
+    def get_llm_effective_config(self, llm_name: str) -> Dict[str, Any]:
         """
-        Добавляет новую LLM.
-
+        Возвращает эффективную конфигурацию LLM с данными от провайдера.
+        
         Args:
-            name: Имя LLM
-            model: Модель LLM
-            api_url: API URL
-            api_key: API ключ (опционально)
+            llm_name: Имя LLM
+        
+        Returns:
+            Dict с полями: provider, model, api_url, api_key, client_name
+        """
+        llm_config = self.get_llm_config(llm_name)
+        if not llm_config:
+            return {}
+        
+        provider_name = llm_config.get("provider", "")
+        providers = self.get("supported_Providers") or {}
+        provider_config = providers.get(provider_name, {})
+        
+        return {
+            "provider": provider_name,
+            "model": llm_config.get("model", ""),
+            "api_url": provider_config.get("api_url", ""),
+            "api_key": provider_config.get("api_key", ""),
+            "client_name": provider_config.get("client_name", "openrouter")  # Дефолт для совместимости
+        }
+
+    def get_current_llm_effective_config(self) -> Dict[str, Any]:
+        """
+        Возвращает эффективную конфигурацию текущей LLM.
+        
+        Returns:
+            Dict с полями: provider, model, api_url, api_key
+        """
+        return self.get_llm_effective_config(self.current_llm)
+
+    def _generate_llm_id(self) -> str:
+        """
+        Генерирует уникальный ID для новой LLM.
+        
+        Returns:
+            str: ID в формате "llm_N"
         """
         supported_llms = self.get("supported_LLMs") or {}
+        
+        # Находим максимальный номер среди существующих ID
+        max_num = 0
+        for llm_id in supported_llms.keys():
+            if llm_id.startswith("llm_"):
+                try:
+                    num = int(llm_id.split("_")[1])
+                    max_num = max(max_num, num)
+                except (IndexError, ValueError):
+                    continue
+        
+        # Возвращаем следующий номер
+        return f"llm_{max_num + 1}"
 
-        if name in supported_llms:
-            raise ValueError(f"LLM с именем '{name}' уже существует")
+    def add_llm(self, provider: str, model: str) -> str:
+        """
+        Добавляет новую LLM с автоматически сгенерированным ID.
 
-        supported_llms[name] = {
-            "model": model,
-            "api_url": api_url,
-            "api_key": api_key
+        Args:
+            provider: Провайдер
+            model: Модель LLM
+            
+        Returns:
+            str: Сгенерированный ID новой LLM
+        """
+        supported_llms = self.get("supported_LLMs") or {}
+        
+        # Генерируем уникальный ID
+        llm_id = self._generate_llm_id()
+
+        supported_llms[llm_id] = {
+            "provider": provider,
+            "model": model
         }
 
         self.update_section("supported_LLMs", supported_llms)
+        return llm_id
 
-    def update_llm(self, name: str, model: str = None, api_url: str = None, api_key: str = None) -> None:
+    def update_llm(self, llm_id: str, provider: str = None, model: str = None) -> None:
         """
         Обновляет конфигурацию LLM.
 
         Args:
-            name: Имя LLM для обновления
+            llm_id: ID LLM для обновления
+            provider: Новый провайдер (опционально)
             model: Новая модель (опционально)
-            api_url: Новый API URL (опционально)
-            api_key: Новый API ключ (опционально)
         """
         supported_llms = self.get("supported_LLMs") or {}
 
-        if name not in supported_llms:
-            raise ValueError(f"LLM с именем '{name}' не найдена")
+        if llm_id not in supported_llms:
+            raise ValueError(f"LLM с ID '{llm_id}' не найдена")
 
         # Создаем копию текущей конфигурации
-        current_config = supported_llms[name].copy()
+        current_config = supported_llms[llm_id].copy()
 
+        if provider is not None:
+            current_config["provider"] = provider
         if model is not None:
             current_config["model"] = model
-        if api_url is not None:
-            current_config["api_url"] = api_url
-        if api_key is not None:
-            current_config["api_key"] = api_key
 
         # Обновляем всю секцию supported_LLMs
-        supported_llms[name] = current_config
+        supported_llms[llm_id] = current_config
         self.update_section("supported_LLMs", supported_llms)
 
-    def remove_llm(self, name: str) -> None:
+    def remove_llm(self, llm_id: str) -> None:
         """
         Удаляет LLM.
 
         Args:
-            name: Имя LLM для удаления
+            llm_id: ID LLM для удаления
         """
-        if name == self.current_llm:
-            raise ValueError("Нельзя удалить текущую LLM")
-
         supported_llms = self.get("supported_LLMs") or {}
 
-        if name not in supported_llms:
-            raise ValueError(f"LLM с именем '{name}' не найдена")
+        if llm_id not in supported_llms:
+            raise ValueError(f"LLM с ID '{llm_id}' не найдена")
 
-        del supported_llms[name]
+        del supported_llms[llm_id]
         self.update_section("supported_LLMs", supported_llms)
 
     def reset_to_defaults(self) -> None:

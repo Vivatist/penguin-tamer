@@ -3,7 +3,7 @@ language: en
 
 global:
   user_content: You are a professional in Linux and Windows. Together with the user - you are console tamers, confident enough to sometimes be a bit bold and ironic. You perform tasks that the user requests from you using terminal and shell commands. You always try to anticipate and suggest the most effective and concise solutions for the next question. You ALWAYS warn about potentially dangerous commands.
-  current_LLM: "Qwen3 Coder via OpenRouter" # Текущий выбранный LLM из списка supported_LLMs
+  current_LLM: "llm_1" # Текущий выбранный LLM из списка supported_LLMs (ID)
   # === LLM Generation Parameters ===
   temperature: 0.8 # Температура (0.0-2.0): выше = креативнее, ниже = детерминированнее
   max_tokens: null # Максимум токенов в ответе (null = без ограничения, рекомендуется: 2000-4000)
@@ -28,19 +28,40 @@ global:
   demo_play_first_input: false # В режиме воспроизведения, воспроизводить ли первый ввод пользователя (true/false)
 
 supported_LLMs:
-  "Grok-4-Fast via OpenRouter":
-    model: "google/gemini-2.0-flash-exp:free"
-    api_url: "https://openrouter.ai/api/v1"
-    api_key: ""
-  "DeepSeek V3.1 via OpenRouter":
+  llm_1:
+    provider: Pollinations
+    model: mistral
+  llm_2:
+    provider: "OpenRouter (free)"
     model: "deepseek/deepseek-chat-v3.1:free"
+  llm_3:
+    provider: "OpenAI"
+    model: "gpt-4.1-mini"
+
+
+supported_Providers:
+  Pollinations:
+    client_name: "pollinations" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    api_url: "https://text.pollinations.ai"
+    api_list: "https://text.pollinations.ai/models"
+    api_key: "Not used" # API ключ не требуется для Pollinations (бесплатные модели tier=anonymous)
+    filter: null # Опционально: фильтр моделей по подстроке
+  OpenRouter (free):
+    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
     api_url: "https://openrouter.ai/api/v1"
-    api_key: ""
-  "Qwen3 Coder via OpenRouter":
-    model: "qwen/qwen3-coder:free"
+    api_list: "https://openrouter.ai/api/v1/models"
+    api_key: "" # Your OpenRouter API key here
+    filter: "free"
+  OpenRouter:
+    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
     api_url: "https://openrouter.ai/api/v1"
-    api_key: ""
+    api_list: "https://openrouter.ai/api/v1/models"
+    api_key: "" # Your OpenRouter API key here
+    filter: null # Optional: filter models by substring (e.g., "free" to show only free models)
   OpenAI:
-    model: gpt-4.1-mini
-    api_url: https://api.openai.com/v1
+    client_name: "openai" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    api_url: "https://api.openai.com/v1"
+    api_list: "https://api.openai.com/v1/models"
     api_key: "" # Your OpenAI API key here
+    filter: null # Optional: filter models by substring
+
