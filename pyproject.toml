@@ -40,6 +40,7 @@ dependencies = [
     "inquirer==3.4.0",
     "prompt-toolkit==3.0.52",
     "textual>=0.47.0",
+    "sseclient-py==1.8.0",
 ]
 dynamic = ["version"]
 
@@ -58,4 +59,10 @@ where = ["src"]
 exclude = ["penguin_tamer.tests*"]
 
 [tool.setuptools.package-data]
-penguin_tamer = ["*.yaml", "locales/*.json"]
+penguin_tamer = [
+    "*.yaml", 
+    "locales/*.json",
+    "menu/locales/*.json",
+    "menu/locales/*.py",
+    "menu/*.tcss",
+]
