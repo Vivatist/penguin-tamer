@@ -1,15 +1,15 @@
 """
 Pollinations Client - Реализация клиента для Pollinations API.
 
-Использует OpenAI-совместимый endpoint для текстовой генерации.
+Использует GET запросы к https://text.pollinations.ai/{prompt}
 API documentation: https://pollinations.ai/
 """
 
 from typing import List, Dict, Optional
 from dataclasses import dataclass, field
+import urllib.parse
 
 from penguin_tamer.llm_clients.base import AbstractLLMClient, LLMConfig
-from penguin_tamer.llm_clients.stream_processor import StreamProcessor
 from penguin_tamer.utils.lazy_import import lazy_import
 
 # Ленивый импорт requests для работы с API
@@ -20,164 +20,151 @@ def get_requests_module():
     return requests
 
 
-# Ленивый импорт OpenAI клиента
-@lazy_import
-def get_openai_client():
-    """Ленивый импорт OpenAI клиента (Pollinations использует OpenAI-совместимый API)"""
-    from openai import OpenAI
-    return OpenAI
-
-
 @dataclass
 class PollinationsClient(AbstractLLMClient):
     """Pollinations-specific implementation of LLM client.
     
-    Uses OpenAI-compatible API at https://text.pollinations.ai/openai
+    Uses GET requests to https://text.pollinations.ai/{encoded_prompt}
     No API key required - free and open access.
     
     This class contains ONLY Pollinations API-specific logic:
-    - Request parameter preparation
-    - Stream creation
-    - Response parsing (chunks, usage, rate limits)
+    - Request parameter preparation (URL encoding)
+    - Direct GET requests (no streaming)
+    - Response parsing
     """
-
-    # Pollinations-specific state
-    _client: Optional[object] = field(default=None, init=False)
 
     # === API-specific methods (формирование запросов и парсинг ответов) ===
 
-    def _prepare_api_params(self, user_input: Optional[str] = None) -> dict:
-        """Подготовка параметров для Pollinations API запроса.
+    def _prepare_prompt_url(self, user_input: str) -> tuple:
+        """Подготовка URL и параметров для Pollinations API запроса.
+        
+        Pollinations использует формат: GET https://text.pollinations.ai/{encoded_prompt}?model=...&seed=...
+        
+        Для многооборотных диалогов формируем полный контекст в промпте.
+        
+        ВАЖНО: Параметр system вызывает ошибки Azure content filter,
+        поэтому мы включаем system message прямо в промпт.
         
         Args:
-            user_input: Пользовательский ввод (добавляется в историю сообщений)
+            user_input: Пользовательский ввод
             
         Returns:
-            dict: Параметры для передачи в OpenAI SDK (OpenAI-compatible format)
+            tuple: (url, params) - URL с закодированным промптом и словарь параметров
         """
-        if user_input:
-            self.messages.append({"role": "user", "content": user_input})
-
-        # Pollinations использует OpenAI-совместимый формат
-        api_params = {
-            "model": self.llm_config.model,
-            "messages": self.messages,
-            "stream": True,
+        # Формируем полный промпт из истории сообщений
+        full_prompt_parts = []
+        
+        # Добавляем системное сообщение БЕЗ префикса "System:" (Azure content filter блокирует это слово)
+        for msg in self.messages:
+            if msg["role"] == "system":
+                full_prompt_parts.append(msg['content'])
+                break
+        
+        # Добавляем историю диалога
+        for msg in self.messages:
+            if msg["role"] == "user":
+                full_prompt_parts.append(f"User: {msg['content']}")
+            elif msg["role"] == "assistant":
+                full_prompt_parts.append(f"Assistant: {msg['content']}")
+        
+        # Добавляем текущий запрос пользователя
+        full_prompt_parts.append(f"User: {user_input}")
+        full_prompt_parts.append("Assistant:")
+        
+        full_prompt = "\n\n".join(full_prompt_parts)
+        
+        # Кодируем промпт для URL
+        encoded_prompt = urllib.parse.quote(full_prompt)
+        
+        # Формируем URL
+        base_url = self.api_url.rstrip('/')
+        url = f"{base_url}/{encoded_prompt}"
+        
+        # Формируем параметры запроса
+        # НЕ используем параметр system - он вызывает Azure content filter ошибки
+        params = {
+            "model": self.model,
+            "seed": self.seed if self.seed is not None else 42,
         }
-
-        # ВАЖНО: Некоторые модели Pollinations (например, "openai") не поддерживают
-        # кастомные значения temperature, top_p и других параметров.
-        # Они работают только со значениями по умолчанию.
-        # Для таких моделей мы не добавляем эти параметры.
         
-        # Список моделей с ограничениями (могут не поддерживать кастомные параметры)
-        restricted_models = {"openai", "gpt-5-nano"}
-        
-        model_name = self.llm_config.model.lower()
-        is_restricted = any(restricted in model_name for restricted in restricted_models)
-        
-        if not is_restricted:
-            # Для моделей без ограничений добавляем все параметры
-            if self.llm_config.temperature and self.llm_config.temperature != 1.0:
-                api_params["temperature"] = self.llm_config.temperature
-
-            if self.llm_config.max_tokens and self.llm_config.max_tokens > 0:
-                api_params["max_tokens"] = self.llm_config.max_tokens
-
-            if self.llm_config.top_p and self.llm_config.top_p != 1.0:
-                api_params["top_p"] = self.llm_config.top_p
-        else:
-            # Для ограниченных моделей добавляем только max_tokens (обычно поддерживается)
-            if self.llm_config.max_tokens and self.llm_config.max_tokens > 0:
-                api_params["max_tokens"] = self.llm_config.max_tokens
-
-        return api_params
-
-    @property
-    def client(self):
-        """Lazy initialization Pollinations client (OpenAI-compatible SDK)."""
-        if self._client is None:
-            OpenAI = get_openai_client()
-            # Pollinations использует OpenAI-совместимый endpoint и НЕ требует API ключа
-            # Используем placeholder для api_key т.к. SDK требует его, но Pollinations игнорирует
-            # Base URL должен указывать на /openai, т.к. SDK добавит /chat/completions
-            self._client = OpenAI(
-                api_key="not-needed",  # Pollinations не требует ключа
-                base_url="https://text.pollinations.ai/openai"  # Pollinations OpenAI-compatible endpoint
-            )
-        return self._client
+        return url, params
 
     def _create_stream(self, api_params: dict):
-        """Создание потока для Pollinations API.
+        """Создание "потока" для Pollinations API.
+        
+        На самом деле Pollinations не поддерживает настоящий streaming,
+        поэтому мы делаем обычный GET запрос и возвращаем результат.
         
         Args:
-            api_params: Параметры запроса (из _prepare_api_params)
+            api_params: Параметры запроса (url, params)
             
         Returns:
-            Stream object от OpenAI SDK (Pollinations совместим с OpenAI)
+            Ответ от API как текст
         """
-        return self.client.chat.completions.create(**api_params)
+        requests = get_requests_module()
+        url = api_params['url']
+        params = api_params['params']
+        
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            return response.text
+        except Exception as e:
+            raise RuntimeError(f"Pollinations API error: {e}")
 
     def _extract_chunk_content(self, chunk) -> Optional[str]:
-        """Извлечение текстового контента из чанка.
+        """Извлечение контента из "чанка".
         
-        Pollinations использует OpenAI-совместимый формат:
-        chunk.choices[0].delta.content
+        Для Pollinations весь ответ приходит целиком, поэтому
+        chunk это просто полный текст ответа.
         
         Args:
-            chunk: Чанк от stream
+            chunk: Текстовый ответ от API
             
         Returns:
-            str или None: Текст из чанка или None если пусто
+            Полный текст ответа
         """
-        if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
-            delta = chunk.choices[0].delta
-            if hasattr(delta, 'content'):
-                return delta.content
+        # Pollinations возвращает весь ответ целиком
+        if isinstance(chunk, str):
+            return chunk
         return None
 
     def _extract_usage_stats(self, chunk) -> Optional[dict]:
-        """Извлечение статистики использования токенов из чанка.
+        """Извлечение статистики использования токенов.
         
-        Pollinations может не предоставлять usage stats в каждом чанке.
-        Формат (если есть): chunk.usage с полями prompt_tokens, completion_tokens
+        Pollinations не предоставляет статистику токенов в своём API.
         
         Args:
-            chunk: Чанк от stream
+            chunk: Ответ от API
             
         Returns:
-            dict или None: {'prompt_tokens': int, 'completion_tokens': int} или None
+            None (статистика недоступна)
         """
-        if hasattr(chunk, 'usage') and chunk.usage:
-            return {
-                'prompt_tokens': getattr(chunk.usage, 'prompt_tokens', 0),
-                'completion_tokens': getattr(chunk.usage, 'completion_tokens', 0)
-            }
+        # Pollinations не возвращает usage stats
         return None
 
-    def _extract_rate_limits(self, headers: dict) -> dict:
-        """Извлечение rate limits из заголовков ответа.
+    def _extract_rate_limits(self, stream) -> dict:
+        """Извлечение rate limits из ответа.
         
-        Pollinations может не предоставлять rate limit информацию,
-        т.к. это бесплатный сервис без ограничений по ключу.
+        Pollinations не предоставляет rate limit информацию,
+        т.к. это бесплатный сервис без ограничений.
         
         Args:
-            headers: HTTP заголовки ответа
+            stream: Ответ от API
             
         Returns:
-            dict: Словарь с rate limit данными (может быть пустым)
+            Пустой dict
         """
-        # Pollinations скорее всего не возвращает rate limits
-        # Возвращаем пустой dict, т.к. это бесплатный сервис
+        # Pollinations не возвращает rate limits
         return {}
 
-    # === Основной метод потоковой генерации ===
+    # === Основной метод генерации ===
 
     def ask_stream(self, user_input: str) -> str:
-        """Основной метод для потоковой генерации с Pollinations.
+        """Основной метод для генерации с Pollinations.
         
-        Делегирует UI/orchestration StreamProcessor,
-        отвечает только за подготовку параметров.
+        Примечание: Несмотря на название "stream", Pollinations не поддерживает
+        настоящий streaming - весь ответ приходит целиком.
         
         Args:
             user_input: Запрос пользователя
@@ -185,8 +172,55 @@ class PollinationsClient(AbstractLLMClient):
         Returns:
             str: Полный ответ от LLM
         """
-        processor = StreamProcessor(self)
-        return processor.process(user_input)
+        from penguin_tamer.i18n import t
+        from penguin_tamer.config_manager import config
+        from penguin_tamer.error_handlers import ErrorHandler, ErrorContext, ErrorSeverity
+        
+        debug_mode = config.get("global", "debug", False)
+        error_handler = ErrorHandler(console=self.console, debug_mode=debug_mode)
+        
+        # Показываем спиннер во время запроса
+        with self._managed_spinner(t('Connecting to Pollinations...')) as status_message:
+            try:
+                # Подготавливаем URL и параметры
+                url, params = self._prepare_prompt_url(user_input)
+                
+                status_message['text'] = t('Ai thinking...')
+                
+                # Делаем запрос
+                api_params = {'url': url, 'params': params}
+                response_text = self._create_stream(api_params)
+                
+                if not response_text or not response_text.strip():
+                    warning = t('Warning: Empty response received from API.')
+                    self.console.print(f"[dim italic]{warning}[/dim italic]")
+                    return ""
+                
+                # Добавляем в контекст
+                self.messages.append({"role": "user", "content": user_input})
+                self.messages.append({"role": "assistant", "content": response_text})
+                
+                # Показываем ответ
+                theme_name = config.get("global", "markdown_theme", "default")
+                markdown = self._create_markdown(response_text, theme_name)
+                self.console.print(markdown)
+                
+                # Debug output если включён
+                self._debug_print_if_enabled("response")
+                
+                return response_text
+                
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                context = ErrorContext(
+                    operation="Pollinations API request",
+                    severity=ErrorSeverity.ERROR,
+                    recoverable=True
+                )
+                error_message = error_handler.handle(e, context)
+                self.console.print(error_message)
+                return ""
 
     # === Методы работы со списком моделей ===
 
