@@ -11,7 +11,7 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 from penguin_tamer.config_manager import config
-from penguin_tamer.menu.provider_utils import fetch_models_from_provider
+from penguin_tamer.llm_client import OpenRouterClient
 
 
 def test_full_workflow():
@@ -53,7 +53,7 @@ def test_full_workflow():
             continue
         
         print(f"  Testing {provider_name}...", end=" ")
-        models = fetch_models_from_provider(api_list, api_key)
+        models = OpenRouterClient.fetch_models(api_list, api_key)
         
         if models:
             print(f"✓ ({len(models)} моделей)")
@@ -73,7 +73,7 @@ def test_full_workflow():
         api_key = provider_config.get("api_key", "")
         
         if api_list:
-            models = fetch_models_from_provider(api_list, api_key)
+            models = OpenRouterClient.fetch_models(api_list, api_key)
             if models:
                 test_provider = provider_name
                 test_models = models[:3]  # Первые 3 модели
@@ -112,7 +112,7 @@ def test_full_workflow():
         api_list = provider_config.get("api_list", "")
         api_key = provider_config.get("api_key", "")
         if api_list:
-            models = fetch_models_from_provider(api_list, api_key)
+            models = OpenRouterClient.fetch_models(api_list, api_key)
             if models:
                 working_providers += 1
     

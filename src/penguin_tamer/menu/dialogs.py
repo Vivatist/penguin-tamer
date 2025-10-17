@@ -123,15 +123,16 @@ class LLMEditDialog(ModalScreen):
     @work(exclusive=True, thread=True)
     def fetch_models(self, api_list_url: str, api_key: str, model_filter: str = None) -> None:
         """Загружает список моделей от провайдера (в отдельном потоке)."""
-        from penguin_tamer.menu.provider_utils import fetch_models_from_provider, format_model_for_select
+        from penguin_tamer.llm_client import OpenRouterClient
+        from penguin_tamer.menu.provider_utils import format_model_for_select
         
         # Показываем индикатор загрузки
         self.loading_models = True
         self.current_filter = model_filter
         self.app.call_from_thread(self.show_loading, True)
         
-        # Запрашиваем модели с применением фильтра
-        models = fetch_models_from_provider(api_list_url, api_key, model_filter)
+        # Запрашиваем модели с применением фильтра используя статический метод OpenRouterClient
+        models = OpenRouterClient.fetch_models(api_list_url, api_key, model_filter)
         self.available_models = models
         
         # Скрываем индикатор загрузки и обновляем список
