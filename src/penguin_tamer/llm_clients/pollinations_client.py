@@ -48,6 +48,48 @@ class PollinationsClient(AbstractLLMClient):
         # Leave all rate_limit fields as None
         pass
 
+    def _create_stream(self, api_params: dict):
+        """Create API stream object (Pollinations-specific).
+        
+        Args:
+            api_params: API parameters
+            
+        Returns:
+            Stream object
+            
+        Raises:
+            NotImplementedError: Not yet implemented
+        """
+        raise NotImplementedError("Pollinations stream creation not implemented")
+
+    def _extract_chunk_content(self, chunk) -> Optional[str]:
+        """Extract text content from stream chunk (Pollinations-specific).
+        
+        Args:
+            chunk: Stream chunk from API
+            
+        Returns:
+            Text content or None
+            
+        Raises:
+            NotImplementedError: Not yet implemented
+        """
+        raise NotImplementedError("Pollinations chunk parsing not implemented")
+
+    def _extract_usage_stats(self, chunk) -> Optional[dict]:
+        """Extract usage statistics from chunk (Pollinations-specific).
+        
+        Args:
+            chunk: Stream chunk from API
+            
+        Returns:
+            Dict with usage stats or None
+            
+        Raises:
+            NotImplementedError: Not yet implemented
+        """
+        raise NotImplementedError("Pollinations usage stats extraction not implemented")
+
     @staticmethod
     def fetch_models(api_list_url: str, api_key: str = "", model_filter: Optional[str] = None) -> List[Dict[str, str]]:
         """Fetch list of available models from Pollinations API.

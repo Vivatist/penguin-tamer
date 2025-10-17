@@ -77,7 +77,7 @@ class StreamProcessor:
             try:
                 # Send API request with user input (but don't add to permanent context yet)
                 api_params = self.client._prepare_api_params(self.user_input)
-                stream = self.client.client.chat.completions.create(**api_params)
+                stream = self.client._create_stream(api_params)
 
                 # Try to extract rate limit info from stream (if available)
                 self.client._extract_rate_limits(stream)
@@ -106,20 +106,16 @@ class StreamProcessor:
                 return None, None
 
     def _wait_first_chunk(self, stream) -> Optional[str]:
-        """Ожидание первого чанка с контентом."""
+        """Ожидание первого чанка с контентом (используется API-специфичный парсинг)."""
         try:
             for chunk in stream:
                 if self.interrupted.is_set():
                     raise KeyboardInterrupt("Stream interrupted")
 
-                if not hasattr(chunk, 'choices') or not chunk.choices:
-                    continue
-                if not hasattr(chunk.choices[0], 'delta'):
-                    continue
-
-                delta = chunk.choices[0].delta
-                if hasattr(delta, 'content') and delta.content:
-                    return delta.content
+                # Use client-specific chunk content extraction
+                content = self.client._extract_chunk_content(chunk)
+                if content:
+                    return content
         except (AttributeError, IndexError):
             return None
         return None
@@ -157,20 +153,9 @@ class StreamProcessor:
                     if self.interrupted.is_set():
                         raise KeyboardInterrupt("Stream interrupted")
 
-                    if not hasattr(chunk, 'choices') or not chunk.choices:
-                        # Check for usage statistics in non-content chunks
-                        if hasattr(chunk, 'usage') and chunk.usage:
-                            prompt_tokens = getattr(chunk.usage, 'prompt_tokens', 0)
-                            completion_tokens = getattr(chunk.usage, 'completion_tokens', 0)
-                            self.client.total_prompt_tokens += prompt_tokens
-                            self.client.total_completion_tokens += completion_tokens
-                            self.client.total_requests += 1
-                        continue
-                    if not hasattr(chunk.choices[0], 'delta'):
-                        continue
-
-                    if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
-                        text = chunk.choices[0].delta.content
+                    # Use client-specific chunk content extraction
+                    text = self.client._extract_chunk_content(chunk)
+                    if text:
                         self.reply_parts.append(text)
                         # Record chunk for demo
                         if self.client._demo_manager:
@@ -179,6 +164,14 @@ class StreamProcessor:
                         markdown = self.client._create_markdown(full_text, theme_name)
                         live.update(markdown)
                         time.sleep(sleep_time)
+                        continue
+
+                    # Use client-specific usage stats extraction
+                    usage_stats = self.client._extract_usage_stats(chunk)
+                    if usage_stats:
+                        self.client.total_prompt_tokens += usage_stats.get('prompt_tokens', 0)
+                        self.client.total_completion_tokens += usage_stats.get('completion_tokens', 0)
+                        self.client.total_requests += 1
             except (AttributeError, IndexError):
                 pass
 

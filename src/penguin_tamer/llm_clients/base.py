@@ -316,6 +316,42 @@ class AbstractLLMClient(ABC):
         """
         pass
 
+    @abstractmethod
+    def _create_stream(self, api_params: dict):
+        """Create API stream object (provider-specific).
+        
+        Args:
+            api_params: API parameters prepared by _prepare_api_params()
+            
+        Returns:
+            Stream object from provider SDK
+        """
+        pass
+
+    @abstractmethod
+    def _extract_chunk_content(self, chunk) -> Optional[str]:
+        """Extract text content from stream chunk (provider-specific).
+        
+        Args:
+            chunk: Stream chunk from API
+            
+        Returns:
+            Text content or None if chunk has no content
+        """
+        pass
+
+    @abstractmethod
+    def _extract_usage_stats(self, chunk) -> Optional[dict]:
+        """Extract usage statistics from chunk (provider-specific).
+        
+        Args:
+            chunk: Stream chunk from API
+            
+        Returns:
+            Dict with 'prompt_tokens' and 'completion_tokens', or None
+        """
+        pass
+
     # === Абстрактные методы (должны быть реализованы в подклассах) ===
 
     @abstractmethod

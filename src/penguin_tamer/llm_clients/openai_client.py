@@ -34,11 +34,17 @@ class OpenAIClient(AbstractLLMClient):
     
     Uses OpenAI API directly without OpenRouter-specific headers.
     Supports streaming responses, model listing, and usage statistics.
-    Currently identical to OpenRouterClient, will be customized for OpenAI specifics.
+    
+    This class contains ONLY OpenAI API-specific logic:
+    - Request parameter preparation
+    - Stream creation
+    - Response parsing (chunks, usage, rate limits)
     """
 
     # OpenAI-specific state
     _client: Optional[object] = field(default=None, init=False)
+
+    # === API-specific methods (формирование запросов и парсинг ответов) ===
 
     def _prepare_api_params(self, user_input: Optional[str] = None) -> dict:
         """Подготовка параметров для API запроса.
@@ -103,6 +109,58 @@ class OpenAIClient(AbstractLLMClient):
         """
         processor = StreamProcessor(self)
         return processor.process(user_input)
+
+    def _create_stream(self, api_params: dict):
+        """Create API stream object (OpenAI-specific).
+        
+        Args:
+            api_params: API parameters prepared by _prepare_api_params()
+            
+        Returns:
+            Stream object from OpenAI SDK
+        """
+        return self.client.chat.completions.create(**api_params)
+
+    def _extract_chunk_content(self, chunk) -> Optional[str]:
+        """Extract text content from stream chunk (OpenAI-specific).
+        
+        Args:
+            chunk: Stream chunk from API
+            
+        Returns:
+            Text content or None if chunk has no content
+        """
+        try:
+            if not hasattr(chunk, 'choices') or not chunk.choices:
+                return None
+            if not hasattr(chunk.choices[0], 'delta'):
+                return None
+            
+            delta = chunk.choices[0].delta
+            if hasattr(delta, 'content') and delta.content:
+                return delta.content
+        except (AttributeError, IndexError):
+            return None
+        return None
+
+    def _extract_usage_stats(self, chunk) -> Optional[dict]:
+        """Extract usage statistics from chunk (OpenAI-specific).
+        
+        Args:
+            chunk: Stream chunk from API
+            
+        Returns:
+            Dict with 'prompt_tokens' and 'completion_tokens', or None
+        """
+        try:
+            if hasattr(chunk, 'usage') and chunk.usage:
+                return {
+                    'prompt_tokens': getattr(chunk.usage, 'prompt_tokens', 0),
+                    'completion_tokens': getattr(chunk.usage, 'completion_tokens', 0)
+                }
+        except (AttributeError, IndexError):
+            return None
+        return None
 
     def _extract_rate_limits(self, stream) -> None:
         """Extract rate limit information from OpenAI API response.
