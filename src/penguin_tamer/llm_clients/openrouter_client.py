@@ -351,74 +351,44 @@ class OpenRouterClient(AbstractLLMClient):
     @staticmethod
     def fetch_models(api_list_url: str, api_key: str = "", model_filter: Optional[str] = None) -> List[Dict[str, str]]:
         """
-        Fetch list of available models from provider API.
+        Fetch list of available models from OpenRouter API.
         
-        Static method that can be used without creating client instance.
-        Useful for UI menus when selecting models before client initialization.
+        OpenRouter allows anonymous access - API key is optional.
+        Returns models in format: {"data": [{"id": "...", "name": "..."}]}
         
         Args:
-            api_list_url: URL endpoint to fetch models list (e.g., "https://openrouter.ai/api/v1/models")
-            api_key: API key for authentication (optional, some providers allow anonymous access)
+            api_list_url: OpenRouter models endpoint (e.g., "https://openrouter.ai/api/v1/models")
+            api_key: API key (optional, OpenRouter works without it)
             model_filter: Filter string to match against model id/name (case-insensitive, optional)
         
         Returns:
             List of model dictionaries: [{"id": "model-id", "name": "Model Display Name"}, ...]
-            Returns empty list on any error (network, parsing, timeout, etc.)
+            Returns empty list on error.
         
         Example:
-            >>> models = OpenRouterClient.fetch_models(
-            ...     "https://openrouter.ai/api/v1/models",
-            ...     api_key="sk-...",
-            ...     model_filter="gpt"
-            ... )
+            >>> models = OpenRouterClient.fetch_models("https://openrouter.ai/api/v1/models")
             >>> print(models[0])
             {'id': 'openai/gpt-4', 'name': 'GPT-4'}
         """
         try:
             requests = get_requests_module()
             
-            headers = {}
-            if api_key:
-                # Добавляем Authorization header если есть API ключ
-                headers["Authorization"] = f"Bearer {api_key}"
-            
-            # Таймаут 10 секунд для запроса
-            response = requests.get(api_list_url, headers=headers, timeout=10)
+            # OpenRouter не требует API ключ для получения списка моделей
+            response = requests.get(api_list_url, timeout=10)
             response.raise_for_status()
             
             data = response.json()
             
-            # Обрабатываем разные форматы ответа
+            # OpenRouter формат: {"data": [{"id": "...", "name": "..."}]}
             models = []
-            
-            # OpenAI/OpenRouter формат: {"data": [{"id": "...", "name": "..."}]}
             if "data" in data and isinstance(data["data"], list):
                 for model in data["data"]:
                     if isinstance(model, dict) and "id" in model:
                         model_id = model["id"]
-                        # Используем name если есть, иначе id
                         model_name = model.get("name", model_id)
                         models.append({"id": model_id, "name": model_name})
             
-            # Альтернативный формат: {"models": [...]}
-            elif "models" in data and isinstance(data["models"], list):
-                for model in data["models"]:
-                    if isinstance(model, dict) and "id" in model:
-                        model_id = model["id"]
-                        model_name = model.get("name", model_id)
-                        models.append({"id": model_id, "name": model_name})
-            
-            # Простой список строк
-            elif isinstance(data, list):
-                for item in data:
-                    if isinstance(item, str):
-                        models.append({"id": item, "name": item})
-                    elif isinstance(item, dict) and "id" in item:
-                        model_id = item["id"]
-                        model_name = item.get("name", model_id)
-                        models.append({"id": model_id, "name": model_name})
-            
-            # Применяем фильтр если он указан
+            # Применяем фильтр если указан
             if model_filter:
                 filter_lower = model_filter.lower()
                 models = [
@@ -429,8 +399,7 @@ class OpenRouterClient(AbstractLLMClient):
             return models
         
         except Exception:
-            # Любые ошибки (сеть, таймаут, парсинг JSON, и т.д.) - возвращаем пустой список
-            # Это безопасное поведение для UI, который может показать сообщение "No models found"
+            # Возвращаем пустой список при любых ошибках
             return []
 
     def get_available_models(self, model_filter: Optional[str] = None) -> List[Dict[str, str]]:
