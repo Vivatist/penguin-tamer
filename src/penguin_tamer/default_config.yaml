@@ -3,29 +3,30 @@ language: en
 
 global:
   user_content: You are a professional in Linux and Windows. Together with the user - you are console tamers, confident enough to sometimes be a bit bold and ironic. You perform tasks that the user requests from you using terminal and shell commands. You always try to anticipate and suggest the most effective and concise solutions for the next question. You ALWAYS warn about potentially dangerous commands.
-  current_LLM: "llm_1" # Текущий выбранный LLM из списка supported_LLMs (ID)
+  current_LLM: "llm_1"  # Current selected LLM from supported_LLMs list (ID)
+  
   # === LLM Generation Parameters ===
-  temperature: 0.8 # Температура (0.0-2.0): выше = креативнее, ниже = детерминированнее
-  max_tokens: null # Максимум токенов в ответе (null = без ограничения, рекомендуется: 2000-4000)
-  top_p: 0.95 # Nucleus sampling (0.0-1.0): альтернатива temperature, обычно 0.9-1.0
-  frequency_penalty: 0.0 # Штраф за повторы (-2.0 до 2.0): положительные значения уменьшают повторение токенов
-  presence_penalty: 0.0 # Штраф за упоминание (-2.0 до 2.0): стимулирует новые темы
-  stop: null # Стоп-последовательности (null или список строк, например: ["\n\n\n", "Human:"])
-  seed: null # Seed для детерминизма (null = случайно, число = воспроизводимо)
+  temperature: 0.8          # Creativity (0.0-2.0): higher = more creative, lower = more deterministic
+  max_tokens: null          # Max tokens in response (null = unlimited, recommended: 2000-4000)
+  top_p: 0.95              # Nucleus sampling (0.0-1.0): alternative to temperature, usually 0.9-1.0
+  frequency_penalty: 0.0   # Repetition penalty (-2.0 to 2.0): positive values reduce token repetition
+  presence_penalty: 0.0    # Topic diversity penalty (-2.0 to 2.0): encourages new topics
+  stop: null               # Stop sequences (null or list of strings, e.g., ["\n\n\n", "Human:"])
+  seed: null               # Seed for determinism (null = random, number = reproducible)
 
   # === Interface Settings ===
-  sleep_time: 0.01 # Задержка между обновлениями в потоковом режиме (секунды)
-  refresh_per_second: 10 # Частота обновления интерфейса в потоковом режиме (обновлений в секунду)
-  markdown_theme: "default" # Тема для Markdown: default, monokai, dracula, nord, solarized_dark, github, matrix, minimal
-  debug_mode: false # Режим отладки: показывает структуру всех сообщений, отправляемых в LLM
+  sleep_time: 0.01         # Delay between updates in streaming mode (seconds)
+  refresh_per_second: 10   # Interface refresh rate during streaming (updates per second)
+  markdown_theme: "default"  # Markdown theme: default, monokai, dracula, nord, solarized_dark, github, matrix, minimal
+  debug_mode: false        # Debug mode: shows structure of all messages sent to LLM
 
   # === Context Management ===
-  add_execution_to_context: true # Добавлять результаты выполнения команд в контекст беседы (true/false). При false экономит токены.
+  add_execution_to_context: true  # Add command execution results to conversation context (true/false). Set false to save tokens.
 
   # === Demo System Settings ===
-  demo_mode: "off" # Режим демонстрации: off, record, play
-  demo_file: null # Файл для воспроизведения в режиме play (если null, используется последний записанный)
-  demo_play_first_input: false # В режиме воспроизведения, воспроизводить ли первый ввод пользователя (true/false)
+  demo_mode: "off"         # Demo mode: off, record, play
+  demo_file: null          # File for playback in play mode (if null, uses last recorded)
+  demo_play_first_input: false  # In playback mode, whether to replay the first user input (true/false)
 
 supported_LLMs:
   llm_1:
@@ -37,31 +38,42 @@ supported_LLMs:
   llm_3:
     provider: "OpenAI"
     model: "gpt-4.1-mini"
-
+  llm_4:
+    provider: Mistral
+    model: magistral-small-2509
 
 supported_Providers:
   Pollinations:
-    client_name: "pollinations" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    client_name: "pollinations"  # Client type: openrouter, openai, pollinations, mistral (DO NOT EDIT in UI)
     api_url: "https://text.pollinations.ai"
     api_list: "https://text.pollinations.ai/models"
-    api_key: "Not used" # API ключ не требуется для Pollinations (бесплатные модели tier=anonymous)
-    filter: null # Опционально: фильтр моделей по подстроке
+    api_key: "Not used"      # API key not required for Pollinations (free tier=anonymous models)
+    filter: null             # Optional: filter models by substring
+  
   OpenRouter (free):
-    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    client_name: "openrouter"  # Client type: openrouter, openai, pollinations, mistral (DO NOT EDIT in UI)
     api_url: "https://openrouter.ai/api/v1"
     api_list: "https://openrouter.ai/api/v1/models"
-    api_key: "" # Your OpenRouter API key here
-    filter: "free"
+    api_key: ""              # Your OpenRouter API key here
+    filter: "free"           # Filter to show only free models
+  
   OpenRouter:
-    client_name: "openrouter" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    client_name: "openrouter"  # Client type: openrouter, openai, pollinations, mistral (DO NOT EDIT in UI)
     api_url: "https://openrouter.ai/api/v1"
     api_list: "https://openrouter.ai/api/v1/models"
-    api_key: "" # Your OpenRouter API key here
-    filter: null # Optional: filter models by substring (e.g., "free" to show only free models)
+    api_key: ""              # Your OpenRouter API key here
+    filter: null             # Optional: filter models by substring (e.g., "free" to show only free models)
+  
   OpenAI:
-    client_name: "openai" # Тип клиента: openrouter, openai, pollinations (НЕ РЕДАКТИРОВАТЬ в UI)
+    client_name: "openai"    # Client type: openrouter, openai, pollinations, mistral (DO NOT EDIT in UI)
     api_url: "https://api.openai.com/v1"
     api_list: "https://api.openai.com/v1/models"
-    api_key: "" # Your OpenAI API key here
-    filter: null # Optional: filter models by substring
-
+    api_key: ""              # Your OpenAI API key here
+    filter: null             # Optional: filter models by substring
+  
+  Mistral:
+    client_name: "mistral"   # Client type: openrouter, openai, pollinations, mistral (DO NOT EDIT in UI)
+    api_url: "https://api.mistral.ai/v1"
+    api_list: "https://api.mistral.ai/v1/models"
+    api_key: ""              # Your Mistral AI API key here (get it from https://console.mistral.ai/)
+    filter: null             # Optional: filter models by substring

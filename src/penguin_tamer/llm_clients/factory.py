@@ -10,6 +10,7 @@ from penguin_tamer.llm_clients.base import AbstractLLMClient, LLMConfig
 from penguin_tamer.llm_clients.openrouter_client import OpenRouterClient
 from penguin_tamer.llm_clients.openai_client import OpenAIClient
 from penguin_tamer.llm_clients.pollinations_client import PollinationsClient
+from penguin_tamer.llm_clients.mistral_client import MistralClient
 
 
 class ClientFactory:
@@ -20,6 +21,7 @@ class ClientFactory:
         'openrouter': OpenRouterClient,
         'openai': OpenAIClient,
         'pollinations': PollinationsClient,
+        'mistral': MistralClient,
     }
 
     @classmethod
@@ -33,7 +35,7 @@ class ClientFactory:
         """Create LLM client based on client_name.
 
         Args:
-            client_name: Name of client implementation ('openrouter', 'openai', 'pollinations')
+            client_name: Name of client implementation ('openrouter', 'openai', 'pollinations', 'mistral')
             console: Rich console instance
             system_message: System messages for LLM
             llm_config: Complete LLM configuration
@@ -65,7 +67,7 @@ class ClientFactory:
         """Get list of available client names.
 
         Returns:
-            List of client names: ['openrouter', 'openai', 'pollinations']
+            List of client names: ['openrouter', 'openai', 'pollinations', 'mistral']
         """
         return list(cls._CLIENT_REGISTRY.keys())
 

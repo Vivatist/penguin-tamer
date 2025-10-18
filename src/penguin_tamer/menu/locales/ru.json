@@ -110,7 +110,7 @@
   "Filter": "Фильтр",
   "API List URL": "API List URL",
   "Provider Name:": "Имя провайдера:",
-  "For example: OpenRouter, OpenAI": "Например: OpenRouter, OpenAI, Pollinations",
+  "For example: OpenRouter, OpenAI": "Например: OpenRouter, OpenAI, Pollinations, Mistral",
   "API List URL:": "API List URL:",
   "For example: https://openrouter.ai/api/v1/models": "Например: https://openrouter.ai/api/v1/models",
   "Optional. To get list of models": "Опционально. Для получения списка моделей",

@@ -7,11 +7,11 @@ playback:
   pause_after_input: 1.0
   pause_before_input: 2.0
   spinner_enabled: true
-  spinner_phase1_max_duration: 0.8
-  spinner_phase1_min_duration: 0.3
+  spinner_phase1_max_duration: 3.0
+  spinner_phase1_min_duration: 2.0
   spinner_phase1_text: Connecting...
-  spinner_phase2_max_duration: 2.0
-  spinner_phase2_min_duration: 0.5
+  spinner_phase2_max_duration: 3.0
+  spinner_phase2_min_duration: 2.0
   spinner_phase2_text: Thinking...
   typing_delay_per_char: 0.15
   typing_delay_variance: 0.05
