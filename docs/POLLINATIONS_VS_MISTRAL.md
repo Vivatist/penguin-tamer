@@ -91,23 +91,58 @@ headers = {
 ## 📊 Извлечение данных из SSE событий
 
 ### `_extract_chunk_content()` - Извлечение текста
-✅ **ИДЕНТИЧНО** в обоих клиентах:
+❌ **РАЗЛИЧАЮТСЯ**:
+
+**Pollinations:**
 ```python
 parsed = json.loads(chunk.data)
 content = parsed.get('choices', [{}])[0].get('delta', {}).get('content')
+return content  # Always string
 ```
+Простое извлечение строки.
+
+**Mistral:**
+```python
+parsed = json.loads(chunk.data)
+content = parsed.get('choices', [{}])[0].get('delta', {}).get('content')
+
+# Handle new array format (magistral models)
+if isinstance(content, list):
+    text_parts = []
+    for block in content:
+        if block.get('type') == 'text':  # Skip 'thinking' blocks
+            text_parts.append(block.get('text', ''))
+    return ''.join(text_parts) if text_parts else None
+
+# Handle old string format
+return content
+```
+Обрабатывает **два формата**: строку и массив с типами `thinking`/`text`.
 
 Оба проверяют маркер `[DONE]` для завершения потока.
 
 ### `_extract_usage_stats()` - Статистика токенов
-✅ **ИДЕНТИЧНО** в обоих клиентах:
+❌ **РАЗЛИЧАЮТСЯ**:
+
+**Pollinations:**
 ```python
-usage = parsed.get('usage')
-if usage:
-    return {
-        'prompt_tokens': usage.get('prompt_tokens', 0),
-        'completion_tokens': usage.get('completion_tokens', 0)
-    }
+def _extract_usage_stats(self, chunk) -> Optional[dict]:
+    # ⚠️ ВАЖНО: Pollinations API НЕ предоставляет статистику использования токенов
+    # В реальных тестах все 13 SSE событий не содержали поля 'usage'
+    return None
+```
+
+**Mistral:**
+```python
+def _extract_usage_stats(self, chunk) -> Optional[dict]:
+    parsed = self._parse_chunk(chunk)
+    usage = parsed.get('usage')
+    if usage:
+        return {
+            'prompt_tokens': usage.get('prompt_tokens', 0),
+            'completion_tokens': usage.get('completion_tokens', 0)
+        }
+    return None
 ```
 
 ### `_extract_rate_limits()` - Лимиты API
@@ -115,21 +150,21 @@ if usage:
 
 **Pollinations:**
 ```python
-def _extract_rate_limits(self, stream) -> dict:
-    return {}  # Не предоставляет информацию о лимитах
+def _extract_rate_limits(self, stream) -> None:
+    pass  # Pollinations не возвращает rate limits
 ```
 
 **Mistral:**
 ```python
 def _extract_rate_limits(self, stream) -> None:
-    # Извлекает из headers:
+    # Извлекает из заголовков ответа:
     # - x-ratelimit-limit-requests
     # - x-ratelimit-limit-tokens
     # - x-ratelimit-remaining-requests
     # - x-ratelimit-remaining-tokens
     if hasattr(stream, 'resp') and hasattr(stream.resp, 'headers'):
         headers = stream.resp.headers
-        # ... извлечение значений
+        # ... извлечение и сохранение значений в self._rate_limits
 ```
 
 ---

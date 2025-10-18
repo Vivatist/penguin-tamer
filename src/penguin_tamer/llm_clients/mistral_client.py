@@ -126,8 +126,9 @@ class MistralClient(AbstractLLMClient):
     def _extract_chunk_content(self, chunk) -> Optional[str]:
         """Extract text content from SSE event.
         
-        Mistral uses OpenAI-compatible format:
-        {"choices": [{"delta": {"content": "..."}}]}
+        Mistral uses OpenAI-compatible format with two possible content formats:
+        1. String: {"choices": [{"delta": {"content": "..."}}]}
+        2. Array (new models with thinking): {"choices": [{"delta": {"content": [{"type": "text", "text": "..."}]}}]}
         
         Args:
             chunk: SSE event from Mistral
@@ -148,6 +149,19 @@ class MistralClient(AbstractLLMClient):
         try:
             parsed = json.loads(data)
             content = parsed.get('choices', [{}])[0].get('delta', {}).get('content')
+            
+            # Handle new format where content is an array
+            if isinstance(content, list):
+                # Extract text from array of content blocks
+                text_parts = []
+                for block in content:
+                    if isinstance(block, dict):
+                        # Skip thinking blocks, only get text
+                        if block.get('type') == 'text':
+                            text_parts.append(block.get('text', ''))
+                return ''.join(text_parts) if text_parts else None
+            
+            # Handle traditional string format
             return content
         except (json.JSONDecodeError, IndexError, KeyError):
             return None

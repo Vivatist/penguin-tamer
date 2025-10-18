@@ -61,14 +61,24 @@ supported_LLMs:
 
 ### ❌ Error: "Input data should be a string, not <class 'list'>"
 
-**Cause**: Using wrong client type in config (e.g., `client_name: "openai"` instead of `client_name: "mistral"`)
+**Causes:**
 
-**Solution**: 
-```yaml
-Mistral:
-  client_name: "mistral"  # ✅ Correct
-  # NOT "openai" ❌
-```
+1. **Wrong client type** in config (e.g., `client_name: "openai"` instead of `client_name: "mistral"`)
+
+   **Solution**: 
+   ```yaml
+   Mistral:
+     client_name: "mistral"  # ✅ Correct
+     # NOT "openai" ❌
+   ```
+
+2. **Old version** of MistralClient (before content array support)
+
+   **Solution**: Update to latest version of penguin-tamer. The new `MistralClient` handles both string and array content formats automatically.
+
+**Fixed in**: MistralClient now supports both formats:
+- Old: `content: "string"`
+- New: `content: [{"type": "text", "text": "..."}]`
 
 ### ❌ Authentication Error
 
@@ -121,6 +131,45 @@ print(response)
 
 - `frequency_penalty` - Not documented in Mistral API
 - `presence_penalty` - Not documented in Mistral API
+
+## New Content Format (Magistral Models)
+
+⚠️ **Important**: Newer Mistral models (like `magistral-small-2509`) return content in a **new array format** with thinking blocks:
+
+```json
+{
+  "choices": [{
+    "delta": {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": [{"type": "text", "text": "Internal reasoning..."}]
+        },
+        {
+          "type": "text",
+          "text": "Actual response text"
+        }
+      ]
+    }
+  }]
+}
+```
+
+**How it's handled:**
+- ✅ `MistralClient` automatically extracts only `type: "text"` blocks
+- ✅ Ignores `type: "thinking"` blocks (internal reasoning)
+- ✅ Still supports old string format for compatibility
+
+**Old format (still supported):**
+```json
+{
+  "choices": [{
+    "delta": {
+      "content": "Simple string response"
+    }
+  }]
+}
+```
 
 ## Rate Limits
 

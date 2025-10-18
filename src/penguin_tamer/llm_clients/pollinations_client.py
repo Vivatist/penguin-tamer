@@ -145,49 +145,34 @@ class PollinationsClient(AbstractLLMClient):
     def _extract_usage_stats(self, chunk) -> Optional[dict]:
         """Извлечение статистики использования токенов из SSE event.
         
-        Pollinations может предоставлять usage в последнем чанке.
+        ⚠️ ВАЖНО: Pollinations API НЕ предоставляет статистику использования токенов
+        в streaming режиме. Этот метод всегда возвращает None.
         
         Args:
             chunk: SSE event от Pollinations
             
         Returns:
-            dict или None: {'prompt_tokens': int, 'completion_tokens': int} или None
+            None: Pollinations не предоставляет usage статистику
         """
-        if not hasattr(chunk, 'data'):
-            return None
-            
-        data = chunk.data.strip()
-        
-        if data == '[DONE]':
-            return None
-            
-        try:
-            parsed = json.loads(data)
-            usage = parsed.get('usage')
-            if usage:
-                return {
-                    'prompt_tokens': usage.get('prompt_tokens', 0),
-                    'completion_tokens': usage.get('completion_tokens', 0)
-                }
-        except (json.JSONDecodeError, KeyError):
-            pass
-        
+        # Pollinations API не возвращает usage данные в streaming режиме
+        # Этот метод оставлен для совместимости с базовым классом
         return None
 
-    def _extract_rate_limits(self, stream) -> dict:
+    def _extract_rate_limits(self, stream) -> None:
         """Извлечение rate limits из ответа.
         
-        Pollinations не предоставляет rate limit информацию,
+        ⚠️ ВАЖНО: Pollinations не предоставляет rate limit информацию,
         т.к. это бесплатный сервис без ограничений.
         
         Args:
             stream: SSEClient stream
             
         Returns:
-            Пустой dict
+            None: Pollinations не предоставляет rate limits
         """
         # Pollinations не возвращает rate limits
-        return {}
+        # Бесплатный сервис без ограничений
+        pass
 
     # === Основной метод потоковой генерации ===
 
